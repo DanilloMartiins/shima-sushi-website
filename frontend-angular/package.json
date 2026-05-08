@@ -6,7 +6,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "dev:full": "npx concurrently -k -n FRONT,BACK -c cyan,green \"npm run dev:front\" \"npm run dev:back\"",
+    "dev:front": "npm start",
+    "dev:back": "cd ../houseburgergrill-backend && mvnw.cmd spring-boot:run"
   },
   "prettier": {
     "printWidth": 100,

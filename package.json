@@ -2,34 +2,19 @@
   "name": "seu-shima-sushi",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "description": "Aplicação React do Seu Shima Sushi com cardápio, carrinho e checkout via WhatsApp.",
+  "description": "Projeto principal Seu Shima Sushi - Angular Frontend e Spring Boot Backend",
   "scripts": {
-    "dev": "vite",
-    "dev:react": "vite",
+    "dev": "concurrently -k -n FRONT,BACK -c cyan,green \"npm run dev:angular\" \"npm run dev:backend\"",
     "dev:angular": "npm --prefix frontend-angular start",
     "dev:backend": "houseburgergrill-backend\\mvnw.cmd -f houseburgergrill-backend/pom.xml spring-boot:run",
-    "dev:full": "concurrently -k -n FRONT,BACK -c cyan,green \"npm run dev:angular\" \"npm run dev:backend\"",
-    "install:angular": "npm --prefix frontend-angular install",
     "install:all": "npm install && npm --prefix frontend-angular install",
-    "build": "vite build",
-    "build:react": "vite build",
-    "build:angular": "npm --prefix frontend-angular run build",
-    "preview": "vite preview",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier \"**/*.{html,css,js,jsx,json,md}\" --write",
-    "format:check": "prettier \"**/*.{html,css,js,jsx,json,md}\" --check"
-  },
-  "dependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "build": "npm --prefix frontend-angular run build",
+    "lint": "npm --prefix frontend-angular run lint",
+    "format": "prettier \"**/*.{html,css,js,ts,json,md}\" --write",
+    "format:check": "prettier \"**/*.{html,css,js,ts,json,md}\" --check"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^9.2.1",
-    "eslint": "^8.57.0",
-    "prettier": "^3.3.3",
-    "vite": "^7.1.7"
+    "prettier": "^3.3.3"
   }
 }
