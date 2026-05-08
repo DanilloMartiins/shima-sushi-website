@@ -21,9 +21,7 @@ import java.time.Instant;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(
         name = "users",
@@ -60,4 +58,13 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    // Construtor para usar no momento do cadastro
+    public User(String fullName, String email, String passwordHash, Role role) {
+        this.fullName = fullName;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.active = true;
+    }
 }

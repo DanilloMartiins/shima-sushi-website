@@ -5,7 +5,7 @@ import br.com.seushimasushi.backend.auth.repository.RefreshTokenRepository;
 import br.com.seushimasushi.backend.common.exception.UnauthorizedException;
 import br.com.seushimasushi.backend.config.properties.AppProperties;
 import br.com.seushimasushi.backend.user.model.User;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,7 +14,6 @@ import java.time.Instant;
 import java.util.Base64;
 
 @Service
-@RequiredArgsConstructor
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -22,17 +21,22 @@ public class RefreshTokenService {
     private final TokenHashService tokenHashService;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @Autowired
+    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository,
+                                AppProperties appProperties,
+                                TokenHashService tokenHashService) {
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.appProperties = appProperties;
+        this.tokenHashService = tokenHashService;
+    }
+
     @Transactional
     public CreatedRefreshToken create(User user) {
         String rawToken = generateRawToken();
         String hashedToken = tokenHashService.hash(rawToken);
         Instant expiresAt = Instant.now().plus(appProperties.getSecurity().getJwt().getRefreshTokenExpiration());
 
-        RefreshToken entity = RefreshToken.builder()
-                .user(user)
-                .tokenHash(hashedToken)
-                .expiresAt(expiresAt)
-                .build();
+        RefreshToken entity = new RefreshToken(user, hashedToken, expiresAt);
 
         refreshTokenRepository.save(entity);
         return new CreatedRefreshToken(rawToken, expiresAt);
@@ -56,10 +60,8 @@ public class RefreshTokenService {
 
     @Transactional
     public void revoke(RefreshToken token) {
-        if (token.getRevokedAt() == null) {
-            token.setRevokedAt(Instant.now());
-            refreshTokenRepository.save(token);
-        }
+        token.setRevokedAt(Instant.now());
+        refreshTokenRepository.save(token);
     }
 
     @Transactional
@@ -69,11 +71,10 @@ public class RefreshTokenService {
     }
 
     private String generateRawToken() {
-        byte[] randomBytes = new byte[64];
-        secureRandom.nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+        byte[] tokenBytes = new byte[32];
+        secureRandom.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
     }
 
-    public record CreatedRefreshToken(String rawToken, Instant expiresAt) {
-    }
+    public record CreatedRefreshToken(String rawToken, Instant expiresAt) {}
 }

@@ -1,5 +1,4 @@
 @echo off
-cd /d "C:\Users\Danillo Martins\OneDrive - eletrobras.com\Projetos - pessoais\Seu Shima Sushi\houseburgergrill-backend"
 echo ========================================
 echo Executando testes JUnit com Maven
 echo ========================================

@@ -39,7 +39,7 @@ class ImageUploadServiceTest {
         void deveUploadarPNG() throws Exception {
             var arquivo = new MockMultipartFile(
                     "file",
-                    "burger.png",
+                    "sushi.png",
                     "image/png",
                     "arquivo png simulado".getBytes()
             );
@@ -56,7 +56,7 @@ class ImageUploadServiceTest {
         void deveUploadarJPG() throws Exception {
             var arquivo = new MockMultipartFile(
                     "file",
-                    "burger.jpg",
+                    "sushi.jpg",
                     "image/jpeg",
                     "arquivo jpg simulado".getBytes()
             );
@@ -72,7 +72,7 @@ class ImageUploadServiceTest {
         void deveUploadarJPEG() throws Exception {
             var arquivo = new MockMultipartFile(
                     "file",
-                    "burger.jpeg",
+                    "sushi.jpeg",
                     "image/jpeg",
                     "arquivo jpeg simulado".getBytes()
             );
@@ -88,14 +88,14 @@ class ImageUploadServiceTest {
         void nomeDeveSerSeguroUniquement() throws Exception {
             var arquivo1 = new MockMultipartFile(
                     "file",
-                    "burger.png",
+                    "sushi.png",
                     "image/png",
                     "arquivo 1".getBytes()
             );
 
             var arquivo2 = new MockMultipartFile(
                     "file",
-                    "burger.png",
+                    "sushi.png",
                     "image/png",
                     "arquivo 2".getBytes()
             );
@@ -116,7 +116,7 @@ class ImageUploadServiceTest {
         void deveRejetarGIF() {
             var arquivo = new MockMultipartFile(
                     "file",
-                    "burger.gif",
+                    "sushi.gif",
                     "image/gif",
                     "arquivo gif".getBytes()
             );
@@ -131,7 +131,7 @@ class ImageUploadServiceTest {
         void deveRejetarBMP() {
             var arquivo = new MockMultipartFile(
                     "file",
-                    "burger.bmp",
+                    "sushi.bmp",
                     "image/bmp",
                     "arquivo bmp".getBytes()
             );
@@ -268,7 +268,7 @@ class ImageUploadServiceTest {
         void deveGerarTimestampUnico() throws Exception {
             var arquivo = new MockMultipartFile(
                     "file",
-                    "burger.jpg",
+                    "sushi.jpg",
                     "image/jpeg",
                     "conteúdo".getBytes()
             );

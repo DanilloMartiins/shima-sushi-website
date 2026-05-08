@@ -8,7 +8,7 @@ import br.com.seushimasushi.backend.menu.service.AdminProductService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -25,45 +25,59 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @Validated
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/products")
 public class AdminProductController {
 
     private final AdminProductService adminProductService;
 
+    // Construtor para o Spring injetar o serviço
+    @Autowired
+    public AdminProductController(AdminProductService adminProductService) {
+        this.adminProductService = adminProductService;
+    }
+
+    // Endpoint para listar produtos com paginação, útil para o painel administrativo
     @GetMapping
     public ResponseEntity<PagedResponse<AdminProductResponse>> list(
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page nao pode ser negativa") int page,
             @RequestParam(defaultValue = "10") @Min(value = 1, message = "Size minimo e 1")
             @Max(value = 100, message = "Size maximo e 100") int size
     ) {
-        return ResponseEntity.ok(adminProductService.list(page, size));
+        PagedResponse<AdminProductResponse> response = adminProductService.list(page, size);
+        return ResponseEntity.ok(response);
     }
 
+    // Endpoint para criar um novo produto no cardápio
     @PostMapping
     public ResponseEntity<AdminProductResponse> create(@Valid @RequestBody ProductUpsertRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(adminProductService.create(request));
+        AdminProductResponse response = adminProductService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // Endpoint para atualizar os dados de um produto existente
     @PutMapping("/{id}")
     public ResponseEntity<AdminProductResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody ProductUpsertRequest request
     ) {
-        return ResponseEntity.ok(adminProductService.update(id, request));
+        AdminProductResponse response = adminProductService.update(id, request);
+        return ResponseEntity.ok(response);
     }
 
+    // Endpoint para remover um produto do sistema pelo ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         adminProductService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    // Endpoint especial para fazer o upload da imagem do produto
     @PostMapping("/{id}/image")
     public ResponseEntity<ProductImageUploadResponse> uploadImage(
             @PathVariable Long id,
             @RequestParam("image") MultipartFile image
     ) {
-        return ResponseEntity.ok(adminProductService.uploadImage(id, image));
+        ProductImageUploadResponse response = adminProductService.uploadImage(id, image);
+        return ResponseEntity.ok(response);
     }
 }

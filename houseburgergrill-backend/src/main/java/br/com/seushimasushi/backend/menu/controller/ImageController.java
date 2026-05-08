@@ -3,6 +3,9 @@ package br.com.seushimasushi.backend.menu.controller;
 import br.com.seushimasushi.backend.menu.service.ImageUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,21 +26,22 @@ public class ImageController {
     private final ImageUploadService imageUploadService;
 
     @GetMapping("/products/{filename}")
-    public ResponseEntity<byte[]> getProductImage(@PathVariable String filename) {
+    public ResponseEntity<Resource> getProductImage(@PathVariable String filename) {
         try {
             Path imagePath = imageUploadService.getImagePath(filename);
 
             if (!Files.exists(imagePath)) {
-                log.warn("Imagem nao encontrada: {}", filename);
+                log.warn("Imagem não encontrada: {}", filename);
                 return ResponseEntity.notFound().build();
             }
 
-            byte[] imageContent = Files.readAllBytes(imagePath);
+            Resource resource = new FileSystemResource(imagePath);
             String contentType = getContentType(filename);
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .body(imageContent);
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .body(resource);
 
         } catch (Exception e) {
             log.error("Erro ao recuperar imagem: {}", filename, e);

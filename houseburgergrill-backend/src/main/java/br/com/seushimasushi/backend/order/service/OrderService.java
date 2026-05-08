@@ -18,7 +18,7 @@ import br.com.seushimasushi.backend.order.model.OrderStatus;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
 import br.com.seushimasushi.backend.user.model.User;
 import br.com.seushimasushi.backend.user.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,37 +33,50 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
+    // Injeção de dependência via construtor
+    @Autowired
+    public OrderService(OrderRepository orderRepository, 
+                        UserRepository userRepository, 
+                        ProductRepository productRepository) {
+        this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.productRepository = productRepository;
+    }
+
     @Transactional
     public OrderResponse createOrder(Long customerId, CreateOrderRequest request) {
+        // Pego o cliente que tá fazendo o pedido
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
 
+        // Dou uma conferida se os itens e o endereço estão ok antes de seguir
         validateOrderItems(request.items());
         validateDeliveryAddressRule(request.deliveryType(), request.deliveryAddress());
 
-        Order order = Order.builder()
-                .customer(customer)
-                .status(OrderStatus.CREATED)
-                .paymentMethod(request.paymentMethod())
-                .deliveryType(request.deliveryType())
-                .deliveryAddress(normalizeNullable(request.deliveryAddress()))
-                .notes(normalizeNullable(request.notes()))
-                .totalAmount(BigDecimal.ZERO)
-                .items(new ArrayList<>())
-                .build();
+        // Começo a montar o objeto do pedido
+        Order order = new Order(
+                customer,
+                OrderStatus.CREATED,
+                request.paymentMethod(),
+                request.deliveryType(),
+                normalizeNullable(request.deliveryAddress()),
+                normalizeNullable(request.notes())
+        );
 
         BigDecimal total = BigDecimal.ZERO;
         Set<Long> productIdsInOrder = new HashSet<>();
+
+        // Aqui eu percorro os itens que vieram no request pra criar os itens do pedido
         for (CreateOrderItemRequest itemRequest : request.items()) {
             validateItem(itemRequest);
 
+            // Regrinha: não pode ter o mesmo produto repetido em linhas diferentes
             if (!productIdsInOrder.add(itemRequest.productId())) {
                 throw new BadRequestException("Pedido nao pode ter item duplicado para o mesmo produto");
             }
@@ -71,6 +84,7 @@ public class OrderService {
             Product product = productRepository.findById(itemRequest.productId())
                     .orElseThrow(() -> new NotFoundException("Produto " + itemRequest.productId() + " nao encontrado"));
 
+            // Só vendo se tiver no cardápio disponível
             if (!Boolean.TRUE.equals(product.getAvailable())) {
                 throw new BadRequestException("Produto " + product.getName() + " esta indisponivel");
             }
@@ -78,18 +92,20 @@ public class OrderService {
             BigDecimal unitPrice = product.getPrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
-            OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .product(product)
-                    .quantity(itemRequest.quantity())
-                    .unitPrice(unitPrice)
-                    .subtotal(subtotal)
-                    .build();
+            // Instancio o item e ligo ele ao pedido principal
+            OrderItem orderItem = new OrderItem(
+                    order,
+                    product,
+                    itemRequest.quantity(),
+                    unitPrice,
+                    subtotal
+            );
 
             order.getItems().add(orderItem);
             total = total.add(subtotal);
         }
 
+        // Atualizo o valor final do pedido somando tudo
         order.setTotalAmount(total);
 
         Order savedOrder = orderRepository.save(order);
@@ -98,14 +114,21 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getMyOrders(Long customerId) {
-        return orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
-                .map(order -> toResponse(order, true))
-                .toList();
+        // Buscamos os pedidos e convertemos para DTO usando um loop simples
+        List<Order> orders = orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
+        List<OrderResponse> responses = new ArrayList<>();
+        
+        for (Order order : orders) {
+            responses.add(toResponse(order, true));
+        }
+        
+        return responses;
     }
 
     @Transactional(readOnly = true)
     public PagedResponse<OrderResponse> getAdminOrders(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        // Aqui o map ainda faz sentido por ser uma Page, mas a lógica interna é clara
         Page<OrderResponse> orderPage = orderRepository.findAll(pageable).map(order -> toResponse(order, true));
         return PagedResponse.from(orderPage);
     }
@@ -113,14 +136,14 @@ public class OrderService {
     @Transactional
     public OrderResponse updateStatus(Long orderId, UpdateOrderStatusRequest request) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Pedido nao encontrado"));
+                .orElseThrow(() -> new NotFoundException("Pedido não encontrado"));
 
         OrderStatus currentStatus = order.getStatus();
         OrderStatus nextStatus = request.status();
 
-        if (!isValidTransition(currentStatus, nextStatus)) {
+        if (!currentStatus.canTransitionTo(nextStatus)) {
             throw new BadRequestException(
-                    "Transicao de status invalida: " + currentStatus + " -> " + nextStatus
+                    "Transição de status inválida: " + currentStatus + " -> " + nextStatus
             );
         }
 
@@ -131,7 +154,7 @@ public class OrderService {
 
     private void validateDeliveryAddressRule(DeliveryType deliveryType, String deliveryAddress) {
         if (deliveryType == DeliveryType.ENTREGA && isBlank(deliveryAddress)) {
-            throw new BadRequestException("Endereco e obrigatorio para entrega");
+            throw new BadRequestException("Endereço é obrigatório para entrega");
         }
     }
 
@@ -143,24 +166,11 @@ public class OrderService {
 
     private void validateItem(CreateOrderItemRequest itemRequest) {
         if (itemRequest == null || itemRequest.productId() == null) {
-            throw new BadRequestException("Produto e obrigatorio");
+            throw new BadRequestException("Produto é obrigatório");
         }
         if (itemRequest.quantity() == null || itemRequest.quantity() < 1) {
             throw new BadRequestException("Quantidade deve ser maior que zero");
         }
-    }
-
-    private boolean isValidTransition(OrderStatus currentStatus, OrderStatus nextStatus) {
-        if (currentStatus == nextStatus) {
-            return true;
-        }
-        if (currentStatus == OrderStatus.CREATED) {
-            return nextStatus == OrderStatus.CONFIRMED || nextStatus == OrderStatus.CANCELLED;
-        }
-        if (currentStatus == OrderStatus.CONFIRMED) {
-            return nextStatus == OrderStatus.COMPLETED || nextStatus == OrderStatus.CANCELLED;
-        }
-        return false;
     }
 
     private OrderResponse toResponse(Order order, boolean includeItems) {
@@ -170,17 +180,21 @@ public class OrderService {
                 order.getCustomer().getEmail()
         );
 
-        List<OrderItemResponse> items = includeItems
-                ? order.getItems().stream()
-                    .map(item -> new OrderItemResponse(
-                            item.getProduct().getId(),
-                            item.getProduct().getName(),
-                            item.getQuantity(),
-                            item.getUnitPrice(),
-                            item.getSubtotal()
-                    ))
-                    .toList()
-                : new ArrayList<>();
+        List<OrderItemResponse> itemResponses = new ArrayList<>();
+        
+        // Se solicitado, convertemos os itens da entidade para o DTO de resposta
+        if (includeItems && order.getItems() != null) {
+            for (OrderItem item : order.getItems()) {
+                OrderItemResponse itemDto = new OrderItemResponse(
+                        item.getProduct().getId(),
+                        item.getProduct().getName(),
+                        item.getQuantity(),
+                        item.getUnitPrice(),
+                        item.getSubtotal()
+                );
+                itemResponses.add(itemDto);
+            }
+        }
 
         return new OrderResponse(
                 order.getId(),
@@ -193,7 +207,7 @@ public class OrderService {
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 customer,
-                items
+                itemResponses
         );
     }
 

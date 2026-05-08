@@ -29,9 +29,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -73,7 +71,20 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // Lista de itens do pedido
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
+
+    // Construtor para ser usado na criação do pedido
+    public Order(User customer, OrderStatus status, PaymentMethod paymentMethod, 
+                 DeliveryType deliveryType, String deliveryAddress, String notes) {
+        this.customer = customer;
+        this.status = status;
+        this.paymentMethod = paymentMethod;
+        this.deliveryType = deliveryType;
+        this.deliveryAddress = deliveryAddress;
+        this.notes = notes;
+        this.totalAmount = BigDecimal.ZERO;
+        this.items = new ArrayList<>();
+    }
 }

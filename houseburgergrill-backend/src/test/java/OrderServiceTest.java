@@ -81,10 +81,10 @@ class OrderServiceTest {
         categoriaTeste = categoryRepository.save(categoriaTeste);
 
         produtoTeste = Product.builder()
-                .name("X-Tudo")
-                .description("Melhor burger da casa")
+                .name("Combinado Salmão")
+                .description("O mais pedido da casa")
                 .price(BigDecimal.valueOf(25.00))
-                .imageUrl("/images/x-tudo.png")
+                .imageUrl("/images/combinado.png")
                 .available(true)
                 .category(categoriaTeste)
                 .build();

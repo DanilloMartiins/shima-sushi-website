@@ -37,23 +37,43 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        // Primeiro de tudo, valida se os campos estão vindo certos
         validateRequest(request);
+        validatePasswordComplexity(request);
 
+        // Deixo o e-mail em minúsculo e sem espaços pra não dar erro se o cara digitar diferente depois
         String normalizedEmail = normalizeEmail(request.email());
+        
+        // Verifico se o e-mail já existe pra não duplicar no banco
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new ConflictException("E-mail ja cadastrado");
+            throw new ConflictException("E-mail já cadastrado");
         }
 
-        User user = User.builder()
-                .fullName(request.fullName().trim())
-                .email(normalizedEmail)
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .role(Role.CUSTOMER)
-                .active(true)
-                .build();
+        // Crio o novo usuário. A senha tem que ser criptografada aqui, senão fica exposta no banco!
+        User user = new User(
+                request.fullName().trim(),
+                normalizedEmail,
+                passwordEncoder.encode(request.password()), 
+                Role.CUSTOMER
+        );
 
         User savedUser = userRepository.save(user);
+        
+        // Já gera o token pro cara já entrar logado logo de cara
         return issueTokens(savedUser);
+    }
+
+    private void validatePasswordComplexity(RegisterRequest request) {
+        String fullName = request.fullName().toLowerCase();
+        String password = request.password().toLowerCase();
+
+        // Verifica se a senha contém partes do nome (mínimo 3 caracteres para evitar falsos positivos)
+        String[] nameParts = fullName.split("\\s+");
+        for (String part : nameParts) {
+            if (part.length() >= 3 && password.contains(part)) {
+                throw new BadRequestException("A senha não pode conter partes do seu nome");
+            }
+        }
     }
 
     @Transactional
@@ -64,13 +84,13 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(normalizedEmail, request.password())
             );
         } catch (BadCredentialsException ex) {
-            throw new UnauthorizedException("E-mail ou senha invalidos");
+            throw new UnauthorizedException("E-mail ou senha inválidos");
         } catch (AuthenticationException ex) {
-            throw new UnauthorizedException("Falha na autenticacao");
+            throw new UnauthorizedException("Falha na autenticação");
         }
 
         User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
-                .orElseThrow(() -> new UnauthorizedException("E-mail ou senha invalidos"));
+                .orElseThrow(() -> new UnauthorizedException("E-mail ou senha inválidos"));
 
         return issueTokens(user);
     }
@@ -109,7 +129,7 @@ public class AuthService {
 
     private <T> void validateRequest(T request) {
         if (request == null) {
-            throw new BadRequestException("Dados invalidos");
+            throw new BadRequestException("Dados inválidos");
         }
 
         var violations = validator.validate(request);

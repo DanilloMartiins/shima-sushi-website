@@ -8,8 +8,8 @@ import br.com.seushimasushi.backend.menu.dto.admin.ProductUpsertRequest;
 import br.com.seushimasushi.backend.menu.dto.common.PagedResponse;
 import br.com.seushimasushi.backend.menu.model.Product;
 import br.com.seushimasushi.backend.menu.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,12 +20,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AdminProductService {
 
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
     private final ImageUploadService imageUploadService;
+
+    // Construtor para injeção de dependências
+    @Autowired
+    public AdminProductService(ProductRepository productRepository, 
+                               CategoryService categoryService, 
+                               ImageUploadService imageUploadService) {
+        this.productRepository = productRepository;
+        this.categoryService = categoryService;
+        this.imageUploadService = imageUploadService;
+    }
 
     @Transactional(readOnly = true)
     public PagedResponse<AdminProductResponse> list(int page, int size) {
@@ -36,23 +45,27 @@ public class AdminProductService {
 
     @Transactional
     public AdminProductResponse create(ProductUpsertRequest request) {
-        Product product = Product.builder()
-                .name(request.name().trim())
-                .description(request.description().trim())
-                .price(request.price())
-                .imageUrl(request.imageUrl().trim())
-                .available(request.available())
-                .category(categoryService.findByIdOrThrow(request.categoryId()))
-                .build();
+        // Crio o novo produto com os dados que vieram do formulário
+        Product product = new Product(
+                request.name().trim(),
+                request.description().trim(),
+                request.price(),
+                request.imageUrl().trim(),
+                request.available(),
+                categoryService.findByIdOrThrow(request.categoryId())
+        );
 
-        return toAdminResponse(productRepository.save(product));
+        Product savedProduct = productRepository.save(product);
+        return toAdminResponse(savedProduct);
     }
 
     @Transactional
     public AdminProductResponse update(Long id, ProductUpsertRequest request) {
+        // Primeiro verificamos se o produto existe no banco
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Produto nao encontrado"));
 
+        // Atualiza os campos do produto com os novos dados
         product.setName(request.name().trim());
         product.setDescription(request.description().trim());
         product.setPrice(request.price());
@@ -60,7 +73,8 @@ public class AdminProductService {
         product.setAvailable(request.available());
         product.setCategory(categoryService.findByIdOrThrow(request.categoryId()));
 
-        return toAdminResponse(productRepository.save(product));
+        Product updatedProduct = productRepository.save(product);
+        return toAdminResponse(updatedProduct);
     }
 
     @Transactional

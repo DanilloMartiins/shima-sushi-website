@@ -20,9 +20,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "order_items")
 public class OrderItem {
@@ -47,4 +45,13 @@ public class OrderItem {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
+
+    // Construtor para vincular o produto ao item do pedido
+    public OrderItem(Order order, Product product, Integer quantity, BigDecimal unitPrice, BigDecimal subtotal) {
+        this.order = order;
+        this.product = product;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.subtotal = subtotal;
+    }
 }

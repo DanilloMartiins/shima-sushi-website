@@ -22,9 +22,7 @@ import java.time.Instant;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "products")
 public class Product {
@@ -59,4 +57,14 @@ public class Product {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    // Construtor para cadastrar novos produtos no estoque
+    public Product(String name, String description, BigDecimal price, String imageUrl, Boolean available, Category category) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.imageUrl = imageUrl;
+        this.available = available;
+        this.category = category;
+    }
 }
