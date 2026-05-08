@@ -1,5 +1,6 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { CartService } from '../../core/services/cart.service';
@@ -85,7 +86,13 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
           <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
           <button type="submit" [disabled]="form.invalid || submitting()">
-            {{ submitting() ? 'Enviando pedido...' : 'Confirmar pedido' }}
+            <ng-container *ngIf="!submitting(); else sendingOrderLabel">Confirmar pedido</ng-container>
+            <ng-template #sendingOrderLabel>
+              <span class="shima-loader">
+                <span class="shima-loader-icon" aria-hidden="true"></span>
+                Enviando pedido...
+              </span>
+            </ng-template>
           </button>
         </form>
 
@@ -126,7 +133,7 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
       }
 
       .checkout-wrap > p {
-        color: #c4cae6;
+        color: var(--brand-muted);
       }
 
       .checkout-grid {
@@ -137,10 +144,11 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
 
       .checkout-form,
       .cart-summary {
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(11, 13, 20, 0.8);
+        border: 1px solid var(--brand-border);
+        background: #fff;
         border-radius: 14px;
         padding: 1rem;
+        box-shadow: var(--shadow-sm);
       }
 
       .checkout-form {
@@ -151,7 +159,7 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
       label {
         display: grid;
         gap: 0.3rem;
-        color: #dae0f5;
+        color: var(--brand-ink);
       }
 
       .inline {
@@ -164,9 +172,9 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
       select,
       textarea {
         border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.17);
-        background: rgba(6, 8, 13, 0.85);
-        color: #f5f7ff;
+        border: 1px solid var(--brand-border);
+        background: #fff;
+        color: var(--brand-ink);
         padding: 0.55rem 0.65rem;
       }
 
@@ -176,8 +184,8 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
         padding: 0.6rem 0.9rem;
         font-weight: 700;
         cursor: pointer;
-        background: #f9bd44;
-        color: #261f14;
+        background: var(--brand-orange);
+        color: #fff;
       }
 
       .error {
@@ -212,7 +220,7 @@ import { StoreSettingsResponse } from '../../core/models/store.models';
       }
 
       .order-success a {
-        color: #f9bd44;
+        color: var(--brand-orange-strong);
         text-decoration: none;
       }
 
@@ -235,6 +243,7 @@ export class CheckoutPageComponent {
   readonly cartService = inject(CartService);
   private readonly ordersService = inject(OrdersService);
   private readonly storeSettingsService = inject(StoreSettingsService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly cartItems = this.cartService.items;
   readonly submitting = signal(false);
@@ -275,35 +284,36 @@ export class CheckoutPageComponent {
   });
 
   constructor() {
-    this.storeSettingsService.getPublicStoreSettings().subscribe({
-      next: (settings) => this.storeSettings.set(settings),
-    });
+    this.storeSettingsService
+      .getPublicStoreSettings()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (settings) => this.storeSettings.set(settings),
+      });
 
-    this.form.controls.deliveryType.valueChanges.subscribe((deliveryType) => {
-      if (deliveryType === 'RETIRADA') {
-        this.form.patchValue(
-          {
-            address: '',
-            houseNumber: '',
-            complement: '',
-            neighborhood: '',
-          },
-          { emitEvent: false },
-        );
-      }
-    });
+    this.form.controls.deliveryType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((deliveryType) => {
+        this.applyDeliveryValidators(deliveryType);
+      });
 
-    this.form.controls.paymentMethod.valueChanges.subscribe((paymentMethod) => {
-      if (paymentMethod !== 'DINHEIRO') {
-        this.form.patchValue(
-          {
-            needChange: false,
-            changeValue: null,
-          },
-          { emitEvent: false },
-        );
-      }
-    });
+    this.form.controls.paymentMethod.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((paymentMethod) => {
+        this.applyPaymentValidators(paymentMethod, this.form.controls.needChange.value);
+      });
+
+    this.form.controls.needChange.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((needChange) => {
+        this.applyPaymentValidators(this.form.controls.paymentMethod.value, needChange);
+      });
+
+    this.applyDeliveryValidators(this.form.controls.deliveryType.value);
+    this.applyPaymentValidators(
+      this.form.controls.paymentMethod.value,
+      this.form.controls.needChange.value,
+    );
   }
 
   submit(): void {
@@ -363,5 +373,60 @@ export class CheckoutPageComponent {
     };
 
     return labels[status];
+  }
+
+  private applyDeliveryValidators(deliveryType: DeliveryType): void {
+    const addressControl = this.form.controls.address;
+    const houseNumberControl = this.form.controls.houseNumber;
+    const neighborhoodControl = this.form.controls.neighborhood;
+
+    if (deliveryType === 'ENTREGA') {
+      addressControl.setValidators([Validators.required]);
+      houseNumberControl.setValidators([Validators.required]);
+      neighborhoodControl.setValidators([Validators.required]);
+    } else {
+      addressControl.clearValidators();
+      houseNumberControl.clearValidators();
+      neighborhoodControl.clearValidators();
+      this.form.patchValue(
+        {
+          address: '',
+          houseNumber: '',
+          complement: '',
+          neighborhood: '',
+        },
+        { emitEvent: false },
+      );
+    }
+
+    addressControl.updateValueAndValidity({ emitEvent: false });
+    houseNumberControl.updateValueAndValidity({ emitEvent: false });
+    neighborhoodControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private applyPaymentValidators(paymentMethod: PaymentMethod, needChange: boolean): void {
+    const changeValueControl = this.form.controls.changeValue;
+
+    if (paymentMethod !== 'DINHEIRO') {
+      this.form.patchValue(
+        {
+          needChange: false,
+          changeValue: null,
+        },
+        { emitEvent: false },
+      );
+      changeValueControl.clearValidators();
+      changeValueControl.updateValueAndValidity({ emitEvent: false });
+      return;
+    }
+
+    if (needChange) {
+      changeValueControl.setValidators([Validators.required, Validators.min(0.01)]);
+    } else {
+      changeValueControl.clearValidators();
+      this.form.patchValue({ changeValue: null }, { emitEvent: false });
+    }
+
+    changeValueControl.updateValueAndValidity({ emitEvent: false });
   }
 }

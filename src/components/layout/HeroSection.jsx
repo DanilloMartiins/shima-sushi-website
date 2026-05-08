@@ -14,16 +14,16 @@ export function HeroSection({ onSelectItem, scheduleLabel, storeStatus }) {
       <div className="container hero-content">
         <div className="hero-announcement">
           <span className="hero-announcement-dot"></span>
-          <span>Burgers artesanais montados na hora e pedido fechado em poucos toques</span>
+          <span>Sushi fresco e artesanal montado na hora e pedido fechado em poucos toques</span>
         </div>
         <div className={`hero-status-badge${storeStatus.isOpenNow ? ' is-open' : ' is-closed'}`}>
           <strong>{storeStatus.statusLabel}</strong>
           <span>{storeStatus.detailLabel}</span>
         </div>
-        <p className="hero-tag">Chapa quente, queijo derretendo e muito sabor</p>
-        <h1>Seu hambúrguer da noite está aqui, alto, suculento e com cara de vício</h1>
+        <p className="hero-tag">Sabor oriental, ingredientes frescos e muita qualidade</p>
+        <h1>Seu sushi da noite está aqui, saboroso, fresco e com cara de vício</h1>
         <p>
-          Do clássico bem montado ao bacon crocante com cheddar puxando, cada burguer foi pensado
+          Do clássico bem montado aos combinados especiais da casa, cada prato foi pensado
           para dar fome no olhar e satisfação de verdade na primeira mordida.
         </p>
         <div className="hero-actions">
@@ -38,11 +38,11 @@ export function HeroSection({ onSelectItem, scheduleLabel, storeStatus }) {
 
         <div className="hero-proof-grid">
           <article className="hero-proof-card">
-            <strong>Pão tostado e montagem caprichada</strong>
-            <p>Visual bonito, altura certa e recheio bem distribuído em cada lanche.</p>
+            <strong>Arroz temperado e montagem caprichada</strong>
+            <p>Visual bonito, sabor equilibrado e ingredientes frescos em cada peça.</p>
           </article>
           <article className="hero-proof-card">
-            <strong>Bacon, cheddar e carne no ponto</strong>
+            <strong>Salmão fresco e cream cheese</strong>
             <p>Os favoritos da casa aparecem com força no sabor e na textura.</p>
           </article>
           <article className="hero-proof-card">
@@ -53,21 +53,21 @@ export function HeroSection({ onSelectItem, scheduleLabel, storeStatus }) {
 
         <div className="hero-highlight-bar">
           <div className="hero-highlight-item">
-            <span className="hero-highlight-value">Classic Burguer</span>
+            <span className="hero-highlight-value">Combinados</span>
             <span className="hero-highlight-label">
-              maionese da casa, salada fresca e equilíbrio perfeito
+              peças frescas, salmão de qualidade e equilíbrio perfeito
             </span>
           </div>
           <div className="hero-highlight-item">
-            <span className="hero-highlight-value">Bacon Burguer</span>
+            <span className="hero-highlight-value">Temakis</span>
             <span className="hero-highlight-label">
-              bacon crocante e barbecue para quem quer mais pegada
+              crocantes e recheados para quem quer mais pegada
             </span>
           </div>
           <div className="hero-highlight-item">
-            <span className="hero-highlight-value">Explosão Burguer</span>
+            <span className="hero-highlight-value">Especiais Quentes</span>
             <span className="hero-highlight-label">
-              camadas generosas para matar a fome de verdade
+              porções generosas para matar a fome de verdade
             </span>
           </div>
         </div>
@@ -92,7 +92,7 @@ export function HeroSection({ onSelectItem, scheduleLabel, storeStatus }) {
         <div className="hero-slider hero-mobile-slider">
           <div className="hero-slider-head">
             <p className="hero-slider-label">Mais pedidos da casa</p>
-            <span className="hero-slider-caption">Toque em um burger para abrir os detalhes</span>
+            <span className="hero-slider-caption">Toque em um item para abrir os detalhes</span>
           </div>
           <div className="hero-slider-shell">
             <button
@@ -120,7 +120,7 @@ export function HeroSection({ onSelectItem, scheduleLabel, storeStatus }) {
               </div>
             </button>
 
-            <div className="hero-slider-track" aria-label="Vitrine de hambúrgueres em destaque">
+            <div className="hero-slider-track" aria-label="Vitrine de pratos em destaque">
               {FEATURED_ITEMS.map((item, index) => (
                 <button
                   className={`hero-burger-card${index === activeIndex ? ' is-active' : ''}`}

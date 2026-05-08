@@ -38,7 +38,13 @@ import { AuthService } from '../../core/services/auth.service';
         <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
         <button type="submit" [disabled]="form.invalid || loading()">
-          {{ loading() ? 'Criando...' : 'Criar conta' }}
+          <ng-container *ngIf="!loading(); else creatingLabel">Criar conta</ng-container>
+          <ng-template #creatingLabel>
+            <span class="shima-loader">
+              <span class="shima-loader-icon" aria-hidden="true"></span>
+              Criando...
+            </span>
+          </ng-template>
         </button>
       </form>
 
@@ -53,7 +59,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       .auth-page p {
-        color: #c3cbe8;
+        color: var(--brand-muted);
       }
 
       .auth-form {
@@ -65,14 +71,14 @@ import { AuthService } from '../../core/services/auth.service';
       label {
         display: grid;
         gap: 0.35rem;
-        color: #d8ddf3;
+        color: var(--brand-ink);
       }
 
       input {
         border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(7, 9, 14, 0.6);
-        color: #f8f9ff;
+        border: 1px solid var(--brand-border);
+        background: #fff;
+        color: var(--brand-ink);
         padding: 0.55rem 0.65rem;
       }
 
@@ -80,8 +86,8 @@ import { AuthService } from '../../core/services/auth.service';
         border: 0;
         border-radius: 999px;
         padding: 0.55rem 0.9rem;
-        background: #f9bd44;
-        color: #251d12;
+        background: var(--brand-orange);
+        color: #fff;
         font-weight: 700;
         cursor: pointer;
       }
@@ -92,7 +98,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       a {
-        color: #ffd071;
+        color: var(--brand-orange-strong);
         text-decoration: none;
       }
     `,

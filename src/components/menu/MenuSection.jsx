@@ -84,9 +84,9 @@ export function MenuSection({ onSelectItem }) {
       <div className="container">
         <div className="section-title menu-section-title">
           <p className="section-tag">Cardápio</p>
-          <h2>Cardápio com presença de hamburgueria artesanal</h2>
+          <h2>Cardápio com presença de culinária oriental</h2>
           <p className="menu-section-subtitle">
-            Burgers intensos, combinações cremosas e clássicos com visual de chapa quente. Toque em
+            Combinados frescos, temakis crocantes e pratos tradicionais. Toque em
             um item para abrir os detalhes.
           </p>
         </div>

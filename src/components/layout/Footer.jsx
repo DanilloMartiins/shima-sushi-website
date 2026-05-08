@@ -5,7 +5,7 @@ export function Footer({ phoneNumber, phoneLabel, scheduleLabel, storeStatus, la
     <footer className="footer" id="contato">
       <div className="container footer-content">
         <div>
-          <h3>House Burguer Grill</h3>
+          <h3>Seu Shima Sushi</h3>
           <p>Avenida Padre Rocha, 539 - São José, Carpina - PE</p>
         </div>
 
@@ -77,7 +77,7 @@ export function Footer({ phoneNumber, phoneLabel, scheduleLabel, storeStatus, la
 
       <div className="container footer-bottom">
         <p className="footer-legal">
-          {`\u00A9 ${currentYear} House Burguer Grill todos os direitos reservados`}
+          {`\u00A9 ${currentYear} Seu Shima Sushi todos os direitos reservados`}
         </p>
         <p className="footer-credit">
           

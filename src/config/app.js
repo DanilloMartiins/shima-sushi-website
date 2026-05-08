@@ -6,15 +6,15 @@ export const APP_CONFIG = Object.freeze({
   },
   business: {
     timeZone: 'America/Recife',
-    openDays: [2, 3, 4, 5, 6, 0],
+    openDays: [2, 3, 4, 5, 6, 0], // Terça a Domingo
     openHour: 17,
     closeHour: 22,
     scheduleLabel: 'Ter, Qua, Qui, Sex, Sab e Dom • 17h às 22h',
   },
   storage: {
-    cartKey: 'house-burguer-grill-cart-v1',
-    checkoutKey: 'house-burguer-grill-checkout-v1',
-    orderHistoryKey: 'house-burguer-grill-last-order-v1',
+    cartKey: 'seu-shima-sushi-cart-v1',
+    checkoutKey: 'seu-shima-sushi-checkout-v1',
+    orderHistoryKey: 'seu-shima-sushi-last-order-v1',
   },
 });
 

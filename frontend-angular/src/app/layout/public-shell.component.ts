@@ -12,7 +12,10 @@ import { CartService } from '../core/services/cart.service';
   template: `
     <div class="page-shell">
       <header class="topbar">
-        <a class="brand" routerLink="/">House Burguer Grill</a>
+        <a class="brand" routerLink="/">
+          <span>Seu Shima Sushi</span>
+          <span class="brand-mini-logo" aria-hidden="true"></span>
+        </a>
 
         <nav class="menu-links">
           <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
@@ -62,17 +65,51 @@ import { CartService } from '../core/services/cart.service';
       justify-content: space-between;
       gap: 1rem;
       padding: 1rem 1.25rem;
-      background: rgba(18, 20, 31, 0.85);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--brand-border);
     }
 
     .brand {
-      color: #fef3d0;
+      color: var(--brand-ink);
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.4px;
-      font-size: 1.1rem;
+      font-size: 1.45rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .brand-mini-logo {
+      position: relative;
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+    }
+
+    .brand-mini-logo::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -1px;
+      width: 22px;
+      height: 9px;
+      background: #ea6a3d;
+      clip-path: polygon(10% 100%, 45% 0%, 99% 72%);
+      border-radius: 6px;
+    }
+
+    .brand-mini-logo::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 7px;
+      width: 10px;
+      height: 10px;
+      background: #171214;
+      border-radius: 50%;
+      box-shadow: 0 7px 0 -2px #171214;
     }
 
     .menu-links {
@@ -82,16 +119,17 @@ import { CartService } from '../core/services/cart.service';
     }
 
     .menu-links a {
-      color: #d4d9f2;
+      color: var(--brand-muted);
       text-decoration: none;
-      font-size: 0.95rem;
-      padding: 0.3rem 0.5rem;
+      font-size: 1.05rem;
+      padding: 0.45rem 0.7rem;
       border-radius: 999px;
+      transition: color 180ms ease, background 180ms ease;
     }
 
     .menu-links a.is-active {
-      background: rgba(249, 189, 68, 0.2);
-      color: #ffd574;
+      background: rgba(234, 106, 61, 0.14);
+      color: var(--brand-orange-strong);
     }
 
     .topbar-actions {
@@ -102,15 +140,15 @@ import { CartService } from '../core/services/cart.service';
 
     .cart-chip {
       text-decoration: none;
-      color: #ffffff;
-      background: #a23b1f;
+      color: #fff;
+      background: var(--brand-ink);
       padding: 0.4rem 0.75rem;
       border-radius: 999px;
       font-size: 0.85rem;
     }
 
     .user-email {
-      color: #cbd1ee;
+      color: var(--brand-muted);
       font-size: 0.85rem;
       max-width: 180px;
       overflow: hidden;
@@ -128,19 +166,19 @@ import { CartService } from '../core/services/cart.service';
     }
 
     .btn.ghost {
-      color: #f8f0d7;
+      color: var(--brand-ink);
       background: transparent;
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: var(--brand-border);
     }
 
     .btn.solid {
-      color: #231b10;
-      background: #f9bd44;
+      color: #fff;
+      background: var(--brand-orange);
     }
 
     .content-wrap {
-      width: min(1150px, 100% - 2rem);
-      margin: 1.5rem auto 2.5rem;
+      width: min(1280px, 100% - 2.4rem);
+      margin: 1.9rem auto 3rem;
     }
 
     @media (max-width: 900px) {

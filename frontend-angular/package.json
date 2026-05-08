@@ -28,8 +28,8 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
-    "house-burguer-grill": "file:..",
     "rxjs": "~7.8.0",
+    "seu-shima-sushi": "file:..",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },

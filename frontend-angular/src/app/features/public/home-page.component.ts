@@ -1,6 +1,8 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { interval } from 'rxjs';
 
 import { MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
 import { StoreStatusSnapshot } from '../../core/models/store.models';
@@ -20,14 +22,19 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
     </section>
 
     <section class="hero-copy">
-      <h1>Cardapio online da House Burguer Grill</h1>
+      <h1>Seu Shima Sushi</h1>
       <p>
         Monte seu pedido, acompanhe historico e finalize no fluxo novo da plataforma.
       </p>
       <a routerLink="/checkout" class="checkout-link">Ir para checkout</a>
     </section>
 
-    <section *ngIf="loading()" class="loading-state">Carregando cardapio...</section>
+    <section *ngIf="loading()" class="loading-state">
+      <span class="shima-loader">
+        <span class="shima-loader-icon" aria-hidden="true"></span>
+        Carregando cardapio...
+      </span>
+    </section>
     <section *ngIf="errorMessage()" class="error-state">{{ errorMessage() }}</section>
 
     <ng-container *ngFor="let category of menuCategories(); trackBy: trackCategory">
@@ -54,15 +61,15 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
   styles: [
     `
       .status-banner {
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--brand-border);
         border-radius: 16px;
         padding: 1rem 1.2rem;
-        background: rgba(115, 23, 24, 0.55);
+        background: rgba(23, 18, 20, 0.04);
         margin-bottom: 1.25rem;
       }
 
       .status-banner.open {
-        background: rgba(34, 97, 57, 0.45);
+        background: rgba(234, 106, 61, 0.12);
       }
 
       .status-banner h2 {
@@ -72,7 +79,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
       .status-banner p {
         margin: 0.3rem 0 0;
-        color: #dce2f8;
+        color: var(--brand-muted);
       }
 
       .hero-copy {
@@ -81,23 +88,25 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
       .hero-copy h1 {
         margin: 0;
-        font-size: clamp(1.4rem, 3vw, 2rem);
+        font-size: clamp(2.2rem, 4vw, 3.4rem);
       }
 
       .hero-copy p {
-        color: #c4cbe8;
-        margin: 0.5rem 0 1rem;
-        max-width: 58ch;
+        color: var(--brand-muted);
+        margin: 0.65rem 0 1.2rem;
+        max-width: 52ch;
+        font-size: 1.18rem;
       }
 
       .checkout-link {
         display: inline-flex;
         text-decoration: none;
-        color: #2b1e0e;
-        background: #f9bd44;
+        color: #fff;
+        background: var(--brand-orange);
         border-radius: 999px;
-        padding: 0.45rem 0.9rem;
+        padding: 0.62rem 1.05rem;
         font-weight: 600;
+        font-size: 1.06rem;
       }
 
       .loading-state,
@@ -105,11 +114,12 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         margin: 1rem 0;
         padding: 0.8rem;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--brand-surface);
+        border: 1px solid var(--brand-border);
       }
 
       .error-state {
-        border: 1px solid rgba(248, 112, 112, 0.5);
+        border: 1px solid rgba(217, 91, 47, 0.5);
       }
 
       .category-wrap {
@@ -117,20 +127,22 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       }
 
       .category-wrap h3 {
-        margin: 0 0 0.8rem;
+        margin: 0 0 0.9rem;
+        font-size: 1.95rem;
       }
 
       .product-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 0.8rem;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        gap: 1rem;
       }
 
       .product-card {
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--brand-border);
         border-radius: 14px;
-        background: rgba(10, 12, 19, 0.8);
+        background: var(--brand-surface);
         overflow: hidden;
+        box-shadow: var(--shadow-sm);
       }
 
       .product-card img {
@@ -141,12 +153,12 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       }
 
       .product-info {
-        padding: 0.9rem;
+        padding: 1rem;
       }
 
       .tag {
         margin: 0;
-        color: #f8c86b;
+        color: var(--brand-orange-strong);
         font-size: 0.75rem;
       }
 
@@ -155,7 +167,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       }
 
       .description {
-        color: #c4cae4;
+        color: var(--brand-muted);
         min-height: 2.8rem;
         font-size: 0.9rem;
       }
@@ -172,8 +184,8 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         border-radius: 999px;
         padding: 0.35rem 0.7rem;
         cursor: pointer;
-        color: #fefefe;
-        background: #a23b1f;
+        color: #fff;
+        background: var(--brand-ink);
       }
     `,
   ],
@@ -182,6 +194,8 @@ export class HomePageComponent implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly storeSettingsService = inject(StoreSettingsService);
   private readonly cartService = inject(CartService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly latestStoreSettings = signal<Parameters<typeof buildStoreStatus>[0] | null>(null);
 
   readonly menuCategories = signal<MenuCategoryResponse[]>([]);
   readonly loading = signal(true);
@@ -191,6 +205,7 @@ export class HomePageComponent implements OnInit {
   ngOnInit(): void {
     this.loadMenu();
     this.loadStoreStatus();
+    this.watchStoreStatus();
   }
 
   addToCart(product: ProductResponse): void {
@@ -221,6 +236,7 @@ export class HomePageComponent implements OnInit {
   private loadStoreStatus(): void {
     this.storeSettingsService.getPublicStoreSettings().subscribe({
       next: (settings) => {
+        this.latestStoreSettings.set(settings);
         this.storeStatus.set(buildStoreStatus(settings));
       },
       error: () => {
@@ -231,5 +247,18 @@ export class HomePageComponent implements OnInit {
         });
       },
     });
+  }
+
+  private watchStoreStatus(): void {
+    interval(60_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const settings = this.latestStoreSettings();
+        if (!settings) {
+          return;
+        }
+
+        this.storeStatus.set(buildStoreStatus(settings));
+      });
   }
 }

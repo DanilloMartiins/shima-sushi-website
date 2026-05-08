@@ -1,50 +1,50 @@
-# House Burguer Grill
+# Seu Shima Sushi
 
-Aplicacao frontend da House Burguer Grill com migracao incremental de React para Angular.
+Frontend oficial do Seu Shima Sushi em Angular (standalone).
 
-## Estrutura atual
+Este repositorio e novo e ja esta organizado com foco no frontend Angular. A migracao de React + Vite foi parte do processo inicial, mas a base de evolucao agora e Angular.
 
-- `src/` (React + Vite): versao ativa em producao.
-- `frontend-angular/` (Angular standalone): nova versao em migracao.
+## Estrutura do projeto
 
-A estrategia atual e migracao incremental: React continua operando enquanto a cobertura do Angular aumenta.
+- `frontend-angular/`: aplicacao frontend principal (Angular)
+- `houseburgergrill-backend/`: API backend (Spring Boot)
+- `docker-compose.yml`: sobe frontend + backend + banco
 
 ## Como rodar
 
-### React (base atual)
-
-```bash
-npm install
-npm run dev:react
-```
-
-### Angular (nova base)
+### Frontend Angular (local)
 
 ```bash
 npm run install:angular
 npm run dev:angular
 ```
 
-### Builds
+### Build do frontend
 
 ```bash
-npm run build:react
 npm run build:angular
 ```
 
-## Modo incremental no Angular
+### Stack completa com Docker
 
-- O Angular usa configuracao runtime no `frontend-angular/src/index.html`.
-- `useMockPublicData: true` ativa fallback local para menu e status da loja.
-- Quando o backend estiver pronto para endpoints publicos, troque para `useMockPublicData: false`.
+```bash
+docker compose up --build
+```
 
-## Objetivo da migracao
+Frontend: `http://localhost:8088`  
+Backend: `http://localhost:8080`
 
-1. Manter React estavel ate paridade funcional.
-2. Evoluir Angular com fluxos publicos, auth, pedidos e admin.
-3. Mudar trafego para Angular somente apos validacao completa.
+## Configuracao de ambiente
 
-## Observacoes
+Use o arquivo `.env.example` como base para variaveis locais.
 
-- O backend esta fora deste fluxo por enquanto (foco exclusivo em frontend).
-- O lint da raiz ignora `dist/` e `frontend-angular/` para evitar ruido entre stacks.
+Variaveis principais:
+- `FRONTEND_API_BASE_URL`
+- `FRONTEND_USE_MOCK_PUBLIC_DATA`
+- `CORS_ALLOWED_ORIGINS`
+- `JWT_SECRET`
+
+## Status da migracao
+
+- Frontend Angular implementado com fluxos publicos, autenticacao, pedidos e area admin.
+- React + Vite tratado como legado de transicao e fora da trilha principal de evolucao.

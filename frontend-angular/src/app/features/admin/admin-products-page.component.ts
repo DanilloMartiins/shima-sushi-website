@@ -61,7 +61,13 @@ import { MenuService } from '../../core/services/menu.service';
 
           <div class="actions">
             <button type="submit" [disabled]="form.invalid || saving()">
-              {{ saving() ? 'Salvando...' : 'Salvar' }}
+              <ng-container *ngIf="!saving(); else savingLabel">Salvar</ng-container>
+              <ng-template #savingLabel>
+                <span class="shima-loader">
+                  <span class="shima-loader-icon" aria-hidden="true"></span>
+                  Salvando...
+                </span>
+              </ng-template>
             </button>
             <button type="button" class="ghost" (click)="resetForm()">Limpar</button>
           </div>
@@ -71,7 +77,12 @@ import { MenuService } from '../../core/services/menu.service';
       <article class="card">
         <h2>Produtos cadastrados</h2>
 
-        <p *ngIf="loading()">Carregando produtos...</p>
+        <p *ngIf="loading()">
+          <span class="shima-loader">
+            <span class="shima-loader-icon" aria-hidden="true"></span>
+            Carregando produtos...
+          </span>
+        </p>
 
         <table *ngIf="!loading()">
           <thead>

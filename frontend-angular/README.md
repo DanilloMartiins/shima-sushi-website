@@ -1,6 +1,6 @@
-# Frontend Angular - House Burguer Grill
+# Frontend Angular - Seu Shima Sushi
 
-Frontend novo (Angular standalone) preparado para integrar com backend REST em `/api/v1`.
+Aplicacao Angular standalone do Seu Shima Sushi, integrada com backend REST em `/api/v1`.
 
 ## Rodar local
 
@@ -15,26 +15,26 @@ Build:
 npm run build
 ```
 
-## Configuracao de API
+## Configuracao de API em runtime
 
-A URL da API e lida em runtime por `window.__HOUSE_BURGUER_CONFIG__.apiBaseUrl`.
+A URL da API e as flags de fallback sao lidas de `window.__SEU_SHIMA_SUSHI_CONFIG__`.
 
-Arquivo: `src/index.html`
+Arquivos relevantes:
+- `public/runtime-config.js`
+- `src/app/core/constants/api.constants.ts`
 
 Exemplo:
 
-```html
-<script>
-  window.__HOUSE_BURGUER_CONFIG__ = {
-    apiBaseUrl: 'http://localhost:8080/api/v1',
-    useMockPublicData: true,
-  };
-</script>
+```js
+window.__SEU_SHIMA_SUSHI_CONFIG__ = {
+  apiBaseUrl: '/api/v1',
+  useMockPublicData: false,
+};
 ```
 
-`useMockPublicData` em `true` usa fallback local para cardapio e status da loja (modo migracao).
+Quando `useMockPublicData` estiver em `true`, o frontend usa fallback local para dados publicos (cardapio e status da loja).
 
-## Contratos esperados (backend)
+## Endpoints esperados do backend
 
 ### Auth
 - `POST /auth/register`
@@ -63,12 +63,13 @@ Exemplo:
 
 ## Funcionalidades implementadas
 
-- Home com cardapio e status da loja.
+- Home publica com cardapio e status da loja.
 - Carrinho persistente em `localStorage`.
-- Login e cadastro.
+- Login e cadastro de usuario.
 - Guard de autenticacao e guard de admin.
 - Interceptor para `Authorization: Bearer`.
 - Interceptor de refresh token em `401`.
-- Checkout com pedido interno e link opcional para WhatsApp apos criar pedido.
+- Checkout com criacao de pedido no backend.
+- Link opcional para WhatsApp apos confirmar pedido.
 - Historico de pedidos do cliente.
-- Painel admin: produtos, loja e pedidos.
+- Painel admin para produtos, pedidos e configuracoes da loja.

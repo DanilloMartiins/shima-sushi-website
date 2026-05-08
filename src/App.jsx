@@ -81,7 +81,7 @@ function App() {
 
   function handleAddToCart(name, price, quantity = 1) {
     if (!isOrderingOpen) {
-      window.alert('A House Burguer Grill está fechada no momento. Os pedidos voltam das 17h às 22h.');
+      window.alert('O Seu Shima Sushi está fechado no momento. Os pedidos voltam das 17h às 22h.');
       return;
     }
 
@@ -95,7 +95,7 @@ function App() {
 
   function handleOpenCheckout() {
     if (!isOrderingOpen) {
-      window.alert('A House Burguer Grill está fechada no momento. Os pedidos voltam no próximo horário de funcionamento.');
+      window.alert('O Seu Shima Sushi está fechado no momento. Os pedidos voltam no próximo horário de funcionamento.');
       return;
     }
 
@@ -149,12 +149,6 @@ function App() {
   return (
     <>
       <div className="brand-watermark" aria-hidden="true">
-        <img
-          className="brand-watermark-image"
-          src="/assets/images/houseBurguerAlberto.png"
-          alt=""
-          decoding="async"
-        />
       </div>
 
       <Header />

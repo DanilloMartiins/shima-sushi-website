@@ -1,36 +1,157 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap');
-
 :root {
-  --bg-main: #0e1018;
-  --bg-alt: #161b2b;
-  --surface: #121622;
-  --surface-strong: #0d111d;
-  --text-main: #f7f8ff;
-  --text-muted: #c3cae5;
-  --accent: #f9bd44;
-  --accent-dark: #ba5b22;
+  --brand-ink: #171214;
+  --brand-orange: #ea6a3d;
+  --brand-orange-strong: #d95b2f;
+  --brand-surface: #ffffff;
+  --brand-bg: #f6f4f3;
+  --brand-muted: #6f6763;
+  --brand-border: #e7e1de;
+  --brand-focus: rgba(234, 106, 61, 0.25);
+
+  --font-body: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --font-display: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 10px 24px rgba(23, 18, 20, 0.08);
+  --transition: 180ms ease;
+  --bg-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23f3b79e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.42'%3E%3Cpath d='M20 28c12 0 18 10 30 10s18-10 30-10'/%3E%3Cpath d='M20 28c0 10 7 18 15 18s15-8 15-18'/%3E%3Cpath d='M108 34h22l6 6v8h-28z'/%3E%3Crect x='106' y='42' width='32' height='15' rx='6'/%3E%3Cpath d='M56 110c8-9 20-12 29-8 6 3 10 8 10 14H56z'/%3E%3Cpath d='M98 116c8-7 19-8 27-3 5 3 7 7 7 11H98z'/%3E%3Crect x='20' y='118' width='28' height='16' rx='7'/%3E%3Cpath d='M20 124h28'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
 body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-  font-family: 'Barlow', 'Segoe UI', Tahoma, sans-serif;
-  color: var(--text-main);
+  font-family: var(--font-body);
   background:
-    radial-gradient(circle at 20% -5%, rgba(249, 189, 68, 0.2), transparent 48%),
-    radial-gradient(circle at 88% -8%, rgba(186, 91, 34, 0.18), transparent 45%),
-    linear-gradient(180deg, var(--bg-alt) 0%, var(--bg-main) 56%);
+    var(--bg-pattern),
+    radial-gradient(circle at 25% -10%, rgba(234, 106, 61, 0.1), transparent 42%),
+    radial-gradient(circle at 85% 2%, rgba(23, 18, 20, 0.05), transparent 36%),
+    var(--brand-bg);
+  background-size: 220px 220px, auto, auto, auto;
+  color: var(--brand-ink);
+  font-size: 18px;
+  line-height: 1.5;
+  cursor: default;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+h1 {
+  font-size: clamp(2rem, 3.6vw, 3rem);
+}
+
+h2 {
+  font-size: clamp(1.55rem, 2.6vw, 2.25rem);
+}
+
+h3 {
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+}
+
+a,
 button,
+input[type='submit'],
+input[type='button'],
+label[for],
+select {
+  cursor: pointer;
+}
+
 input,
 textarea,
 select {
   font: inherit;
+  color: var(--brand-ink);
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--brand-orange);
+  color: #fff;
+  border: 0;
+  padding: 0.7rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--transition), background var(--transition);
+}
+.btn-primary:hover {
+  background: var(--brand-orange-strong);
+  transform: translateY(-1px);
+}
+
+main {
+  animation: fade-in 320ms ease;
+}
+
+.shima-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: currentColor;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.shima-loader-icon {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: inline-block;
+  animation: shima-bob 780ms ease-in-out infinite;
+}
+
+.shima-loader-icon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 30px;
+  height: 13px;
+  background: #ffffff;
+  clip-path: polygon(9% 100%, 46% 0%, 99% 72%);
+  border-radius: 7px;
+  transform: rotate(1deg);
+}
+
+.shima-loader-icon::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  width: 13px;
+  height: 13px;
+  background: #171214;
+  border-radius: 50%;
+  box-shadow:
+    0 10px 0 -2px #171214,
+    0 13px 0 -4px #171214;
+}
+
+@keyframes shima-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

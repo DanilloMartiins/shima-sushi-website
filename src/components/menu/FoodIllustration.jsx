@@ -1,21 +1,12 @@
 const INGREDIENT_STYLES = [
-  { match: /pão/i, fill: '#e8b76a', stroke: '#c88f44', height: 22, type: 'bun-top' },
+  { match: /salmão|atum/i, fill: '#ff7e67', stroke: '#e85a4f', height: 18, type: 'fish' },
+  { match: /arroz/i, fill: '#ffffff', stroke: '#e0e0e0', height: 14, type: 'rice' },
+  { match: /nori|alga/i, fill: '#2e3b32', stroke: '#1a2421', height: 6, type: 'nori' },
+  { match: /cream cheese/i, fill: '#fffdd0', stroke: '#e6e4a8', height: 10, type: 'cheese' },
+  { match: /cebolinha|pepino/i, fill: '#69b34c', stroke: '#4b8b36', height: 8, type: 'veg' },
+  { match: /crocante|empanado/i, fill: '#e8b76a', stroke: '#c88f44', height: 12, type: 'crunch' },
   {
-    match: /hambúrguer|hamburguer|carne|cupim|calabresa|salsicha|presunto/i,
-    fill: '#6b3521',
-    stroke: '#4a2112',
-    height: 18,
-  },
-  { match: /frango/i, fill: '#d38f3a', stroke: '#9a6321', height: 18 },
-  { match: /queijo|cheddar|cream cheese/i, fill: '#f2c94c', stroke: '#d6a72b', height: 12 },
-  { match: /alface|cenoura|ervilha/i, fill: '#69b34c', stroke: '#4b8b36', height: 10 },
-  { match: /tomate/i, fill: '#d94b45', stroke: '#ad302b', height: 10 },
-  { match: /cebola/i, fill: '#c7995f', stroke: '#9e713d', height: 10 },
-  { match: /barbecue|molho/i, fill: '#8d3d2b', stroke: '#692816', height: 8 },
-  { match: /ovo/i, fill: '#f8f0cf', stroke: '#d7c88c', height: 12 },
-  { match: /batata/i, fill: '#f5cf67', stroke: '#cfa73f', height: 8 },
-  {
-    match: /água|suco|refrigerante/i,
+    match: /água|suco|refrigerante|chá/i,
     fill: '#61b7ff',
     stroke: '#3c8bce',
     height: 42,
@@ -87,69 +78,34 @@ export function FoodIllustration({ item }) {
     );
   }
 
-  const layers = visibleIngredients.map((ingredient, index) => {
-    const style = getIngredientStyle(ingredient) ?? {
-      fill: '#915c2f',
-      stroke: '#74451e',
-      height: 10,
-    };
-    return {
-      ingredient,
-      y: 152 - index * 13,
-      width: 176 - index * 4,
-      ...style,
-    };
-  });
-
+  // Desenho simplificado de um sushi para itens sem foto
   return (
     <svg className="product-illustration" viewBox="0 0 320 240" role="img" aria-label={item.name}>
       <defs>
-        <linearGradient id="bg-burger" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="bg-sushi" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#241307" />
           <stop offset="100%" stopColor="#110904" />
         </linearGradient>
-        <linearGradient id="bun-top" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f0c97d" />
-          <stop offset="100%" stopColor="#d79c4a" />
+        <linearGradient id="salmon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ff7e67" />
+          <stop offset="100%" stopColor="#e85a4f" />
         </linearGradient>
       </defs>
 
-      <rect width="320" height="240" rx="32" fill="url(#bg-burger)" />
+      <rect width="320" height="240" rx="32" fill="url(#bg-sushi)" />
       <circle cx="68" cy="58" r="34" fill="rgba(246,190,59,0.14)" />
       <circle cx="256" cy="186" r="48" fill="rgba(246,190,59,0.12)" />
 
       <ellipse cx="160" cy="194" rx="92" ry="14" fill="rgba(0,0,0,0.35)" />
-      <path
-        d="M88 160c8 0 136 0 144 0 9 0 16 7 16 16 0 10-8 18-18 18H90c-10 0-18-8-18-18 0-9 7-16 16-16Z"
-        fill="#c1843e"
-        stroke="#9b6029"
-        strokeWidth="4"
-      />
 
-      {layers.reverse().map((layer, index) => (
-        <rect
-          key={`${layer.ingredient}-${index}`}
-          x={160 - layer.width / 2}
-          y={layer.y}
-          width={layer.width}
-          height={layer.height}
-          rx={layer.height / 2}
-          fill={layer.type === 'bun-top' ? 'url(#bun-top)' : layer.fill}
-          stroke={layer.stroke}
-          strokeWidth="3"
-        />
-      ))}
+      {/* Base de Arroz (Niguiri style) */}
+      <rect x="110" y="130" width="100" height="40" rx="20" fill="#ffffff" stroke="#e0e0e0" strokeWidth="2" />
 
-      <path
-        d="M90 82c8-22 30-34 70-34 42 0 66 13 74 34l6 26H84Z"
-        fill="url(#bun-top)"
-        stroke="#b97c31"
-        strokeWidth="4"
-      />
-      <circle cx="124" cy="78" r="2.4" fill="#fff3cb" />
-      <circle cx="152" cy="68" r="2.4" fill="#fff3cb" />
-      <circle cx="178" cy="82" r="2.4" fill="#fff3cb" />
-      <circle cx="204" cy="73" r="2.4" fill="#fff3cb" />
+      {/* Fatia de Peixe */}
+      <path d="M90 140 Q 160 110 230 140 Q 230 160 160 130 Q 90 160 90 140" fill="url(#salmon-grad)" stroke="#e85a4f" strokeWidth="2" />
+
+      {/* Faixa de Nori */}
+      <rect x="150" y="125" width="20" height="50" fill="#2e3b32" stroke="#1a2421" strokeWidth="1" />
 
       <text
         x="160"

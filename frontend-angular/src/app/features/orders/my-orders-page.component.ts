@@ -13,7 +13,12 @@ import { OrdersService } from '../../core/services/orders.service';
       <h1>Meus pedidos</h1>
       <p class="subtitle">Historico dos pedidos da sua conta.</p>
 
-      <p class="feedback" *ngIf="loading()">Carregando pedidos...</p>
+      <p class="feedback" *ngIf="loading()">
+        <span class="shima-loader">
+          <span class="shima-loader-icon" aria-hidden="true"></span>
+          Carregando pedidos...
+        </span>
+      </p>
       <p class="feedback error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
       <article *ngFor="let order of orders(); trackBy: trackOrder" class="order-card">

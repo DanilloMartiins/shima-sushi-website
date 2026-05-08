@@ -12,7 +12,12 @@ import { OrdersService } from '../../core/services/orders.service';
     <article class="card">
       <h2>Gestao de pedidos</h2>
 
-      <p *ngIf="loading()">Carregando pedidos...</p>
+      <p *ngIf="loading()">
+        <span class="shima-loader">
+          <span class="shima-loader-icon" aria-hidden="true"></span>
+          Carregando pedidos...
+        </span>
+      </p>
       <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
       <div *ngFor="let order of orders(); trackBy: trackOrder" class="order-line">

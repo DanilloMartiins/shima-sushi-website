@@ -1,14 +1,17 @@
 {
-  "name": "house-burguer-grill",
+  "name": "seu-shima-sushi",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Aplicação React da House Burguer Grill com cardápio, carrinho e checkout via WhatsApp.",
+  "description": "Aplicação React do Seu Shima Sushi com cardápio, carrinho e checkout via WhatsApp.",
   "scripts": {
     "dev": "vite",
     "dev:react": "vite",
     "dev:angular": "npm --prefix frontend-angular start",
+    "dev:backend": "houseburgergrill-backend\\mvnw.cmd -f houseburgergrill-backend/pom.xml spring-boot:run",
+    "dev:full": "concurrently -k -n FRONT,BACK -c cyan,green \"npm run dev:angular\" \"npm run dev:backend\"",
     "install:angular": "npm --prefix frontend-angular install",
+    "install:all": "npm install && npm --prefix frontend-angular install",
     "build": "vite build",
     "build:react": "vite build",
     "build:angular": "npm --prefix frontend-angular run build",
@@ -24,6 +27,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
     "eslint": "^8.57.0",
     "prettier": "^3.3.3",
     "vite": "^7.1.7"

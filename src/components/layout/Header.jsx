@@ -11,8 +11,8 @@ export function Header() {
             </svg>
           </span>
           <span className="logo-copy">
-            <span className="logo-text">House Burguer Grill</span>
-            <span className="logo-subtext">Artesanal • Carpina</span>
+            <span className="logo-text">Seu Shima Sushi</span>
+            <span className="logo-subtext">Culinária Oriental • Carpina</span>
           </span>
         </a>
 
