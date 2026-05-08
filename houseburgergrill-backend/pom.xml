@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>br.com.houseburgergrill</groupId>
-    <artifactId>backend</artifactId>
+    <groupId>br.com.seushimasushi</groupId>
+    <artifactId>seu-shima-sushi-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>houseburgergrill-backend</name>
-    <description>Backend House Burger Grill</description>
+    <name>seu-shima-sushi-backend</name>
+    <description>Backend Seu Shima Sushi</description>
 
     <properties>
         <java.version>21</java.version>

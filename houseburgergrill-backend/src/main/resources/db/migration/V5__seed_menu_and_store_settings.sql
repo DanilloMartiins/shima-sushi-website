@@ -1,13 +1,13 @@
 INSERT INTO categories (name, description, active)
-SELECT 'Artesanais', 'Hamburgueres artesanais da casa', TRUE
+SELECT 'Combinados', 'Combinados de sushi para compartilhar ou devorar sozinho', TRUE
 WHERE NOT EXISTS (
-    SELECT 1 FROM categories WHERE LOWER(name) = LOWER('Artesanais')
+    SELECT 1 FROM categories WHERE LOWER(name) = LOWER('Combinados')
 );
 
 INSERT INTO categories (name, description, active)
-SELECT 'Tradicionais e Lanches', 'Lanches tradicionais e hamburgueres populares', TRUE
+SELECT 'Temakis', 'Temakis tradicionais e empanados (Hot)', TRUE
 WHERE NOT EXISTS (
-    SELECT 1 FROM categories WHERE LOWER(name) = LOWER('Tradicionais e Lanches')
+    SELECT 1 FROM categories WHERE LOWER(name) = LOWER('Temakis')
 );
 
 INSERT INTO categories (name, description, active)
@@ -17,114 +17,99 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO categories (name, description, active)
-SELECT 'Acompanhamentos', 'Complementos e porcoes para compartilhar', TRUE
+SELECT 'Acompanhamentos', 'Entradas, conservas e molhos extras', TRUE
 WHERE NOT EXISTS (
     SELECT 1 FROM categories WHERE LOWER(name) = LOWER('Acompanhamentos')
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Classic Burguer',
-    'Hamburguer artesanal 100g, queijo mussarela, alface, tomate e maionese da casa.',
-    17.00,
-    '/assets/images/classic_burguer.png',
+    'Combinado Salmao (20 pecas)',
+    '10 sashimis de salmao, 5 niguiris de salmao e 5 uramakis de salmao.',
+    55.00,
+    '/assets/images/combinado_salmao.png',
     TRUE,
     c.id
 FROM categories c
-WHERE LOWER(c.name) = LOWER('Artesanais')
+WHERE LOWER(c.name) = LOWER('Combinados')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Classic Burguer') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Combinado Salmao (20 pecas)') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Bacon Burguer',
-    'Hamburguer artesanal 100g, bacon crocante, queijo mussarela, cebola caramelizada e molho barbecue.',
-    19.00,
-    '/assets/images/bacon_burguer.png',
+    'Combinado Especial (30 pecas)',
+    '10 sashimis variados, 10 niguiris variados e 10 enrolados especiais.',
+    85.00,
+    '/assets/images/combinado_especial.png',
     TRUE,
     c.id
 FROM categories c
-WHERE LOWER(c.name) = LOWER('Artesanais')
+WHERE LOWER(c.name) = LOWER('Combinados')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Bacon Burguer') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Combinado Especial (30 pecas)') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Burguer da Casa',
-    'Hamburguer artesanal 100g, cream cheese, queijo coalho, cebola caramelizada e tomate.',
-    15.00,
-    '/assets/images/burguer_da_asa.png',
+    'Combinado Hot (16 pecas)',
+    '8 hot rolls classicos e 8 hot rolls especiais com cream cheese e cebolinha.',
+    45.00,
+    '/assets/images/combinado_hot.png',
     TRUE,
     c.id
 FROM categories c
-WHERE LOWER(c.name) = LOWER('Artesanais')
+WHERE LOWER(c.name) = LOWER('Combinados')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Burguer da Casa') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Combinado Hot (16 pecas)') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Cupim Burguer',
-    'Hamburguer, cupim desfiado, queijo cheddar, bacon, cebola caramelizada e alface.',
+    'Temaki de Salmao Completo',
+    'Salmao batido com cream cheese e cebolinha.',
+    25.00,
+    '/assets/images/product_placeholder.png',
+    TRUE,
+    c.id
+FROM categories c
+WHERE LOWER(c.name) = LOWER('Temakis')
+  AND NOT EXISTS (
+    SELECT 1 FROM products p
+    WHERE LOWER(p.name) = LOWER('Temaki de Salmao Completo') AND p.category_id = c.id
+);
+
+INSERT INTO products (name, description, price, image_url, available, category_id)
+SELECT
+    'Temaki Hot',
+    'Temaki de salmao empanado e frito, com cream cheese e molho tare.',
     28.00,
-    '/assets/images/houseBurguerAlberto.png',
-    TRUE,
-    c.id
-FROM categories c
-WHERE LOWER(c.name) = LOWER('Artesanais')
-  AND NOT EXISTS (
-    SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Cupim Burguer') AND p.category_id = c.id
-);
-
-INSERT INTO products (name, description, price, image_url, available, category_id)
-SELECT
-    'Frango Burguer',
-    'Frango desfiado, batata palha, molho barbecue, cenoura, queijo mussarela e alface.',
-    18.00,
     '/assets/images/product_placeholder.png',
     TRUE,
     c.id
 FROM categories c
-WHERE LOWER(c.name) = LOWER('Tradicionais e Lanches')
+WHERE LOWER(c.name) = LOWER('Temakis')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Frango Burguer') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Temaki Hot') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Tradicional Carpina',
-    'Hamburguer, queijo mussarela, alface, cebola e tomate.',
-    8.00,
+    'Temaki Skin',
+    'Pele de salmao grelhada, cream cheese e molho tare.',
+    20.00,
     '/assets/images/product_placeholder.png',
     TRUE,
     c.id
 FROM categories c
-WHERE LOWER(c.name) = LOWER('Tradicionais e Lanches')
+WHERE LOWER(c.name) = LOWER('Temakis')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Tradicional Carpina') AND p.category_id = c.id
-);
-
-INSERT INTO products (name, description, price, image_url, available, category_id)
-SELECT
-    'Chicken Burguer',
-    'Empanado de frango, cream cheese, cebola, alface e tomate.',
-    8.00,
-    '/assets/images/product_placeholder.png',
-    TRUE,
-    c.id
-FROM categories c
-WHERE LOWER(c.name) = LOWER('Tradicionais e Lanches')
-  AND NOT EXISTS (
-    SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Chicken Burguer') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Temaki Skin') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
@@ -159,9 +144,9 @@ WHERE LOWER(c.name) = LOWER('Bebidas')
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Suco copo 300ml',
-    'Suco natural em copo de 300ml.',
-    4.00,
+    'Cha Gelado (Copo)',
+    'Cha gelado com limao.',
+    8.00,
     '/assets/images/product_placeholder.png',
     TRUE,
     c.id
@@ -169,14 +154,14 @@ FROM categories c
 WHERE LOWER(c.name) = LOWER('Bebidas')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Suco copo 300ml') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Cha Gelado (Copo)') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Batata Frita (P)',
-    'Porcao pequena de batata frita crocante.',
-    8.00,
+    'Sunomono',
+    'Saladinha de pepino agridoce com gergelim.',
+    12.00,
     '/assets/images/product_placeholder.png',
     TRUE,
     c.id
@@ -184,13 +169,28 @@ FROM categories c
 WHERE LOWER(c.name) = LOWER('Acompanhamentos')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Batata Frita (P)') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Sunomono') AND p.category_id = c.id
 );
 
 INSERT INTO products (name, description, price, image_url, available, category_id)
 SELECT
-    'Batata cheddar e bacon',
-    'Batata frita coberta com cheddar e bacon.',
+    'Porcao de Gengibre',
+    'Porcao de gengibre em conserva.',
+    5.00,
+    '/assets/images/product_placeholder.png',
+    TRUE,
+    c.id
+FROM categories c
+WHERE LOWER(c.name) = LOWER('Acompanhamentos')
+  AND NOT EXISTS (
+    SELECT 1 FROM products p
+    WHERE LOWER(p.name) = LOWER('Porcao de Gengibre') AND p.category_id = c.id
+);
+
+INSERT INTO products (name, description, price, image_url, available, category_id)
+SELECT
+    'Edamame',
+    'Porcao de graos de soja verde cozidos e salgados.',
     15.00,
     '/assets/images/product_placeholder.png',
     TRUE,
@@ -199,22 +199,7 @@ FROM categories c
 WHERE LOWER(c.name) = LOWER('Acompanhamentos')
   AND NOT EXISTS (
     SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Batata cheddar e bacon') AND p.category_id = c.id
-);
-
-INSERT INTO products (name, description, price, image_url, available, category_id)
-SELECT
-    'Aneis de cebola',
-    'Porcao de aneis de cebola empanados.',
-    8.00,
-    '/assets/images/product_placeholder.png',
-    TRUE,
-    c.id
-FROM categories c
-WHERE LOWER(c.name) = LOWER('Acompanhamentos')
-  AND NOT EXISTS (
-    SELECT 1 FROM products p
-    WHERE LOWER(p.name) = LOWER('Aneis de cebola') AND p.category_id = c.id
+    WHERE LOWER(p.name) = LOWER('Edamame') AND p.category_id = c.id
 );
 
 INSERT INTO store_settings (
@@ -228,7 +213,7 @@ INSERT INTO store_settings (
 ) VALUES (
     1,
     TRUE,
-    'Loja aberta. Seu pedido sera preparado com carinho!',
+    'Loja aberta. Seu sushi sera preparado com ingredientes frescos e muito carinho!',
     'Loja fechada no momento. Voltamos no proximo horario de atendimento.',
     '5581989543788',
     0.00,

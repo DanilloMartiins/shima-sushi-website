@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:houseburgergrill;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    url: jdbc:h2:mem:seushimasushi;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -9,9 +9,14 @@ spring:
     hibernate:
       ddl-auto: create-drop
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     placeholders:
       admin_name: Test Admin
       admin_email: test@admin.com
       admin_password: TestPass123
+
+app:
+  security:
+    jwt:
+      secret: test-secret-key-with-minimum-32-chars-length

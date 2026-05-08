@@ -16,8 +16,8 @@ CREATE TABLE products (
     image_url VARCHAR(400) NOT NULL,
     available BOOLEAN NOT NULL DEFAULT TRUE,
     category_id BIGINT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_products_price_non_negative CHECK (price >= 0),
     CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(id)
 );

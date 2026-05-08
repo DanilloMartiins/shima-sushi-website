@@ -7,8 +7,8 @@ CREATE TABLE orders (
     delivery_address VARCHAR(500),
     notes VARCHAR(500),
     total_amount NUMERIC(10,2) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES users(id),
     CONSTRAINT ck_orders_total_non_negative CHECK (total_amount >= 0),
     CONSTRAINT ck_orders_status CHECK (status IN (

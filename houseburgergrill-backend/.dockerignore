@@ -1,0 +1,17 @@
+.git
+.gitignore
+.idea
+.mvn
+target
+*.md
+*.log
+.DS_Store
+.vscode
+*.iml
+*.class
+.gradle
+build
+*.jar
+uploads/
+.env
+.env.local
