@@ -30,14 +30,8 @@ class JwtServiceTest {
         
         jwtService = new JwtService(appProperties);
         
-        usuarioTeste = User.builder()
-                .id(1L)
-                .email("teste@example.com")
-                .fullName("Usuário Teste")
-                .passwordHash("hashed")
-                .role(Role.CUSTOMER)
-                .active(true)
-                .build();
+        usuarioTeste = new User("Usuário Teste", "teste@example.com", "hashed", Role.CUSTOMER);
+        usuarioTeste.setId(1L);
     }
 
     @Nested

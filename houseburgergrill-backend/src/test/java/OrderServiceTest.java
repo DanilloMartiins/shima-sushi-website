@@ -64,40 +64,17 @@ class OrderServiceTest {
         categoryRepository.deleteAll();
         userRepository.deleteAll();
 
-        clienteTeste = User.builder()
-                .fullName("Cliente Teste")
-                .email("cliente@test.com")
-                .passwordHash("hashed")
-                .role(Role.CUSTOMER)
-                .active(true)
-                .build();
+        clienteTeste = new User("Cliente Teste", "cliente@test.com", "hashed", Role.CUSTOMER);
         clienteTeste = userRepository.save(clienteTeste);
 
-        categoriaTeste = Category.builder()
-                .name("Combos")
-                .description("Categoria de teste")
-                .active(true)
-                .build();
+        categoriaTeste = new Category("Combos", "Categoria de teste");
         categoriaTeste = categoryRepository.save(categoriaTeste);
 
-        produtoTeste = Product.builder()
-                .name("Combinado Salmão")
-                .description("O mais pedido da casa")
-                .price(BigDecimal.valueOf(25.00))
-                .imageUrl("/images/combinado.png")
-                .available(true)
-                .category(categoriaTeste)
-                .build();
+        produtoTeste = new Product("Combinado Salmão", "O mais pedido da casa", BigDecimal.valueOf(25.00), "/images/combinado.png", true, categoriaTeste);
         produtoTeste = productRepository.save(produtoTeste);
 
-        produtoTeste2 = Product.builder()
-                .name("Refrigerante")
-                .description("Refrigerante gelado")
-                .price(BigDecimal.valueOf(8.00))
-                .imageUrl("/images/refrigerante.png")
-                .available(true)
-                .category(categoriaTeste)
-                .build();
+        produtoTeste2 = new Product("Refrigerante", "Refrigerante gelado", BigDecimal.valueOf(8.00), "/images/refrigerante.png", true, categoriaTeste);
+        produtoTeste2 = productRepository.save(produtoTeste2);
         produtoTeste2 = productRepository.save(produtoTeste2);
     }
 

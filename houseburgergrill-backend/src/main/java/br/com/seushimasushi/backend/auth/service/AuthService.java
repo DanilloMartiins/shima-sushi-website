@@ -41,7 +41,7 @@ public class AuthService {
         validateRequest(request);
         validatePasswordComplexity(request);
 
-        // Deixo o e-mail em minúsculo e sem espaços pra não dar erro se o cara digitar diferente depois
+        // Deixo o e-mail em minúsculo e sem espaços pra não dar erro se a pessoa digitar diferente depois
         String normalizedEmail = normalizeEmail(request.email());
         
         // Verifico se o e-mail já existe pra não duplicar no banco
@@ -59,7 +59,7 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
         
-        // Já gera o token pro cara já entrar logado logo de cara
+        // Já gera o token pra pessoa já entrar logado
         return issueTokens(savedUser);
     }
 
