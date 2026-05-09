@@ -17,12 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
       <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
         <label>
           Nome
-          <input type="text" formControlName="name" />
-        </label>
-
-        <label>
-          Telefone
-          <input type="tel" formControlName="phone" />
+          <input type="text" formControlName="fullName" />
         </label>
 
         <label>
@@ -113,10 +108,9 @@ export class RegisterPageComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    phone: ['', [Validators.required]],
+    fullName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
   submit(): void {
@@ -132,8 +126,10 @@ export class RegisterPageComponent {
       next: () => {
         void this.router.navigateByUrl('/');
       },
-      error: () => {
-        this.errorMessage.set('Nao foi possivel criar a conta com os dados informados.');
+      error: (err) => {
+        // Tenta pegar a mensagem do backend, se não usa a genérica
+        const message = err?.error?.message || 'Nao foi possivel criar a conta com os dados informados.';
+        this.errorMessage.set(message);
         this.loading.set(false);
       },
       complete: () => {

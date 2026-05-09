@@ -15,8 +15,18 @@ import { StoreSettingsService } from '../../core/services/store-settings.service
 
       <form [formGroup]="form" (ngSubmit)="save()">
         <label>
-          Nome da loja
-          <input type="text" formControlName="storeName" />
+          Loja Aberta?
+          <input type="checkbox" formControlName="storeOpen" />
+        </label>
+
+        <label>
+          Mensagem de Loja Aberta
+          <input type="text" formControlName="openingMessage" />
+        </label>
+
+        <label>
+          Mensagem de Loja Fechada
+          <input type="text" formControlName="closingMessage" />
         </label>
 
         <label>
@@ -24,30 +34,15 @@ import { StoreSettingsService } from '../../core/services/store-settings.service
           <input type="text" formControlName="whatsappNumber" />
         </label>
 
-        <label>
-          Label do horario
-          <input type="text" formControlName="scheduleLabel" />
-        </label>
-
-        <label>
-          Timezone
-          <input type="text" formControlName="timeZone" />
-        </label>
-
-        <label>
-          Dias de abertura (0-6, separado por virgula)
-          <input type="text" formControlName="openDaysCsv" />
-        </label>
-
         <div class="inline-grid">
           <label>
-            Hora de abertura
-            <input type="number" min="0" max="23" formControlName="openHour" />
+            Taxa de Entrega (R$)
+            <input type="number" min="0" step="0.01" formControlName="deliveryFee" />
           </label>
 
           <label>
-            Hora de fechamento
-            <input type="number" min="1" max="23" formControlName="closeHour" />
+            Pedido Mínimo (R$)
+            <input type="number" min="0" step="0.01" formControlName="minimumOrderValue" />
           </label>
         </div>
 
@@ -130,26 +125,24 @@ export class AdminStoreSettingsPageComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
-    storeName: ['', [Validators.required]],
+    storeOpen: [false, [Validators.required]],
+    openingMessage: ['', [Validators.required]],
+    closingMessage: ['', [Validators.required]],
     whatsappNumber: ['', [Validators.required]],
-    scheduleLabel: ['', [Validators.required]],
-    timeZone: ['America/Recife', [Validators.required]],
-    openDaysCsv: ['0,2,3,4,5,6', [Validators.required]],
-    openHour: [17, [Validators.required, Validators.min(0), Validators.max(23)]],
-    closeHour: [22, [Validators.required, Validators.min(1), Validators.max(23)]],
+    deliveryFee: [0, [Validators.required, Validators.min(0)]],
+    minimumOrderValue: [0, [Validators.required, Validators.min(0)]],
   });
 
   ngOnInit(): void {
     this.storeSettingsService.getAdminStoreSettings().subscribe({
       next: (settings) => {
         this.form.patchValue({
-          storeName: settings.storeName,
+          storeOpen: settings.storeOpen,
+          openingMessage: settings.openingMessage,
+          closingMessage: settings.closingMessage,
           whatsappNumber: settings.whatsappNumber,
-          scheduleLabel: settings.scheduleLabel,
-          timeZone: settings.timeZone,
-          openDaysCsv: settings.openDays.join(','),
-          openHour: settings.openHour,
-          closeHour: settings.closeHour,
+          deliveryFee: settings.deliveryFee,
+          minimumOrderValue: settings.minimumOrderValue,
         });
       },
       error: () => {
@@ -170,16 +163,12 @@ export class AdminStoreSettingsPageComponent implements OnInit {
 
     const value = this.form.getRawValue();
     const payload: UpdateStoreSettingsRequest = {
-      storeName: value.storeName,
+      storeOpen: value.storeOpen,
+      openingMessage: value.openingMessage,
+      closingMessage: value.closingMessage,
       whatsappNumber: value.whatsappNumber,
-      scheduleLabel: value.scheduleLabel,
-      timeZone: value.timeZone,
-      openHour: value.openHour,
-      closeHour: value.closeHour,
-      openDays: value.openDaysCsv
-        .split(',')
-        .map((item) => Number(item.trim()))
-        .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6),
+      deliveryFee: value.deliveryFee,
+      minimumOrderValue: value.minimumOrderValue,
     };
 
     this.storeSettingsService.updateAdminStoreSettings(payload).subscribe({

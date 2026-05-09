@@ -11,10 +11,10 @@ import { MenuCategoryResponse } from '@core/models/menu.models';
     <div class="menu-container">
       @for (category of categories; track category.id) {
         <section class="category-section">
-          <h2 class="category-title">{{ category.title }}</h2>
+          <h2 class="category-title">{{ category.name || category.title }}</h2>
           
           <div class="products-grid">
-            @for (product of category.items; track product.id) {
+            @for (product of category.products; track product.id) {
               <app-product-card [product]="product"></app-product-card>
             }
           </div>

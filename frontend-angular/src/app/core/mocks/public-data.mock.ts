@@ -3,20 +3,20 @@ import { StoreSettingsResponse } from '../models/store.models';
 
 export const PUBLIC_STORE_SETTINGS_MOCK: StoreSettingsResponse = {
   id: 1,
-  storeName: 'Seu Shima Sushi',
+  storeOpen: true,
+  openingMessage: 'Bem-vindo ao Seu Shima Sushi!',
+  closingMessage: 'Estamos fechados no momento.',
   whatsappNumber: '5581989543788',
-  scheduleLabel: 'Ter, Qua, Qui, Sex, Sab e Dom - 17h as 22h',
-  timeZone: 'America/Recife',
-  openDays: [2, 3, 4, 5, 6, 0],
-  openHour: 17,
-  closeHour: 22,
+  deliveryFee: 5.0,
+  minimumOrderValue: 30.0,
 };
 
 export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
   {
     id: 1,
-    title: 'Combinados',
-    items: [
+    name: 'Combinados',
+    description: 'Combinados de sushi para compartilhar ou devorar sozinho',
+    products: [
       {
         id: 101,
         categoryId: 1,
@@ -54,8 +54,9 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
   },
   {
     id: 2,
-    title: 'Temakis',
-    items: [
+    name: 'Temakis',
+    description: 'Temakis tradicionais e empanados (Hot)',
+    products: [
       {
         id: 201,
         categoryId: 2,
@@ -90,8 +91,9 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
   },
   {
     id: 3,
-    title: 'Bebidas',
-    items: [
+    name: 'Bebidas',
+    description: 'Bebidas para acompanhar seu pedido',
+    products: [
       {
         id: 301,
         categoryId: 3,
@@ -123,8 +125,9 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
   },
   {
     id: 4,
-    title: 'Acompanhamentos',
-    items: [
+    name: 'Acompanhamentos',
+    description: 'Entradas, conservas e molhos extras',
+    products: [
       {
         id: 401,
         categoryId: 4,

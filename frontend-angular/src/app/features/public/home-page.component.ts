@@ -39,10 +39,10 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
     <ng-container *ngFor="let category of menuCategories(); trackBy: trackCategory">
       <section class="category-wrap">
-        <h3>{{ category.title }}</h3>
+        <h3>{{ category.name || category.title }}</h3>
 
         <div class="product-grid">
-          <article *ngFor="let item of category.items; trackBy: trackProduct" class="product-card">
+          <article *ngFor="let item of category.products; trackBy: trackProduct" class="product-card">
             <img *ngIf="item.imageUrl" [src]="item.imageUrl" [alt]="item.name" loading="lazy" />
             <div class="product-info">
               <p class="tag" *ngIf="item.tag">{{ item.tag }}</p>

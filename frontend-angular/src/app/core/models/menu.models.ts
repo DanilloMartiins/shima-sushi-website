@@ -12,8 +12,10 @@ export interface ProductResponse {
 
 export interface MenuCategoryResponse {
   id: number;
-  title: string;
-  items: ProductResponse[];
+  title?: string; // Mantido como opcional caso algo ainda use
+  name: string;
+  description: string;
+  products: ProductResponse[];
 }
 
 export interface CreateProductRequest {

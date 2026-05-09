@@ -1,10 +1,9 @@
 export type RoleName = 'ADMIN' | 'CUSTOMER';
 
 export interface RegisterRequest {
-  name: string;
+  fullName: string;
   email: string;
   password: string;
-  phone: string;
 }
 
 export interface LoginRequest {

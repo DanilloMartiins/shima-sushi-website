@@ -1,22 +1,20 @@
 export interface StoreSettingsResponse {
   id: number;
-  storeName: string;
+  storeOpen: boolean;
+  openingMessage: string;
+  closingMessage: string;
   whatsappNumber: string;
-  scheduleLabel: string;
-  timeZone: string;
-  openDays: number[];
-  openHour: number;
-  closeHour: number;
+  deliveryFee: number;
+  minimumOrderValue: number;
 }
 
 export interface UpdateStoreSettingsRequest {
-  storeName: string;
+  storeOpen: boolean;
+  openingMessage: string;
+  closingMessage: string;
   whatsappNumber: string;
-  scheduleLabel: string;
-  timeZone: string;
-  openDays: number[];
-  openHour: number;
-  closeHour: number;
+  deliveryFee: number;
+  minimumOrderValue: number;
 }
 
 export interface StoreStatusSnapshot {
