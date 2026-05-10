@@ -43,7 +43,8 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
         <div class="product-grid">
           <article *ngFor="let item of category.products; trackBy: trackProduct" class="product-card">
-            <img *ngIf="item.imageUrl" [src]="item.imageUrl" [alt]="item.name" loading="lazy" />
+            <!-- As imagens agora passam pelo nosso proxy do backend -->
+            <img *ngIf="item.imageUrl" [src]="'/api/imagem?url=' + item.imageUrl" [alt]="item.name" loading="lazy" />
             <div class="product-info">
               <p class="tag" *ngIf="item.tag">{{ item.tag }}</p>
               <h4>{{ item.name }}</h4>
