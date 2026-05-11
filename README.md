@@ -7,7 +7,7 @@ Este repositorio e novo e ja esta organizado com foco no frontend Angular. A mig
 ## Estrutura do projeto
 
 - `frontend-angular/`: aplicacao frontend principal (Angular)
-- `houseburgergrill-backend/`: API backend (Spring Boot)
+- `seuShimaSushi-backend/`: API backend (Spring Boot)
 - `docker-compose.yml`: sobe frontend + backend + banco
 
 ## Como rodar
