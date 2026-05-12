@@ -21,6 +21,12 @@ spring:
       admin_email: ${ADMIN_EMAIL:admin@seushimasushi.com}
       admin_password: ${ADMIN_PASSWORD:Admin@123}
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://informed-haddock-50.clerk.accounts.dev
+
 app:
   security:
     jwt:

@@ -1,17 +1,15 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { ClerkService } from '../services/clerk.service';
 
-import { AuthService } from '../services/auth.service';
-
-export const authGuard: CanActivateFn = (_route, state) => {
-  const authService = inject(AuthService);
+export const authGuard = () => {
+  const clerkService = inject(ClerkService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
+  if (clerkService.user()) {
     return true;
   }
 
-  return router.createUrlTree(['/login'], {
-    queryParams: { redirectTo: state.url || '/checkout' },
-  });
+  void router.navigate(['/login']);
+  return false;
 };

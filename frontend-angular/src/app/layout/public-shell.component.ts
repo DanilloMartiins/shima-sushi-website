@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
-import { AuthService } from '../core/services/auth.service';
+import { ClerkService } from '../core/services/clerk.service';
 import { CartService } from '../core/services/cart.service';
 
 @Component({
@@ -22,7 +22,7 @@ import { CartService } from '../core/services/cart.service';
             >Cardapio</a
           >
           <a routerLink="/orders" routerLinkActive="is-active">Meus pedidos</a>
-          <a *ngIf="authService.isAdmin()" routerLink="/admin" routerLinkActive="is-active"
+          <a *ngIf="isUserAdmin()" routerLink="/admin" routerLinkActive="is-active"
             >Admin</a
           >
         </nav>
@@ -32,8 +32,8 @@ import { CartService } from '../core/services/cart.service';
             Carrinho <strong>{{ cartService.totalItems() }}</strong>
           </a>
 
-          <ng-container *ngIf="authService.isAuthenticated(); else authButtons">
-            <span class="user-email">{{ authService.email() }}</span>
+          <ng-container *ngIf="clerk.user(); else authButtons">
+            <span class="user-email">{{ clerk.user().primaryEmailAddress?.emailAddress }}</span>
             <button type="button" class="btn ghost" (click)="logout()">Sair</button>
           </ng-container>
 
@@ -201,16 +201,19 @@ import { CartService } from '../core/services/cart.service';
   ],
 })
 export class PublicShellComponent {
-  readonly authService = inject(AuthService);
+  readonly clerk = inject(ClerkService);
   readonly cartService = inject(CartService);
 
   private readonly router = inject(Router);
 
+  isUserAdmin(): boolean {
+    const user = this.clerk.user();
+    return user && (user.publicMetadata?.['role'] === 'ADMIN' || user.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com');
+  }
+
   logout(): void {
-    this.authService.logout().subscribe({
-      next: () => {
-        void this.router.navigateByUrl('/');
-      },
+    void this.clerk.signOut().then(() => {
+      void this.router.navigateByUrl('/');
     });
   }
 }

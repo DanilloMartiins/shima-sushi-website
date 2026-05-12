@@ -1,17 +1,18 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { ClerkService } from '../services/clerk.service';
 
-import { AuthService } from '../services/auth.service';
-
-export const adminGuard: CanActivateFn = () => {
-  const authService = inject(AuthService);
+export const adminGuard = () => {
+  const clerkService = inject(ClerkService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated() && authService.role() === 'ADMIN') {
+  const user = clerkService.user();
+  
+  // Regra de exemplo: checa se o email é o do admin ou se tem a role nas publicMetadata
+  if (user && (user.publicMetadata?.['role'] === 'ADMIN' || user.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com')) {
     return true;
   }
 
-  return router.createUrlTree(['/login'], {
-    queryParams: { redirectTo: '/admin' },
-  });
+  void router.navigate(['/']);
+  return false;
 };
