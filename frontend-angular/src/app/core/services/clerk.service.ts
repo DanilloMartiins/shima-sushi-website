@@ -1,28 +1,90 @@
 import { Injectable, signal } from '@angular/core';
-import { Clerk } from '@clerk/clerk-js';
+import { ptBR } from '@clerk/localizations';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ClerkService {
-  // A Publishable Key deve vir do seu dashboard do Clerk
   private readonly publishableKey = 'pk_test_aW5mb3JtZWQtaGFkZG9jay01MC5jbGVyay5hY2NvdW50cy5kZXYk';
-  private clerk: Clerk | null = null;
-
+  private readonly instanceUrl = 'informed-haddock-50.clerk.accounts.dev';
+  
+  private clerk: any = null;
   readonly loaded = signal(false);
   readonly user = signal<any>(null);
 
   async init(): Promise<void> {
-    if (this.clerk) return;
-
-    this.clerk = new Clerk(this.publishableKey);
-
-    try {
-      await this.clerk.load();
+    if (this.clerk || (window as any).Clerk) {
+      this.clerk = (window as any).Clerk;
       this.loaded.set(true);
-      this.user.set(this.clerk.user);
-    } catch (err) {
-      console.error('Erro ao carregar o Clerk:', err);
+      return;
+    }
+
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.setAttribute('data-clerk-publishable-key', this.publishableKey);
+      script.async = true;
+      script.src = `https://${this.instanceUrl}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`;
+      
+      script.onload = async () => {
+        this.clerk = (window as any).Clerk;
+        try {
+          await this.clerk.load({
+            localization: ptBR,
+          });
+          
+          this.user.set(this.clerk.user);
+          this.loaded.set(true);
+          
+          this.clerk.addListener((resources: any) => {
+            this.user.set(resources.user);
+          });
+          resolve();
+        } catch (err) {
+          console.error('Erro ao inicializar Clerk:', err);
+        }
+      };
+
+      document.body.appendChild(script);
+    });
+  }
+
+  mountSignIn(containerId: string): void {
+    const el = document.getElementById(containerId);
+    if (!el || !this.clerk) return;
+
+    if (this.loaded()) {
+      this.clerk.mountSignIn(el, {
+        // ESSENCIAL: Força o redirecionamento para o perfil após o login com sucesso (Google ou E-mail)
+        forceRedirectUrl: '/perfil',
+        fallbackRedirectUrl: '/perfil'
+      });
+    } else {
+      setTimeout(() => this.mountSignIn(containerId), 500);
+    }
+  }
+
+  mountSignUp(containerId: string): void {
+    const el = document.getElementById(containerId);
+    if (!el || !this.clerk) return;
+
+    if (this.loaded()) {
+      this.clerk.mountSignUp(el, {
+        // ESSENCIAL: Mesma regra para o cadastro
+        forceRedirectUrl: '/perfil',
+        fallbackRedirectUrl: '/perfil'
+      });
+    } else {
+      setTimeout(() => this.mountSignUp(containerId), 500);
+    }
+  }
+
+  mountUserProfile(containerId: string): void {
+    const el = document.getElementById(containerId);
+    if (!el || !this.clerk) return;
+    if (this.loaded()) {
+      this.clerk.mountUserProfile(el);
+    } else {
+      setTimeout(() => this.mountUserProfile(containerId), 500);
     }
   }
 
@@ -34,13 +96,5 @@ export class ClerkService {
   async signOut(): Promise<void> {
     await this.clerk?.signOut();
     this.user.set(null);
-  }
-
-  openSignIn(): void {
-    this.clerk?.openSignIn();
-  }
-
-  openSignUp(): void {
-    this.clerk?.openSignUp();
   }
 }

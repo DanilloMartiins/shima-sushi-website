@@ -16,8 +16,6 @@ import br.com.seushimasushi.backend.order.model.Order;
 import br.com.seushimasushi.backend.order.model.OrderItem;
 import br.com.seushimasushi.backend.order.model.OrderStatus;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
-import br.com.seushimasushi.backend.user.model.User;
-import br.com.seushimasushi.backend.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,32 +34,25 @@ import java.util.Set;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    // Injeção de dependência via construtor
     @Autowired
     public OrderService(OrderRepository orderRepository, 
-                        UserRepository userRepository, 
                         ProductRepository productRepository) {
         this.orderRepository = orderRepository;
-        this.userRepository = userRepository;
         this.productRepository = productRepository;
     }
 
     @Transactional
-    public OrderResponse createOrder(Long customerId, CreateOrderRequest request) {
-        // Pego o cliente que tá fazendo o pedido
-        User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
-
-        // Dou uma conferida se os itens e o endereço estão ok antes de seguir
+    public OrderResponse createOrder(String customerClerkId, CreateOrderRequest request) {
+        // Agora não precisamos mais buscar o User no banco, usamos o ID que veio do Clerk
+        
         validateOrderItems(request.items());
         validateDeliveryAddressRule(request.deliveryType(), request.deliveryAddress());
 
-        // Começo a montar o objeto do pedido
+        // Criamos a instância do pedido com o ID do Clerk
         Order order = new Order(
-                customer,
+                customerClerkId,
                 OrderStatus.CREATED,
                 request.paymentMethod(),
                 request.deliveryType(),
@@ -72,11 +63,9 @@ public class OrderService {
         BigDecimal total = BigDecimal.ZERO;
         Set<Long> productIdsInOrder = new HashSet<>();
 
-        // Aqui eu percorro os itens que vieram no request pra criar os itens do pedido
         for (CreateOrderItemRequest itemRequest : request.items()) {
             validateItem(itemRequest);
 
-            // Regrinha: não pode ter o mesmo produto repetido em linhas diferentes
             if (!productIdsInOrder.add(itemRequest.productId())) {
                 throw new BadRequestException("Pedido nao pode ter item duplicado para o mesmo produto");
             }
@@ -84,7 +73,6 @@ public class OrderService {
             Product product = productRepository.findById(itemRequest.productId())
                     .orElseThrow(() -> new NotFoundException("Produto " + itemRequest.productId() + " nao encontrado"));
 
-            // Só vendo se tiver no cardápio disponível
             if (!Boolean.TRUE.equals(product.getAvailable())) {
                 throw new BadRequestException("Produto " + product.getName() + " esta indisponivel");
             }
@@ -92,7 +80,6 @@ public class OrderService {
             BigDecimal unitPrice = product.getPrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
-            // Instancio o item e ligo ele ao pedido principal
             OrderItem orderItem = new OrderItem(
                     order,
                     product,
@@ -105,7 +92,6 @@ public class OrderService {
             total = total.add(subtotal);
         }
 
-        // Atualizo o valor final do pedido somando tudo
         order.setTotalAmount(total);
 
         Order savedOrder = orderRepository.save(order);
@@ -113,9 +99,9 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderResponse> getMyOrders(Long customerId) {
-        // Buscamos os pedidos e convertemos para DTO usando um loop simples
-        List<Order> orders = orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
+    public List<OrderResponse> getMyOrders(String customerClerkId) {
+        // Buscamos os pedidos filtrando pelo ID do Clerk
+        List<Order> orders = orderRepository.findByCustomerClerkIdOrderByCreatedAtDesc(customerClerkId);
         List<OrderResponse> responses = new ArrayList<>();
         
         for (Order order : orders) {
@@ -128,7 +114,6 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PagedResponse<OrderResponse> getAdminOrders(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        // Aqui o map ainda faz sentido por ser uma Page, mas a lógica interna é clara
         Page<OrderResponse> orderPage = orderRepository.findAll(pageable).map(order -> toResponse(order, true));
         return PagedResponse.from(orderPage);
     }
@@ -174,15 +159,11 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Order order, boolean includeItems) {
-        CustomerSummaryResponse customer = new CustomerSummaryResponse(
-                order.getCustomer().getId(),
-                order.getCustomer().getFullName(),
-                order.getCustomer().getEmail()
-        );
+        // DTO de resposta agora contém apenas o ID do Clerk para o cliente
+        CustomerSummaryResponse customer = new CustomerSummaryResponse(order.getCustomerClerkId());
 
         List<OrderItemResponse> itemResponses = new ArrayList<>();
         
-        // Se solicitado, convertemos os itens da entidade para o DTO de resposta
         if (includeItems && order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 OrderItemResponse itemDto = new OrderItemResponse(

@@ -44,7 +44,6 @@ public class CardapioScraperService {
                         String precoTexto = priceEl.text();
                         String urlImagem = (imgEl != null) ? imgEl.attr("src") : "";
 
-                        // Se a imagem for um placeholder ou vazia, podemos tratar aqui
                         if (urlImagem.startsWith("//")) {
                             urlImagem = "https:" + urlImagem;
                         }

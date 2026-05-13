@@ -46,16 +46,12 @@ public class ProdutoScrapedService {
             }
 
         } catch (Exception e) {
-            // Se der erro no scraping (site caiu, timeout, etc), a gente cai aqui
             log.error("Erro ao atualizar produtos via scraping. O sistema vai manter a última versão válida. Motivo: {}", e.getMessage());
-            // Nota: Não relançamos a exceção aqui pro Scheduler não travar as próximas execuções
         }
     }
 
-    // Método que o Controller vai chamar pra listar pro Front
     @Transactional(readOnly = true)
     public List<Produto> listarProdutos() {
-        // Nunca chama o scraper aqui! Sempre lê direto do nosso banco.
         return produtoRepository.findAll();
     }
 }

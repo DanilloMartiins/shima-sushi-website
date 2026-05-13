@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject, effect } from '@angular/core';
+import { Router } from '@angular/router';
 import { ClerkService } from '../../core/services/clerk.service';
 
 @Component({
@@ -6,35 +7,39 @@ import { ClerkService } from '../../core/services/clerk.service';
   standalone: true,
   template: `
     <section class="auth-page">
-      <h1>Entrar</h1>
-      <p>Acesse sua conta para finalizar seus pedidos.</p>
-      
-      <button class="clerk-btn" (click)="clerk.openSignIn()">
-        Clique para Entrar com o Clerk
-      </button>
-
-      <div class="divider"></div>
-      
-      <p class="footer-text">Nao tem conta? <a href="javascript:void(0)" (click)="clerk.openSignUp()">Criar agora</a></p>
+      <div id="clerk-signin-container"></div>
     </section>
   `,
   styles: [`
-    .auth-page { width: min(420px, 100%); margin: 4rem auto; text-align: center; }
-    .clerk-btn { 
-      background: var(--brand-orange); 
-      color: white; 
-      border: none; 
-      padding: 1rem 2rem; 
-      border-radius: 99px; 
-      font-weight: bold; 
-      cursor: pointer;
-      font-size: 1.1rem;
+    .auth-page { 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 70vh;
+      padding: 2rem;
     }
-    .divider { margin: 2rem 0; border-top: 1px solid var(--brand-border); }
-    .footer-text { color: var(--brand-muted); }
-    a { color: var(--brand-orange-strong); text-decoration: none; font-weight: bold; }
   `]
 })
-export class LoginPageComponent {
+export class LoginPageComponent implements OnInit {
   readonly clerk = inject(ClerkService);
+  private readonly router = inject(Router);
+
+  constructor() {
+    // Redireciona automaticamente se o usuário já estiver autenticado
+    effect(() => {
+      if (this.clerk.user()) {
+        void this.router.navigateByUrl('/perfil');
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    // Se já entrar logado (ex: volta do Google), já redireciona de cara
+    if (this.clerk.user()) {
+      void this.router.navigateByUrl('/perfil');
+      return;
+    }
+    
+    this.clerk.mountSignIn('clerk-signin-container');
+  }
 }

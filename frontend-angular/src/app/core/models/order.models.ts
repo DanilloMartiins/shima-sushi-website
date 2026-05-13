@@ -16,44 +16,32 @@ export interface CreateOrderItemRequest {
 export interface CreateOrderRequest {
   deliveryType: DeliveryType;
   paymentMethod: PaymentMethod;
-  needChange: boolean;
-  changeValue?: number | null;
-  customerName: string;
-  phone: string;
-  address?: string;
-  houseNumber?: string;
-  complement?: string;
-  neighborhood?: string;
-  orderNote?: string;
+  deliveryAddress?: string;
+  notes?: string;
   items: CreateOrderItemRequest[];
 }
 
 export interface OrderItemResponse {
-  id: number;
   productId: number;
   productName: string;
   unitPrice: number;
   quantity: number;
-  lineTotal: number;
+  subtotal: number;
 }
 
 export interface OrderResponse {
   id: number;
   status: OrderStatus;
-  createdAt: string;
-  customerName: string;
-  phone: string;
-  deliveryType: DeliveryType;
   paymentMethod: PaymentMethod;
-  needChange: boolean;
-  changeValue?: number | null;
-  address?: string | null;
-  houseNumber?: string | null;
-  complement?: string | null;
-  neighborhood?: string | null;
-  orderNote?: string | null;
-  totalPrice: number;
-  totalItems: number;
+  deliveryType: DeliveryType;
+  deliveryAddress?: string | null;
+  notes?: string | null;
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
+  customer: {
+    clerkId: string;
+  };
   items: OrderItemResponse[];
 }
 

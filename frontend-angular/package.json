@@ -32,6 +32,7 @@
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
     "@clerk/clerk-js": "^6.10.1",
+    "@clerk/localizations": "^4.6.2",
     "rxjs": "~7.8.0",
     "seu-shima-sushi": "file:..",
     "tslib": "^2.3.0",

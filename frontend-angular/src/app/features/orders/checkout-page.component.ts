@@ -1,432 +1,265 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
 import { CartService } from '../../core/services/cart.service';
 import { OrdersService } from '../../core/services/orders.service';
-import { StoreSettingsService } from '../../core/services/store-settings.service';
+import { AddressService } from '../../core/services/address.service';
 import { CreateOrderRequest, DeliveryType, OrderResponse, PaymentMethod } from '../../core/models/order.models';
-import { StoreSettingsResponse } from '../../core/models/store.models';
+import { AddressResponse } from '../../core/models/address.models';
 
 @Component({
   selector: 'app-checkout-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CurrencyPipe],
+  imports: [CommonModule, ReactiveFormsModule, CurrencyPipe, RouterLink],
   template: `
     <section class="checkout-wrap">
-      <h1>Checkout</h1>
-      <p>Finalize seu pedido no sistema e envie no WhatsApp, se quiser, depois da confirmacao.</p>
+      <div class="checkout-header">
+        <h1>Finalizar Pedido</h1>
+        <button class="btn-clear" (click)="clearCart()" *ngIf="cartItems().length > 0">
+          Limpar Carrinho
+        </button>
+      </div>
 
       <div class="checkout-grid" *ngIf="cartItems().length > 0; else emptyCart">
         <form class="checkout-form" [formGroup]="form" (ngSubmit)="submit()">
-          <label>
-            Nome
-            <input type="text" formControlName="customerName" />
-          </label>
+          
+          <div class="section-box">
+            <h3>1. Como deseja receber?</h3>
+            <div class="delivery-options">
+              <label class="radio-card" [class.selected]="form.get('deliveryType')?.value === 'RETIRADA'">
+                <input type="radio" formControlName="deliveryType" value="RETIRADA" />
+                <span>Retirada na Loja</span>
+              </label>
+              <label class="radio-card" [class.selected]="form.get('deliveryType')?.value === 'ENTREGA'">
+                <input type="radio" formControlName="deliveryType" value="ENTREGA" />
+                <span>Entrega em Casa</span>
+              </label>
+            </div>
 
-          <label>
-            Telefone
-            <input type="tel" formControlName="phone" />
-          </label>
+            <!-- Endereço de Entrega -->
+            <div *ngIf="form.get('deliveryType')?.value === 'ENTREGA'" class="address-fields animate-fade">
+              <div *ngIf="hasDefaultAddress() && !isEditingAddress(); else addressForm" class="default-address-alert">
+                <p>O endereço de entrega é realmente este?</p>
+                <div class="address-preview">
+                  <strong>{{ defaultAddress()?.street }}, {{ defaultAddress()?.number }}</strong>
+                  <span>{{ defaultAddress()?.neighborhood }} - {{ defaultAddress()?.city }}</span>
+                </div>
+                <button type="button" class="btn-change" (click)="startEditingAddress()">Mudar endereço</button>
+              </div>
 
-          <label>
-            Pedido sera
-            <select formControlName="deliveryType">
-              <option value="RETIRADA">Retirada</option>
-              <option value="ENTREGA">Entrega</option>
-            </select>
-          </label>
+              <ng-template #addressForm>
+                <div class="form-group">
+                  <label>Endereço Completo</label>
+                  <input type="text" formControlName="fullAddress" placeholder="Rua, Número, Bairro" />
+                </div>
+                
+                <div class="save-default-check" *ngIf="isEditingAddress() || !hasDefaultAddress()">
+                   <label class="inline">
+                     <input type="checkbox" formControlName="saveAsDefault" /> Salvar como endereço padrão?
+                   </label>
+                </div>
+              </ng-template>
+            </div>
+          </div>
 
-          <label>
-            Forma de pagamento
+          <div class="section-box">
+            <h3>2. Pagamento</h3>
             <select formControlName="paymentMethod">
               <option value="PIX">PIX</option>
-              <option value="CARTAO_CREDITO">Cartao de credito</option>
+              <option value="CARTAO_CREDITO">Cartão de Crédito (na entrega)</option>
               <option value="DINHEIRO">Dinheiro</option>
             </select>
-          </label>
+          </div>
 
-          <label class="inline" *ngIf="form.controls.paymentMethod.value === 'DINHEIRO'">
-            <input type="checkbox" formControlName="needChange" /> Precisa de troco?
-          </label>
-
-          <label *ngIf="form.controls.needChange.value && form.controls.paymentMethod.value === 'DINHEIRO'">
-            Troco para quanto
-            <input type="number" formControlName="changeValue" min="0" step="0.01" />
-          </label>
-
-          <ng-container *ngIf="form.controls.deliveryType.value === 'ENTREGA'">
-            <label>
-              Endereco
-              <input type="text" formControlName="address" />
-            </label>
-
-            <label>
-              Numero
-              <input type="text" formControlName="houseNumber" />
-            </label>
-
-            <label>
-              Complemento
-              <input type="text" formControlName="complement" />
-            </label>
-
-            <label>
-              Bairro
-              <input type="text" formControlName="neighborhood" />
-            </label>
-          </ng-container>
-
-          <label>
-            Observacao do pedido
-            <textarea rows="3" formControlName="orderNote"></textarea>
-          </label>
+          <div class="section-box">
+            <h3>3. Observações (Opcional)</h3>
+            <textarea rows="2" formControlName="notes" placeholder="Ex: Sem cebolinha, trocar por..."></textarea>
+          </div>
 
           <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
-          <button type="submit" [disabled]="form.invalid || submitting()">
-            <ng-container *ngIf="!submitting(); else sendingOrderLabel">Confirmar pedido</ng-container>
-            <ng-template #sendingOrderLabel>
-              <span class="shima-loader">
-                <span class="shima-loader-icon" aria-hidden="true"></span>
-                Enviando pedido...
-              </span>
-            </ng-template>
+          <button type="submit" class="btn-confirm" [disabled]="form.invalid || submitting()">
+            {{ submitting() ? 'Enviando...' : 'Confirmar e Finalizar' }}
           </button>
         </form>
 
         <aside class="cart-summary">
-          <h2>Resumo do carrinho</h2>
-
+          <h2>Resumo</h2>
           <ul>
-            <li *ngFor="let item of cartItems(); trackBy: trackByProductId">
+            <li *ngFor="let item of cartItems()">
               <span>{{ item.quantity }}x {{ item.name }}</span>
               <strong>{{ item.quantity * item.price | currency: 'BRL' }}</strong>
             </li>
           </ul>
-
           <div class="totals">
-            <p>Itens: <strong>{{ cartService.totalItems() }}</strong></p>
             <p>Total: <strong>{{ cartService.totalPrice() | currency: 'BRL' }}</strong></p>
           </div>
-
-          <section class="order-success" *ngIf="lastOrder() as order">
-            <h3>Pedido #{{ order.id }} confirmado</h3>
-            <p>Status inicial: {{ statusLabel(order.status) }}</p>
-            <a *ngIf="whatsappLink()" [href]="whatsappLink()" target="_blank" rel="noopener noreferrer"
-              >Enviar no WhatsApp</a
-            >
-          </section>
         </aside>
       </div>
 
       <ng-template #emptyCart>
-        <p class="empty-cart">Seu carrinho esta vazio. Volte ao cardapio para adicionar itens.</p>
+        <div class="empty-box">
+          <p>Seu carrinho está vazio.</p>
+          <a routerLink="/" class="btn-back">Voltar ao cardápio</a>
+        </div>
       </ng-template>
     </section>
   `,
-  styles: [
-    `
-      .checkout-wrap h1 {
-        margin: 0;
-      }
+  styles: [`
+    .checkout-wrap { width: min(1100px, 100% - 2rem); margin: 2rem auto; }
+    .checkout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    
+    .checkout-grid { display: grid; grid-template-columns: 1.4fr 0.6fr; gap: 2rem; }
+    .section-box { background: #fff; padding: 1.5rem; border-radius: 15px; border: 1px solid var(--brand-border); margin-bottom: 1.5rem; }
+    
+    .delivery-options { display: flex; gap: 1rem; margin-top: 1rem; }
+    .radio-card { flex: 1; padding: 1rem; border: 2px solid var(--brand-border); border-radius: 12px; cursor: pointer; text-align: center; font-weight: bold; }
+    .radio-card.selected { border-color: var(--brand-orange); background: rgba(234, 106, 61, 0.05); color: var(--brand-orange-strong); }
+    .radio-card input { display: none; }
 
-      .checkout-wrap > p {
-        color: var(--brand-muted);
-      }
+    .default-address-alert { background: #fdf6f2; padding: 1rem; border-radius: 12px; border: 1px solid #f9d8c6; }
+    .address-preview { margin: 0.8rem 0; display: grid; }
+    
+    .btn-change { background: transparent; border: 1px solid var(--brand-orange); color: var(--brand-orange-strong); padding: 0.4rem 1rem; border-radius: 99px; cursor: pointer; font-size: 0.85rem; }
+    .btn-clear { background: #fff; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 0.5rem 1rem; border-radius: 99px; cursor: pointer; }
+    .btn-confirm { width: 100%; padding: 1rem; background: var(--brand-orange); color: #fff; border: none; border-radius: 99px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
 
-      .checkout-grid {
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: 1rem;
-      }
+    .form-group { display: grid; gap: 0.4rem; margin-top: 1rem; }
+    input, select, textarea { padding: 0.8rem; border-radius: 10px; border: 1px solid var(--brand-border); width: 100%; }
+    .inline { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
 
-      .checkout-form,
-      .cart-summary {
-        border: 1px solid var(--brand-border);
-        background: #fff;
-        border-radius: 14px;
-        padding: 1rem;
-        box-shadow: var(--shadow-sm);
-      }
+    .cart-summary { background: #fff; padding: 1.5rem; border-radius: 15px; border: 1px solid var(--brand-border); height: fit-content; }
+    .cart-summary ul { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.8rem; }
+    .cart-summary li { display: flex; justify-content: space-between; font-size: 0.95rem; }
+    .totals { border-top: 1px dashed var(--brand-border); padding-top: 1rem; font-size: 1.2rem; }
 
-      .checkout-form {
-        display: grid;
-        gap: 0.8rem;
-      }
+    .empty-box { text-align: center; padding: 4rem; background: #fff; border-radius: 20px; border: 1px solid var(--brand-border); }
+    .btn-back { display: inline-block; margin-top: 1rem; background: var(--brand-ink); color: #fff; text-decoration: none; padding: 0.8rem 2rem; border-radius: 99px; }
 
-      label {
-        display: grid;
-        gap: 0.3rem;
-        color: var(--brand-ink);
-      }
+    .animate-fade { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-      .inline {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-      }
-
-      input,
-      select,
-      textarea {
-        border-radius: 10px;
-        border: 1px solid var(--brand-border);
-        background: #fff;
-        color: var(--brand-ink);
-        padding: 0.55rem 0.65rem;
-      }
-
-      button {
-        border: 0;
-        border-radius: 999px;
-        padding: 0.6rem 0.9rem;
-        font-weight: 700;
-        cursor: pointer;
-        background: var(--brand-orange);
-        color: #fff;
-      }
-
-      .error {
-        margin: 0;
-        color: #ff9f9f;
-      }
-
-      .cart-summary ul {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: grid;
-        gap: 0.5rem;
-      }
-
-      .cart-summary li {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.5rem;
-      }
-
-      .totals {
-        margin-top: 0.9rem;
-        border-top: 1px dashed rgba(255, 255, 255, 0.2);
-        padding-top: 0.75rem;
-      }
-
-      .order-success {
-        margin-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        padding-top: 0.9rem;
-      }
-
-      .order-success a {
-        color: var(--brand-orange-strong);
-        text-decoration: none;
-      }
-
-      .empty-cart {
-        border: 1px dashed rgba(255, 255, 255, 0.24);
-        border-radius: 12px;
-        padding: 1rem;
-      }
-
-      @media (max-width: 960px) {
-        .checkout-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    `,
-  ],
+    @media (max-width: 800px) { .checkout-grid { grid-template-columns: 1fr; } }
+  `]
 })
-export class CheckoutPageComponent {
+export class CheckoutPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   readonly cartService = inject(CartService);
   private readonly ordersService = inject(OrdersService);
-  private readonly storeSettingsService = inject(StoreSettingsService);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly addressService = inject(AddressService);
+  private readonly router = inject(Router);
 
   readonly cartItems = this.cartService.items;
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly lastOrder = signal<OrderResponse | null>(null);
-  readonly storeSettings = signal<StoreSettingsResponse | null>(null);
-
-  readonly whatsappLink = computed<string | null>(() => {
-    const order = this.lastOrder();
-    const settings = this.storeSettings();
-
-    if (!order || !settings?.whatsappNumber) {
-      return null;
-    }
-
-    const text = [
-      `Pedido #${order.id}`,
-      `Cliente: ${order.customerName}`,
-      `Itens: ${order.totalItems}`,
-      `Total: R$ ${order.totalPrice.toFixed(2)}`,
-    ].join('\n');
-
-    return `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(text)}`;
-  });
+  
+  readonly defaultAddress = signal<AddressResponse | null>(null);
+  readonly hasDefaultAddress = computed(() => !!this.defaultAddress());
+  readonly isEditingAddress = signal(false);
 
   readonly form = this.fb.nonNullable.group({
-    customerName: ['', [Validators.required]],
-    phone: ['', [Validators.required]],
     deliveryType: this.fb.nonNullable.control<DeliveryType>('RETIRADA'),
     paymentMethod: this.fb.nonNullable.control<PaymentMethod>('PIX'),
-    needChange: this.fb.nonNullable.control(false),
-    changeValue: this.fb.control<number | null>(null),
-    address: this.fb.nonNullable.control(''),
-    houseNumber: this.fb.nonNullable.control(''),
-    complement: this.fb.nonNullable.control(''),
-    neighborhood: this.fb.nonNullable.control(''),
-    orderNote: this.fb.nonNullable.control(''),
+    fullAddress: [''],
+    saveAsDefault: [false],
+    notes: ['']
   });
 
-  constructor() {
-    this.storeSettingsService
-      .getPublicStoreSettings()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (settings) => this.storeSettings.set(settings),
-      });
+  ngOnInit(): void {
+    // Busca o endereço padrão do banco
+    this.addressService.getDefaultAddress().subscribe(addr => {
+      if (addr) {
+        this.defaultAddress.set(addr);
+        this.form.patchValue({
+          fullAddress: `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}`
+        });
+      }
+    });
 
-    this.form.controls.deliveryType.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((deliveryType) => {
-        this.applyDeliveryValidators(deliveryType);
-      });
+    // Se mudar o tipo para Entrega e não tiver endereço, já abre o form
+    this.form.get('deliveryType')?.valueChanges.subscribe(type => {
+      if (type === 'ENTREGA' && !this.hasDefaultAddress()) {
+        this.isEditingAddress.set(true);
+      }
+    });
+  }
 
-    this.form.controls.paymentMethod.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((paymentMethod) => {
-        this.applyPaymentValidators(paymentMethod, this.form.controls.needChange.value);
-      });
+  clearCart(): void {
+    if (confirm('Deseja realmente limpar o carrinho?')) {
+      this.cartService.clear();
+    }
+  }
 
-    this.form.controls.needChange.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((needChange) => {
-        this.applyPaymentValidators(this.form.controls.paymentMethod.value, needChange);
-      });
+  startEditingAddress(): void {
+    this.isEditingAddress.set(true);
+    this.form.patchValue({ fullAddress: '' });
+  }
 
-    this.applyDeliveryValidators(this.form.controls.deliveryType.value);
-    this.applyPaymentValidators(
-      this.form.controls.paymentMethod.value,
-      this.form.controls.needChange.value,
-    );
+  cancelEdit(): void {
+    if (this.hasDefaultAddress()) {
+      const addr = this.defaultAddress()!;
+      this.isEditingAddress.set(false);
+      this.form.patchValue({
+        fullAddress: `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}`
+      });
+    } else {
+      this.form.patchValue({ deliveryType: 'RETIRADA' });
+    }
   }
 
   submit(): void {
-    if (this.form.invalid || this.cartItems().length === 0) {
-      this.form.markAllAsTouched();
-      return;
+    if (this.form.invalid) return;
+
+    // Se o usuário digitou um novo endereço e pediu pra salvar como padrão
+    if (this.form.get('deliveryType')?.value === 'ENTREGA' && this.form.get('saveAsDefault')?.value) {
+      this.saveNewDefaultAddress();
     }
 
-    this.errorMessage.set(null);
-    this.submitting.set(true);
+    this.sendOrder();
+  }
 
+  private saveNewDefaultAddress(): void {
+    const fullText = this.form.get('fullAddress')?.value || '';
+    const parts = fullText.split(',');
+    
+    this.addressService.saveAddress({
+      street: parts[0]?.trim() || 'Não informado',
+      number: parts[1]?.trim() || 'SN',
+      neighborhood: 'Não informado',
+      city: 'Garanhuns',
+      zipCode: '00000000',
+      isDefault: true
+    }).subscribe();
+  }
+
+  private sendOrder(): void {
+    this.submitting.set(true);
     const formValue = this.form.getRawValue();
+
     const payload: CreateOrderRequest = {
-      customerName: formValue.customerName,
-      phone: formValue.phone,
       deliveryType: formValue.deliveryType,
       paymentMethod: formValue.paymentMethod,
-      needChange: formValue.needChange,
-      changeValue: formValue.needChange ? formValue.changeValue : null,
-      address: formValue.deliveryType === 'ENTREGA' ? formValue.address : '',
-      houseNumber: formValue.deliveryType === 'ENTREGA' ? formValue.houseNumber : '',
-      complement: formValue.deliveryType === 'ENTREGA' ? formValue.complement : '',
-      neighborhood: formValue.deliveryType === 'ENTREGA' ? formValue.neighborhood : '',
-      orderNote: formValue.orderNote,
-      items: this.cartItems().map((item) => ({
+      deliveryAddress: formValue.deliveryType === 'ENTREGA' ? formValue.fullAddress : undefined,
+      notes: formValue.notes,
+      items: this.cartItems().map(item => ({
         productId: item.productId,
-        quantity: item.quantity,
-      })),
+        quantity: item.quantity
+      }))
     };
 
     this.ordersService.createOrder(payload).subscribe({
       next: (order) => {
-        this.lastOrder.set(order);
+        alert('Pedido realizado com sucesso!');
         this.cartService.clear();
+        void this.router.navigateByUrl('/orders');
       },
       error: () => {
-        this.errorMessage.set('Nao foi possivel concluir seu pedido agora.');
-      },
-      complete: () => {
+        this.errorMessage.set('Falha ao enviar pedido. Tente novamente.');
         this.submitting.set(false);
-      },
+      }
     });
-  }
-
-  trackByProductId(_index: number, item: { productId: number }): number {
-    return item.productId;
-  }
-
-  statusLabel(status: OrderResponse['status']): string {
-    const labels: Record<OrderResponse['status'], string> = {
-      CREATED: 'Criado',
-      CONFIRMED: 'Confirmado',
-      PREPARING: 'Em preparo',
-      OUT_FOR_DELIVERY: 'Saiu para entrega',
-      COMPLETED: 'Concluido',
-      CANCELLED: 'Cancelado',
-    };
-
-    return labels[status];
-  }
-
-  private applyDeliveryValidators(deliveryType: DeliveryType): void {
-    const addressControl = this.form.controls.address;
-    const houseNumberControl = this.form.controls.houseNumber;
-    const neighborhoodControl = this.form.controls.neighborhood;
-
-    if (deliveryType === 'ENTREGA') {
-      addressControl.setValidators([Validators.required]);
-      houseNumberControl.setValidators([Validators.required]);
-      neighborhoodControl.setValidators([Validators.required]);
-    } else {
-      addressControl.clearValidators();
-      houseNumberControl.clearValidators();
-      neighborhoodControl.clearValidators();
-      this.form.patchValue(
-        {
-          address: '',
-          houseNumber: '',
-          complement: '',
-          neighborhood: '',
-        },
-        { emitEvent: false },
-      );
-    }
-
-    addressControl.updateValueAndValidity({ emitEvent: false });
-    houseNumberControl.updateValueAndValidity({ emitEvent: false });
-    neighborhoodControl.updateValueAndValidity({ emitEvent: false });
-  }
-
-  private applyPaymentValidators(paymentMethod: PaymentMethod, needChange: boolean): void {
-    const changeValueControl = this.form.controls.changeValue;
-
-    if (paymentMethod !== 'DINHEIRO') {
-      this.form.patchValue(
-        {
-          needChange: false,
-          changeValue: null,
-        },
-        { emitEvent: false },
-      );
-      changeValueControl.clearValidators();
-      changeValueControl.updateValueAndValidity({ emitEvent: false });
-      return;
-    }
-
-    if (needChange) {
-      changeValueControl.setValidators([Validators.required, Validators.min(0.01)]);
-    } else {
-      changeValueControl.clearValidators();
-      this.form.patchValue({ changeValue: null }, { emitEvent: false });
-    }
-
-    changeValueControl.updateValueAndValidity({ emitEvent: false });
   }
 }

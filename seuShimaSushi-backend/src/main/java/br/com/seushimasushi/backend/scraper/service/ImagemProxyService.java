@@ -13,10 +13,12 @@ import java.time.Duration;
 public class ImagemProxyService {
 
     private final RestTemplate restTemplate;
-    private static final String PERMITTED_URL_PREFIX = "https://delivery.yooga.app/";
+    private static final String[] PERMITTED_URL_PREFIXES = {
+        "https://delivery.yooga.app/",
+        "https://cdn-production.yooga.com.br/"
+    };
 
     public ImagemProxyService(RestTemplateBuilder builder) {
-        // Configura o RestTemplate com timeouts simples (5 segundos)
         this.restTemplate = builder
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(5))
@@ -24,8 +26,16 @@ public class ImagemProxyService {
     }
 
     public byte[] baixarImagem(String url) {
-        // Validação básica de segurança (evitar SSRF)
-        if (url == null || !url.startsWith(PERMITTED_URL_PREFIX)) {
+        // Validação de segurança para múltiplos domínios permitidos
+        boolean isAllowed = false;
+        for (String prefix : PERMITTED_URL_PREFIXES) {
+            if (url != null && url.startsWith(prefix)) {
+                isAllowed = true;
+                break;
+            }
+        }
+
+        if (!isAllowed) {
             log.warn("Tentativa de acesso a URL não permitida: {}", url);
             throw new IllegalArgumentException("URL de imagem não permitida");
         }

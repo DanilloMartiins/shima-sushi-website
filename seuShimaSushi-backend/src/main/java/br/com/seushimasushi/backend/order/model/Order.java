@@ -1,21 +1,15 @@
 package br.com.seushimasushi.backend.order.model;
 
-import br.com.seushimasushi.backend.user.model.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -38,9 +32,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private User customer;
+    // Agora referenciamos o usuário pelo ID do Clerk (String)
+    @Column(name = "customer_clerk_id", nullable = false, length = 100)
+    private String customerClerkId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -71,14 +65,13 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    // Lista de itens do pedido
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
-    // Construtor para ser usado na criação do pedido
-    public Order(User customer, OrderStatus status, PaymentMethod paymentMethod, 
+    // Construtor atualizado para o padrão Clerk
+    public Order(String customerClerkId, OrderStatus status, PaymentMethod paymentMethod, 
                  DeliveryType deliveryType, String deliveryAddress, String notes) {
-        this.customer = customer;
+        this.customerClerkId = customerClerkId;
         this.status = status;
         this.paymentMethod = paymentMethod;
         this.deliveryType = deliveryType;

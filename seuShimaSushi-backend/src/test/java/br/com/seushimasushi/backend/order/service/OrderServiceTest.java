@@ -2,7 +2,6 @@ package br.com.seushimasushi.backend.order.service;
 
 import br.com.seushimasushi.backend.common.exception.BadRequestException;
 import br.com.seushimasushi.backend.common.exception.NotFoundException;
-import br.com.seushimasushi.backend.auth.repository.RefreshTokenRepository;
 import br.com.seushimasushi.backend.menu.model.Category;
 import br.com.seushimasushi.backend.menu.model.Product;
 import br.com.seushimasushi.backend.menu.repository.CategoryRepository;
@@ -12,10 +11,6 @@ import br.com.seushimasushi.backend.order.dto.request.CreateOrderRequest;
 import br.com.seushimasushi.backend.order.model.DeliveryType;
 import br.com.seushimasushi.backend.order.model.PaymentMethod;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
-import br.com.seushimasushi.backend.order.service.OrderService;
-import br.com.seushimasushi.backend.user.model.Role;
-import br.com.seushimasushi.backend.user.model.User;
-import br.com.seushimasushi.backend.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,9 +32,6 @@ class OrderServiceTest {
     private OrderService orderService;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -48,10 +40,7 @@ class OrderServiceTest {
     @Autowired
     private OrderRepository orderRepository;
 
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    private User clienteTeste;
+    private final String clienteClerkId = "user_2test123";
     private Category categoriaTeste;
     private Product produtoTeste;
     private Product produtoTeste2;
@@ -59,13 +48,8 @@ class OrderServiceTest {
     @BeforeEach
     void setup() {
         orderRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
-        userRepository.deleteAll();
-
-        clienteTeste = new User("Cliente Teste", "cliente@test.com", "hashed", Role.CUSTOMER);
-        clienteTeste = userRepository.save(clienteTeste);
 
         categoriaTeste = new Category("Combos", "Categoria de teste");
         categoriaTeste = categoryRepository.save(categoriaTeste);
@@ -74,7 +58,6 @@ class OrderServiceTest {
         produtoTeste = productRepository.save(produtoTeste);
 
         produtoTeste2 = new Product("Refrigerante", "Refrigerante gelado", BigDecimal.valueOf(8.00), "/images/refrigerante.png", true, categoriaTeste);
-        produtoTeste2 = productRepository.save(produtoTeste2);
         produtoTeste2 = productRepository.save(produtoTeste2);
     }
 
@@ -94,7 +77,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            var response = orderService.createOrder(clienteTeste.getId(), request);
+            var response = orderService.createOrder(clienteClerkId, request);
 
             assertNotNull(response, "Resposta não deveria ser null");
             assertEquals(new BigDecimal("50.00"), response.totalAmount(), "Total deveria ser 50");
@@ -114,7 +97,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            var response = orderService.createOrder(clienteTeste.getId(), request);
+            var response = orderService.createOrder(clienteClerkId, request);
 
             assertNotNull(response, "Resposta não deveria ser null");
             assertEquals(DeliveryType.ENTREGA, response.deliveryType(), "Tipo deveria ser ENTREGA");
@@ -133,7 +116,7 @@ class OrderServiceTest {
                     List.of(item1, item2)
             );
 
-            var response = orderService.createOrder(clienteTeste.getId(), request);
+            var response = orderService.createOrder(clienteClerkId, request);
 
             // 25 * 2 + 8 * 3 = 50 + 24 = 74
             var totalEsperado = new BigDecimal("74.00");
@@ -148,17 +131,17 @@ class OrderServiceTest {
 
             // Test PIX
             var requestPix = new CreateOrderRequest(PaymentMethod.PIX, DeliveryType.RETIRADA, null, null, List.of(item));
-            var responsePix = orderService.createOrder(clienteTeste.getId(), requestPix);
+            var responsePix = orderService.createOrder(clienteClerkId, requestPix);
             assertEquals(PaymentMethod.PIX, responsePix.paymentMethod(), "Deveria aceitar PIX");
 
             // Test CARTAO_CREDITO
             var requestCartao = new CreateOrderRequest(PaymentMethod.CARTAO_CREDITO, DeliveryType.RETIRADA, null, null, List.of(item));
-            var responseCartao = orderService.createOrder(clienteTeste.getId(), requestCartao);
+            var responseCartao = orderService.createOrder(clienteClerkId, requestCartao);
             assertEquals(PaymentMethod.CARTAO_CREDITO, responseCartao.paymentMethod(), "Deveria aceitar CARTÃO_CREDITO");
 
             // Test DINHEIRO
             var requestDinheiro = new CreateOrderRequest(PaymentMethod.DINHEIRO, DeliveryType.RETIRADA, null, null, List.of(item));
-            var responseDinheiro = orderService.createOrder(clienteTeste.getId(), requestDinheiro);
+            var responseDinheiro = orderService.createOrder(clienteClerkId, requestDinheiro);
             assertEquals(PaymentMethod.DINHEIRO, responseDinheiro.paymentMethod(), "Deveria aceitar DINHEIRO");
         }
     }
@@ -166,22 +149,6 @@ class OrderServiceTest {
     @Nested
     @DisplayName("Validações e Erros")
     class ValidacoesErros {
-
-        @Test
-        @DisplayName("Deve rejeitar pedido de cliente inexistente")
-        void deveRejetarClienteInexistente() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1);
-            var request = new CreateOrderRequest(
-                    PaymentMethod.PIX,
-                    DeliveryType.RETIRADA,
-                    null,
-                    null,
-                    List.of(item)
-            );
-
-            assertThrows(NotFoundException.class, () -> orderService.createOrder(9999L, request),
-                "Deveria rejeitar cliente que não existe");
-        }
 
         @Test
         @DisplayName("Deve rejeitar pedido com produto indisponível")
@@ -198,7 +165,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar produto indisponível");
         }
 
@@ -214,7 +181,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar entrega sem endereço");
         }
 
@@ -231,7 +198,7 @@ class OrderServiceTest {
                     List.of(item1, item2)
             );
 
-            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar produto duplicado no mesmo pedido");
         }
 
@@ -247,7 +214,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar quantidade zero");
         }
 
@@ -263,7 +230,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar quantidade negativa");
         }
 
@@ -278,7 +245,7 @@ class OrderServiceTest {
                     List.of()  // Lista vazia
             );
 
-            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(BadRequestException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar pedido sem itens");
         }
 
@@ -294,7 +261,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            assertThrows(NotFoundException.class, () -> orderService.createOrder(clienteTeste.getId(), request),
+            assertThrows(NotFoundException.class, () -> orderService.createOrder(clienteClerkId, request),
                 "Deveria rejeitar produto que não existe");
         }
     }
@@ -315,7 +282,7 @@ class OrderServiceTest {
                     List.of(item)
             );
 
-            var response = orderService.createOrder(clienteTeste.getId(), request);
+            var response = orderService.createOrder(clienteClerkId, request);
 
             assertNotNull(response, "Deveria aceitar sem complemento");
         }

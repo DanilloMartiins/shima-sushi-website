@@ -11,9 +11,8 @@ import java.util.List;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Override
-    @EntityGraph(attributePaths = {"customer"})
     Page<Order> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = {"items", "items.product"})
-    List<Order> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
+    List<Order> findByCustomerClerkIdOrderByCreatedAtDesc(String customerClerkId);
 }

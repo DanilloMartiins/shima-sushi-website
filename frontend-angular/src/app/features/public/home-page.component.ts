@@ -23,10 +23,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
     <section class="hero-copy">
       <h1>Seu Shima Sushi</h1>
-      <p>
-        Monte seu pedido, acompanhe historico e finalize no fluxo novo da plataforma.
-      </p>
-      <a routerLink="/checkout" class="checkout-link">Ir para checkout</a>
+      <p>O melhor sushi de Garanhuns, agora com o cardápio oficial atualizado!</p>
     </section>
 
     <section *ngIf="loading()" class="loading-state">
@@ -35,22 +32,23 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         Carregando cardapio...
       </span>
     </section>
+    
     <section *ngIf="errorMessage()" class="error-state">{{ errorMessage() }}</section>
 
+    <!-- Lista de Categorias e Produtos -->
     <ng-container *ngFor="let category of menuCategories(); trackBy: trackCategory">
       <section class="category-wrap">
-        <h3>{{ category.name || category.title }}</h3>
+        <h3>{{ category.name }}</h3>
 
         <div class="product-grid">
           <article *ngFor="let item of category.products; trackBy: trackProduct" class="product-card">
-            <!-- As imagens agora passam pelo nosso proxy do backend -->
-            <img *ngIf="item.imageUrl" [src]="'/api/imagem?url=' + item.imageUrl" [alt]="item.name" loading="lazy" />
+            <!-- Proxy de imagem para evitar bloqueio de CORS do Yooga -->
+            <img *ngIf="item.urlImagem" [src]="'/api/imagem?url=' + item.urlImagem" [alt]="item.nome" loading="lazy" />
+            
             <div class="product-info">
-              <p class="tag" *ngIf="item.tag">{{ item.tag }}</p>
-              <h4>{{ item.name }}</h4>
-              <p class="description">{{ item.description }}</p>
+              <h4>{{ item.nome }}</h4>
               <div class="card-footer">
-                <strong>{{ item.price | currency: 'BRL' }}</strong>
+                <strong>{{ item.preco | currency: 'BRL' }}</strong>
                 <button type="button" (click)="addToCart(item)">Adicionar</button>
               </div>
             </div>
@@ -61,133 +59,31 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
   `,
   styles: [
     `
-      .status-banner {
-        border: 1px solid var(--brand-border);
-        border-radius: 16px;
-        padding: 1rem 1.2rem;
-        background: rgba(23, 18, 20, 0.04);
-        margin-bottom: 1.25rem;
-      }
+      .status-banner { border: 1px solid var(--brand-border); border-radius: 16px; padding: 1rem 1.2rem; background: rgba(23, 18, 20, 0.04); margin-bottom: 1.25rem; }
+      .status-banner.open { background: rgba(234, 106, 61, 0.12); }
+      .status-banner h2 { margin: 0; font-size: 1.05rem; }
+      .status-banner p { margin: 0.3rem 0 0; color: var(--brand-muted); }
 
-      .status-banner.open {
-        background: rgba(234, 106, 61, 0.12);
-      }
+      .hero-copy { margin-bottom: 2rem; }
+      .hero-copy h1 { margin: 0; font-size: clamp(2.2rem, 4vw, 3.4rem); }
+      .hero-copy p { color: var(--brand-muted); margin: 0.65rem 0 1.2rem; max-width: 52ch; font-size: 1.18rem; }
 
-      .status-banner h2 {
-        margin: 0;
-        font-size: 1.05rem;
-      }
+      .loading-state, .error-state { margin: 1rem 0; padding: 1rem; border-radius: 10px; background: #fff; border: 1px solid var(--brand-border); text-align: center; }
 
-      .status-banner p {
-        margin: 0.3rem 0 0;
-        color: var(--brand-muted);
-      }
+      .category-wrap { margin: 2rem 0; }
+      .category-wrap h3 { margin: 0 0 1.2rem; font-size: 1.8rem; color: var(--brand-ink); }
 
-      .hero-copy {
-        margin-bottom: 1.25rem;
-      }
+      .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+      .product-card { border: 1px solid var(--brand-border); border-radius: 18px; background: #fff; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: transform 0.2s; }
+      .product-card:hover { transform: translateY(-4px); }
+      .product-card img { width: 100%; height: 160px; object-fit: cover; background: #f0f0f0; }
 
-      .hero-copy h1 {
-        margin: 0;
-        font-size: clamp(2.2rem, 4vw, 3.4rem);
-      }
+      .product-info { padding: 1.2rem; }
+      .product-info h4 { margin: 0 0 1rem; font-size: 1.1rem; min-height: 2.4rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-      .hero-copy p {
-        color: var(--brand-muted);
-        margin: 0.65rem 0 1.2rem;
-        max-width: 52ch;
-        font-size: 1.18rem;
-      }
-
-      .checkout-link {
-        display: inline-flex;
-        text-decoration: none;
-        color: #fff;
-        background: var(--brand-orange);
-        border-radius: 999px;
-        padding: 0.62rem 1.05rem;
-        font-weight: 600;
-        font-size: 1.06rem;
-      }
-
-      .loading-state,
-      .error-state {
-        margin: 1rem 0;
-        padding: 0.8rem;
-        border-radius: 10px;
-        background: var(--brand-surface);
-        border: 1px solid var(--brand-border);
-      }
-
-      .error-state {
-        border: 1px solid rgba(217, 91, 47, 0.5);
-      }
-
-      .category-wrap {
-        margin: 1.6rem 0;
-      }
-
-      .category-wrap h3 {
-        margin: 0 0 0.9rem;
-        font-size: 1.95rem;
-      }
-
-      .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-        gap: 1rem;
-      }
-
-      .product-card {
-        border: 1px solid var(--brand-border);
-        border-radius: 14px;
-        background: var(--brand-surface);
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-      }
-
-      .product-card img {
-        width: 100%;
-        height: 148px;
-        object-fit: cover;
-        background: rgba(0, 0, 0, 0.2);
-      }
-
-      .product-info {
-        padding: 1rem;
-      }
-
-      .tag {
-        margin: 0;
-        color: var(--brand-orange-strong);
-        font-size: 0.75rem;
-      }
-
-      .product-info h4 {
-        margin: 0.25rem 0;
-      }
-
-      .description {
-        color: var(--brand-muted);
-        min-height: 2.8rem;
-        font-size: 0.9rem;
-      }
-
-      .card-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 0.8rem;
-      }
-
-      .card-footer button {
-        border: 0;
-        border-radius: 999px;
-        padding: 0.35rem 0.7rem;
-        cursor: pointer;
-        color: #fff;
-        background: var(--brand-ink);
-      }
+      .card-footer { display: flex; justify-content: space-between; align-items: center; }
+      .card-footer strong { font-size: 1.2rem; color: var(--brand-orange-strong); }
+      .card-footer button { border: 0; border-radius: 99px; padding: 0.5rem 1.2rem; cursor: pointer; color: #fff; background: var(--brand-ink); font-weight: bold; }
     `,
   ],
 })
@@ -210,7 +106,13 @@ export class HomePageComponent implements OnInit {
   }
 
   addToCart(product: ProductResponse): void {
-    this.cartService.addProduct(product);
+    const cartProduct: any = {
+      id: product.id,
+      name: product.nome,
+      price: product.preco,
+      imageUrl: product.urlImagem
+    };
+    this.cartService.addProduct(cartProduct);
   }
 
   trackCategory(_index: number, category: MenuCategoryResponse): number {
@@ -255,10 +157,7 @@ export class HomePageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         const settings = this.latestStoreSettings();
-        if (!settings) {
-          return;
-        }
-
+        if (!settings) return;
         this.storeStatus.set(buildStoreStatus(settings));
       });
   }

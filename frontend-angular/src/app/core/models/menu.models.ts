@@ -1,18 +1,13 @@
 export interface ProductResponse {
   id: number;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl?: string | null;
-  tag?: string | null;
-  pitch?: string | null;
-  categoryId: number;
-  categoryTitle?: string | null;
+  nome: string;
+  preco: number;
+  urlImagem?: string | null;
+  dataAtualizacao: string;
 }
 
 export interface MenuCategoryResponse {
   id: number;
-  title?: string; // Mantido como opcional caso algo ainda use
   name: string;
   description: string;
   products: ProductResponse[];
