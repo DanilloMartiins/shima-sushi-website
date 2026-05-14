@@ -18,7 +18,7 @@ services:
 
   backend:
     build:
-      context: ./houseburgergrill-backend
+      context: ./seuShimaSushi-backend
       dockerfile: Dockerfile
     container_name: seushimasushi-backend
     depends_on:

@@ -42,11 +42,11 @@ Ja configurado no `angular.json` para o `ng serve`.
 
 O backend ja esta com CORS via `SecurityConfig`:
 
-- `houseburgergrill-backend/src/main/java/br/com/seushimasushi/backend/security/config/SecurityConfig.java`
+- `seuShimaSushi-backend/src/main/java/br/com/seushimasushi/backend/security/config/SecurityConfig.java`
 
 A lista de origens vem de propriedade:
 
-- `houseburgergrill-backend/src/main/resources/application.yml`
+- `seuShimaSushi-backend/src/main/resources/application.yml`
 - `app.cors.allowed-origins`
 
 Valor default atualizado para ambiente local:
@@ -59,7 +59,7 @@ Scripts na raiz:
 
 - `npm run dev:angular` -> sobe Angular
 - `npm run dev:backend` -> sobe Spring Boot
-- `npm run dev:full` -> sobe os dois juntos com `concurrently`
+- `npm run dev` -> sobe os dois juntos com `concurrently`
 
 Pre-requisito:
 
@@ -106,6 +106,6 @@ Copie para `.env` na raiz e ajuste os valores para seu ambiente.
 4. `frontend-angular/Dockerfile`
 5. `frontend-angular/nginx/default.conf`
 6. `frontend-angular/docker/entrypoint.sh`
-7. `houseburgergrill-backend/src/main/resources/application.yml`
+7. `seuShimaSushi-backend/src/main/resources/application.yml`
 8. `package.json` (raiz)
 9. `docker-compose.yml` (raiz)

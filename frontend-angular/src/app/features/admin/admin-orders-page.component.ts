@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 
 import { OrderResponse, OrderStatus } from '../../core/models/order.models';
 import { OrdersService } from '../../core/services/orders.service';
@@ -130,6 +130,20 @@ export class AdminOrdersPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+    // Atualiza a lista automaticamente a cada 30 segundos (polling simples)
+    this.startPolling();
+  }
+
+  private startPolling(): void {
+    const intervalId = setInterval(() => {
+      // Só atualiza se não estiver carregando algo manualmente
+      if (!this.loading()) {
+        this.refresh(false); // refresh sem mostrar o loader principal
+      }
+    }, 30000);
+
+    // Garante que o intervalo seja limpo quando o componente for destruído
+    inject(DestroyRef).onDestroy(() => clearInterval(intervalId));
   }
 
   updateStatus(order: OrderResponse, nextStatus: string): void {
@@ -138,7 +152,7 @@ export class AdminOrdersPageComponent implements OnInit {
     }
 
     this.ordersService.updateOrderStatus(order.id, nextStatus).subscribe({
-      next: () => this.refresh(),
+      next: () => this.refresh(true),
       error: () => this.errorMessage.set('Falha ao atualizar status do pedido.'),
     });
   }
@@ -147,8 +161,9 @@ export class AdminOrdersPageComponent implements OnInit {
     return order.id;
   }
 
-  private refresh(): void {
-    this.loading.set(true);
+  private refresh(showLoader = true): void {
+    if (showLoader) this.loading.set(true);
+    
     this.ordersService.getAdminOrders().subscribe({
       next: (data) => {
         this.orders.set(data.content);

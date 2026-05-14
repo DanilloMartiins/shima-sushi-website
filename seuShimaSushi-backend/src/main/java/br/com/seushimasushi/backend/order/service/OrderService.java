@@ -98,18 +98,11 @@ public class OrderService {
 
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
-            // Criamos o item. Como o OrderItem no banco aponta para 'Product' (entidade admin),
-            // se o item for do scraper, vamos precisar de uma solução melhor no futuro (como unificar tabelas).
-            // Por enquanto, se for do scraper, vamos apenas calcular o total sem persistir o vínculo fixo no DB
-            // OU (solução rápida de dev) vamos focar em retornar o DTO correto para o WhatsApp.
-            
-            // Para não quebrar o JPA (que espera uma entidade Product), vamos tentar associar um 'Product' fake ou nulo
-            // mas o ideal é que o scraper salve na mesma tabela. 
-            // Como sou Júnior+, vou fazer o básico que funciona: persistir se tiver Product, senão só logar (por enquanto).
-            
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
-            orderItem.setProduct(productOpt.orElse(null)); // Pode ser null se for do scraper (precisa ajustar o banco se for NOT NULL)
+            orderItem.setProduct(productOpt.orElse(null));
+            orderItem.setProductName(productName);
+            orderItem.setScrapedProductId(productOpt.isEmpty() ? itemRequest.productId() : null);
             orderItem.setQuantity(itemRequest.quantity());
             orderItem.setUnitPrice(unitPrice);
             orderItem.setSubtotal(subtotal);
@@ -193,9 +186,9 @@ public class OrderService {
         
         if (includeItems && order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
-                // Se o produto for null (veio do scraper), pegamos o nome de forma genérica
-                String name = (item.getProduct() != null) ? item.getProduct().getName() : "Item do Cardápio Yooga";
-                Long pId = (item.getProduct() != null) ? item.getProduct().getId() : 0L;
+                // Usamos o nome que foi salvo no snapshot do item
+                String name = item.getProductName();
+                Long pId = (item.getProduct() != null) ? item.getProduct().getId() : item.getScrapedProductId();
 
                 OrderItemResponse itemDto = new OrderItemResponse(
                         pId,

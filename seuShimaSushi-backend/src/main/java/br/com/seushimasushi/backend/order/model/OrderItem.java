@@ -33,9 +33,15 @@ public class OrderItem {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "product_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = true)
     private Product product;
+
+    @Column(name = "product_name", nullable = false)
+    private String productName;
+
+    @Column(name = "scraped_product_id")
+    private Long scrapedProductId;
 
     @Column(nullable = false)
     private Integer quantity;
@@ -46,10 +52,12 @@ public class OrderItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 
-    // Construtor para vincular o produto ao item do pedido
-    public OrderItem(Order order, Product product, Integer quantity, BigDecimal unitPrice, BigDecimal subtotal) {
+    // Construtor completo para vincular o produto ao item do pedido
+    public OrderItem(Order order, Product product, String productName, Long scrapedProductId, Integer quantity, BigDecimal unitPrice, BigDecimal subtotal) {
         this.order = order;
         this.product = product;
+        this.productName = productName;
+        this.scrapedProductId = scrapedProductId;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.subtotal = subtotal;
