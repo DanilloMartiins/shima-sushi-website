@@ -1,7 +1,6 @@
 databases:
   - name: seushimasushi-db-test
     databaseName: seushimasushi
-    user: postgres
     plan: free
 
 services:
