@@ -43,6 +43,8 @@ services:
         value: sk_test_36QwcRvWsFOZHNXYIGV7Kh81BlOXP0VJtEWBX1pM79
       - key: CLERK_PUBLISHABLE_KEY
         value: pk_test_aW5mb3JtZWQtaGFkZG9jay01MC5jbGVyay5hY2NvdW50cy5kZXYk
+      - key: CLERK_ISSUER_URI
+        value: https://informed-haddock-50.clerk.accounts.dev
 
   # 2. Frontend (Angular)
   - type: web
