@@ -104,11 +104,6 @@ import { OrdersService } from '../../core/services/orders.service';
         }
         .status-box select { flex: 1; }
       }
-
-        .status-box {
-          justify-content: flex-start;
-        }
-      }
     `,
   ],
 })
