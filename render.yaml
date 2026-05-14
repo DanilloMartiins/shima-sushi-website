@@ -8,9 +8,9 @@ services:
   # 1. Backend (Spring Boot)
   - type: web
     name: seushimasushi-backend-test
-    env: docker
+    runtime: docker
     dockerContext: ./seuShimaSushi-backend
-    dockerfile: seuShimaSushi-backend/Dockerfile
+    dockerfilePath: seuShimaSushi-backend/Dockerfile
     plan: free
     region: oregon
     envVars:
@@ -51,9 +51,9 @@ services:
   # 2. Frontend (Angular)
   - type: web
     name: seushimasushi-frontend-test
-    env: docker
+    runtime: docker
     dockerContext: ./frontend-angular
-    dockerfile: frontend-angular/Dockerfile
+    dockerfilePath: frontend-angular/Dockerfile
     plan: free
     region: oregon
     envVars:
