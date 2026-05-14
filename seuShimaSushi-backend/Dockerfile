@@ -30,10 +30,6 @@ RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
 
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:${SERVER_PORT:-8080}/health || exit 1
-
 # Expose port (default 8080, can be overridden)
 EXPOSE ${SERVER_PORT:-8080}
 
