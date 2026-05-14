@@ -1,19 +1,18 @@
-services:
-  # 1. Banco de Dados PostgreSQL
-  - type: database
-    name: seushimasushi-db-test
+databases:
+  - name: seushimasushi-db-test
     databaseName: seushimasushi
     user: postgres
-    plan: free # Render Free Tier
+    plan: free
 
-  # 2. Backend (Spring Boot)
+services:
+  # 1. Backend (Spring Boot)
   - type: web
     name: seushimasushi-backend-test
     env: docker
     dockerContext: ./seuShimaSushi-backend
     dockerfile: Dockerfile
     plan: free
-    region: oregon # Recomendado para o plano free
+    region: oregon
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -42,15 +41,14 @@ services:
           type: web
           name: seushimasushi-frontend-test
           property: host
-      # Segredos que você deve preencher no painel do Render após o deploy inicial:
       - key: JWT_SECRET
         generateValue: true
       - key: CLERK_SECRET_KEY
-        sync: false
+        value: sk_test_36QwcRvWsFOZHNXYIGV7Kh81BlOXP0VJtEWBX1pM79
       - key: CLERK_PUBLISHABLE_KEY
-        sync: false
+        value: pk_test_aW5mb3JtZWQtaGFkZG9jay01MC5jbGVyay5hY2NvdW50cy5kZXYk
 
-  # 3. Frontend (Angular)
+  # 2. Frontend (Angular)
   - type: web
     name: seushimasushi-frontend-test
     env: docker
@@ -61,7 +59,6 @@ services:
     envVars:
       - key: FRONTEND_API_BASE_URL
         value: /api/v1
-      # A URL do backend para o Proxy do Nginx ou chamadas diretas
       - key: BACKEND_URL
         fromService:
           type: web
