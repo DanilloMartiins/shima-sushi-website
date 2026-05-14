@@ -10,7 +10,7 @@ services:
     name: seushimasushi-backend-test
     env: docker
     dockerContext: ./seuShimaSushi-backend
-    dockerfile: Dockerfile
+    dockerfile: seuShimaSushi-backend/Dockerfile
     plan: free
     region: oregon
     envVars:
@@ -53,7 +53,7 @@ services:
     name: seushimasushi-frontend-test
     env: docker
     dockerContext: ./frontend-angular
-    dockerfile: Dockerfile
+    dockerfile: frontend-angular/Dockerfile
     plan: free
     region: oregon
     envVars:
