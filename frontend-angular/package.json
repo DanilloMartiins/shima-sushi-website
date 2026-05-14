@@ -34,7 +34,6 @@
     "@clerk/clerk-js": "^6.10.1",
     "@clerk/localizations": "^4.6.2",
     "rxjs": "~7.8.0",
-    "seu-shima-sushi": "file:..",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
