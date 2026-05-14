@@ -32,11 +32,11 @@ import { CartService } from '../core/services/cart.service';
             Carrinho <strong>{{ cartService.totalItems() }}</strong>
           </a>
 
-          <ng-container *ngIf="clerk.user(); else authButtons">
+          <ng-container *ngIf="clerk.user() as user; else authButtons">
             <!-- Novo bloco com Foto e Nome (link para o perfil) -->
             <a routerLink="/perfil" class="user-profile-link">
-              <img [src]="clerk.user().imageUrl" class="user-avatar" alt="Perfil" />
-              <span class="user-name">{{ clerk.user().fullName || 'Minha Conta' }}</span>
+              <img [src]="user.imageUrl" class="user-avatar" alt="Perfil" />
+              <span class="user-name">{{ user.fullName || 'Minha Conta' }}</span>
             </a>
             <button type="button" class="btn-logout" (click)="logout()" title="Sair">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -97,45 +97,47 @@ import { CartService } from '../core/services/cart.service';
       background: #171214; border-radius: 50%; box-shadow: 0 7px 0 -2px #171214;
     }
 
-    .menu-links { display: flex; align-items: center; gap: 0.8rem; }
+    .menu-links { display: flex; align-items: center; gap: 0.4rem; }
     .menu-links a {
-      color: var(--brand-muted); text-decoration: none; font-size: 1.05rem;
-      padding: 0.45rem 0.7rem; border-radius: 999px; transition: 180ms ease;
+      color: var(--brand-muted); text-decoration: none; font-size: 0.95rem;
+      padding: 0.4rem 0.6rem; border-radius: 999px; transition: 180ms ease;
+      white-space: nowrap;
     }
     .menu-links a.is-active { background: rgba(234, 106, 61, 0.14); color: var(--brand-orange-strong); }
 
-    .topbar-actions { display: flex; align-items: center; gap: 0.8rem; }
+    .topbar-actions { display: flex; align-items: center; gap: 0.6rem; }
 
     .cart-chip {
       text-decoration: none; color: #fff; background: var(--brand-ink);
-      padding: 0.4rem 0.75rem; border-radius: 999px; font-size: 0.85rem;
+      padding: 0.4rem 0.75rem; border-radius: 999px; font-size: 0.8rem;
+      display: flex; align-items: center; gap: 0.3rem;
     }
 
     /* Estilo do novo Perfil */
     .user-profile-link {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.5rem;
       text-decoration: none;
-      padding: 0.25rem 0.5rem;
+      padding: 0.2rem;
       border-radius: 99px;
       transition: background 0.2s;
     }
     .user-profile-link:hover { background: rgba(0,0,0,0.04); }
 
     .user-avatar {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid var(--brand-orange);
+      border: 1.5px solid var(--brand-orange);
     }
 
     .user-name {
       color: var(--brand-ink);
       font-weight: 600;
-      font-size: 0.9rem;
-      max-width: 120px;
+      font-size: 0.85rem;
+      max-width: 100px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -148,26 +150,33 @@ import { CartService } from '../core/services/cart.service';
       cursor: pointer;
       display: flex;
       align-items: center;
-      padding: 0.5rem;
+      padding: 0.4rem;
       border-radius: 50%;
       transition: 0.2s;
     }
     .btn-logout:hover { background: #fff1f1; color: #ff4d4d; }
 
     .btn {
-      border: 1px solid transparent; border-radius: 999px; padding: 0.4rem 0.8rem;
-      font-size: 0.85rem; text-decoration: none; cursor: pointer;
+      border: 1px solid transparent; border-radius: 999px; padding: 0.4rem 0.7rem;
+      font-size: 0.8rem; text-decoration: none; cursor: pointer;
     }
     .btn.ghost { color: var(--brand-ink); background: transparent; border-color: var(--brand-border); }
     .btn.solid { color: #fff; background: var(--brand-orange); }
 
-    .content-wrap { width: min(1280px, 100% - 2.4rem); margin: 1.9rem auto 3rem; }
+    .content-wrap { width: min(1280px, 100% - 1.5rem); margin: 1.2rem auto 3rem; }
 
     @media (max-width: 900px) {
-      .topbar { position: static; }
-      .menu-links { order: 3; width: 100%; justify-content: flex-start; overflow-x: auto; }
+      .topbar { padding: 0.7rem 1rem; }
+      .menu-links { order: 3; width: 100%; justify-content: space-around; border-top: 1px solid var(--brand-border); padding-top: 0.5rem; }
       .topbar-actions { margin-left: auto; }
-      .user-name { display: none; } /* Em telas pequenas, mostra só a bolinha com a foto */
+      .user-name { display: none; }
+      .brand { font-size: 1.25rem; }
+    }
+    
+    @media (max-width: 480px) {
+      .menu-links a { font-size: 0.85rem; padding: 0.3rem 0.5rem; }
+      .topbar-actions { gap: 0.4rem; }
+      .btn { padding: 0.35rem 0.6rem; }
     }
   `,
   ],
@@ -180,7 +189,7 @@ export class PublicShellComponent {
 
   isUserAdmin(): boolean {
     const user = this.clerk.user();
-    return user && (user.publicMetadata?.['role'] === 'ADMIN' || user.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com');
+    return !!(user && (user.publicMetadata?.['role'] === 'ADMIN' || user.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com'));
   }
 
   logout(): void {

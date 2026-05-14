@@ -1,7 +1,6 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import { interval } from 'rxjs';
 
 import { MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
@@ -14,7 +13,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe],
   template: `
     <section class="status-banner" [class.open]="storeStatus()?.isOpenNow">
       <h2>{{ storeStatus()?.statusLabel ?? 'Carregando status...' }}</h2>
@@ -43,12 +42,12 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         <div class="product-grid">
           <article *ngFor="let item of category.products; trackBy: trackProduct" class="product-card">
             <!-- Proxy de imagem para evitar bloqueio de CORS do Yooga -->
-            <img *ngIf="item.urlImagem" [src]="'/api/imagem?url=' + item.urlImagem" [alt]="item.nome" loading="lazy" />
+            <img *ngIf="item.imageUrl" [src]="'/api/imagem?url=' + item.imageUrl" [alt]="item.name" loading="lazy" />
             
             <div class="product-info">
-              <h4>{{ item.nome }}</h4>
+              <h4>{{ item.name }}</h4>
               <div class="card-footer">
-                <strong>{{ item.preco | currency: 'BRL' }}</strong>
+                <strong>{{ item.price | currency: 'BRL' }}</strong>
                 <button type="button" (click)="addToCart(item)">Adicionar</button>
               </div>
             </div>
@@ -106,13 +105,7 @@ export class HomePageComponent implements OnInit {
   }
 
   addToCart(product: ProductResponse): void {
-    const cartProduct: any = {
-      id: product.id,
-      name: product.nome,
-      price: product.preco,
-      imageUrl: product.urlImagem
-    };
-    this.cartService.addProduct(cartProduct);
+    this.cartService.addProduct(product);
   }
 
   trackCategory(_index: number, category: MenuCategoryResponse): number {

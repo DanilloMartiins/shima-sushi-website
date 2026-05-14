@@ -84,29 +84,31 @@ import { MenuService } from '../../core/services/menu.service';
           </span>
         </p>
 
-        <table *ngIf="!loading()">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nome</th>
-              <th>Preco</th>
-              <th>Categoria</th>
-              <th>Acoes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let product of products(); trackBy: trackProduct">
-              <td>{{ product.id }}</td>
-              <td>{{ product.name }}</td>
-              <td>{{ product.price | currency: 'BRL' }}</td>
-              <td>{{ product.categoryId }}</td>
-              <td>
-                <button type="button" class="ghost" (click)="edit(product)">Editar</button>
-                <button type="button" class="danger" (click)="remove(product)">Excluir</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <section *ngIf="!loading() && !errorMessage()" class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Preco</th>
+                <th>Categoria</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let product of products(); trackBy: trackProduct">
+                <td>{{ product.id }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.price | currency: 'BRL' }}</td>
+                <td>{{ product.category?.name || 'Sem cat.' }} ({{ product.category?.id }})</td>
+                <td>
+                  <button type="button" class="ghost" (click)="edit(product)">Editar</button>
+                  <button type="button" class="danger" (click)="remove(product)">Excluir</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
       </article>
     </section>
   `,
@@ -270,7 +272,7 @@ export class AdminProductsPageComponent implements OnInit {
       name: product.name,
       description: product.description,
       price: product.price,
-      categoryId: product.categoryId,
+      categoryId: product.category?.id ?? 1,
       imageUrl: product.imageUrl ?? '',
       tag: product.tag ?? '',
       pitch: product.pitch ?? '',

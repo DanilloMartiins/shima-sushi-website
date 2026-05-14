@@ -7,6 +7,7 @@ import {
   CreateOrderRequest,
   OrderResponse,
   OrderStatus,
+  PagedResponse,
   UpdateOrderStatusRequest,
 } from '../models/order.models';
 
@@ -25,8 +26,10 @@ export class OrdersService {
     return this.http.get<OrderResponse[]>(`${this.ordersEndpoint}/me`);
   }
 
-  getAdminOrders(): Observable<OrderResponse[]> {
-    return this.http.get<OrderResponse[]>(this.adminOrdersEndpoint);
+  getAdminOrders(page = 0, size = 20): Observable<PagedResponse<OrderResponse>> {
+    return this.http.get<PagedResponse<OrderResponse>>(this.adminOrdersEndpoint, {
+      params: { page: page.toString(), size: size.toString() },
+    });
   }
 
   updateOrderStatus(orderId: number, status: OrderStatus): Observable<OrderResponse> {

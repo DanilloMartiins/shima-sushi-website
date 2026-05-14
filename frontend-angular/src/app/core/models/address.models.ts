@@ -2,6 +2,8 @@ export interface AddressRequest {
   street: string;
   number: string;
   neighborhood: string;
+  city: string;
+  zipCode?: string;
   complement?: string;
   referencePoint?: string;
   isDefault: boolean;

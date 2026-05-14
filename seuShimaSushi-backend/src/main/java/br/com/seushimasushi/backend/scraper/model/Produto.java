@@ -33,14 +33,18 @@ public class Produto {
     @Column(name = "url_imagem", length = 1000)
     private String urlImagem;
 
+    @Column(name = "categoria")
+    private String categoria;
+
     @Column(name = "data_atualizacao", nullable = false)
     private LocalDateTime dataAtualizacao;
 
     // Construtor pra facilitar a criação dos produtos que a gente raspa do site
-    public Produto(String nome, BigDecimal preco, String urlImagem) {
+    public Produto(String nome, BigDecimal preco, String urlImagem, String categoria) {
         this.nome = nome;
         this.preco = preco;
         this.urlImagem = urlImagem;
+        this.categoria = categoria;
         this.dataAtualizacao = LocalDateTime.now();
     }
 }

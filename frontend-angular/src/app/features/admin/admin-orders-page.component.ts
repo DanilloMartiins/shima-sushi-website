@@ -96,7 +96,14 @@ import { OrdersService } from '../../core/services/orders.service';
       @media (max-width: 830px) {
         .order-line {
           flex-direction: column;
+          gap: 1rem;
         }
+        .status-box {
+          justify-content: space-between;
+          width: 100%;
+        }
+        .status-box select { flex: 1; }
+      }
 
         .status-box {
           justify-content: flex-start;
@@ -143,8 +150,8 @@ export class AdminOrdersPageComponent implements OnInit {
   private refresh(): void {
     this.loading.set(true);
     this.ordersService.getAdminOrders().subscribe({
-      next: (orders) => {
-        this.orders.set(orders);
+      next: (data) => {
+        this.orders.set(data.content);
         this.loading.set(false);
       },
       error: () => {

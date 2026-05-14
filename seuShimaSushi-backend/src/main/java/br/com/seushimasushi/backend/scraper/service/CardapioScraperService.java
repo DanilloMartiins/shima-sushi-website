@@ -49,7 +49,7 @@ public class CardapioScraperService {
                         }
 
                         BigDecimal preco = limparPreco(precoTexto);
-                        produtosRaspados.add(new Produto(nome, preco, urlImagem));
+                        produtosRaspados.add(new Produto(nome, preco, urlImagem, "Geral"));
                     }
                     
                 } catch (Exception e) {

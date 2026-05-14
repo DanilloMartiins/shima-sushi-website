@@ -11,7 +11,7 @@ import { MenuCategoryResponse } from '@core/models/menu.models';
     <div class="menu-container">
       @for (category of categories; track category.id) {
         <section class="category-section">
-          <h2 class="category-title">{{ category.name || category.title }}</h2>
+          <h2 class="category-title">{{ category.name }}</h2>
           
           <div class="products-grid">
             @for (product of category.products; track product.id) {

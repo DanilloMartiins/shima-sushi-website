@@ -1,9 +1,20 @@
+export interface CategorySummaryResponse {
+  id: number;
+  name: string;
+}
+
 export interface ProductResponse {
   id: number;
-  nome: string;
-  preco: number;
-  urlImagem?: string | null;
-  dataAtualizacao: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl?: string | null;
+  available?: boolean;
+  category?: CategorySummaryResponse;
+  // Campos opcionais usados em outras partes do front
+  tag?: string;
+  pitch?: string;
+  dataAtualizacao?: string;
 }
 
 export interface MenuCategoryResponse {

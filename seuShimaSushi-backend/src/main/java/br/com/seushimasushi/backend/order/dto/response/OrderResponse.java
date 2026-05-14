@@ -16,6 +16,9 @@ public record OrderResponse(
         String deliveryAddress,
         String notes,
         BigDecimal totalAmount,
+        BigDecimal totalPrice, // Adicionado para bater com o front
+        Integer totalItems,    // Adicionado para bater com o front
+        String customerName,   // Adicionado para facilitar exibição no admin
         Instant createdAt,
         Instant updatedAt,
         CustomerSummaryResponse customer,

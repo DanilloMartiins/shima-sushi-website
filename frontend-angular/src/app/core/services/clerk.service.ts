@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { ptBR } from '@clerk/localizations';
+import { ClerkUser } from '../models/auth.models';
 
 @Injectable({
   providedIn: 'root',
@@ -10,12 +11,15 @@ export class ClerkService {
   
   private clerk: any = null;
   readonly loaded = signal(false);
-  readonly user = signal<any>(null);
+  readonly user = signal<ClerkUser | null>(null);
+  private inactivityTimeout: any;
+  private readonly INACTIVITY_TIME = 5 * 60 * 1000; // 5 minutos
 
   async init(): Promise<void> {
     if (this.clerk || (window as any).Clerk) {
       this.clerk = (window as any).Clerk;
       this.loaded.set(true);
+      this.setupInactivityListener();
       return;
     }
 
@@ -35,8 +39,17 @@ export class ClerkService {
           this.user.set(this.clerk.user);
           this.loaded.set(true);
           
+          if (this.clerk.user) {
+            this.setupInactivityListener();
+          }
+
           this.clerk.addListener((resources: any) => {
             this.user.set(resources.user);
+            if (resources.user) {
+              this.setupInactivityListener();
+            } else {
+              this.clearInactivityListener();
+            }
           });
           resolve();
         } catch (err) {
@@ -48,15 +61,38 @@ export class ClerkService {
     });
   }
 
+  private setupInactivityListener(): void {
+    this.resetInactivityTimeout();
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, () => this.resetInactivityTimeout());
+    });
+  }
+
+  private clearInactivityListener(): void {
+    if (this.inactivityTimeout) {
+      clearTimeout(this.inactivityTimeout);
+    }
+  }
+
+  private resetInactivityTimeout(): void {
+    this.clearInactivityListener();
+    if (this.user()) {
+      this.inactivityTimeout = setTimeout(() => {
+        console.log('Sessão expirada por inatividade.');
+        this.signOut();
+      }, this.INACTIVITY_TIME);
+    }
+  }
+
   mountSignIn(containerId: string): void {
     const el = document.getElementById(containerId);
     if (!el || !this.clerk) return;
 
     if (this.loaded()) {
       this.clerk.mountSignIn(el, {
-        // ESSENCIAL: Força o redirecionamento para o perfil após o login com sucesso (Google ou E-mail)
-        forceRedirectUrl: '/perfil',
-        fallbackRedirectUrl: '/perfil'
+        forceRedirectUrl: '/',
+        fallbackRedirectUrl: '/'
       });
     } else {
       setTimeout(() => this.mountSignIn(containerId), 500);
@@ -69,9 +105,8 @@ export class ClerkService {
 
     if (this.loaded()) {
       this.clerk.mountSignUp(el, {
-        // ESSENCIAL: Mesma regra para o cadastro
-        forceRedirectUrl: '/perfil',
-        fallbackRedirectUrl: '/perfil'
+        forceRedirectUrl: '/',
+        fallbackRedirectUrl: '/'
       });
     } else {
       setTimeout(() => this.mountSignUp(containerId), 500);

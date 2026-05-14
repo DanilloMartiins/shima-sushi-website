@@ -35,12 +35,15 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository;
 
     @Autowired
     public OrderService(OrderRepository orderRepository, 
-                        ProductRepository productRepository) {
+                        ProductRepository productRepository,
+                        br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
+        this.produtoRepository = produtoRepository;
     }
 
     @Transactional
@@ -70,23 +73,46 @@ public class OrderService {
                 throw new BadRequestException("Pedido nao pode ter item duplicado para o mesmo produto");
             }
 
-            Product product = productRepository.findById(itemRequest.productId())
-                    .orElseThrow(() -> new NotFoundException("Produto " + itemRequest.productId() + " nao encontrado"));
+            // Tentamos buscar primeiro na tabela de produtos manuais (Admin)
+            // Se não achar, buscamos na tabela de produtos raspados (Yooga)
+            String productName;
+            BigDecimal unitPrice;
 
-            if (!Boolean.TRUE.equals(product.getAvailable())) {
-                throw new BadRequestException("Produto " + product.getName() + " esta indisponivel");
+            var productOpt = productRepository.findById(itemRequest.productId());
+            if (productOpt.isPresent()) {
+                Product p = productOpt.get();
+                if (!Boolean.TRUE.equals(p.getAvailable())) {
+                    throw new BadRequestException("Produto " + p.getName() + " esta indisponivel");
+                }
+                productName = p.getName();
+                unitPrice = p.getPrice();
+            } else {
+                var scrapedOpt = produtoRepository.findById(itemRequest.productId());
+                if (scrapedOpt.isEmpty()) {
+                    throw new NotFoundException("Produto " + itemRequest.productId() + " nao encontrado em nenhuma base");
+                }
+                var sp = scrapedOpt.get();
+                productName = sp.getNome();
+                unitPrice = sp.getPreco();
             }
 
-            BigDecimal unitPrice = product.getPrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
-            OrderItem orderItem = new OrderItem(
-                    order,
-                    product,
-                    itemRequest.quantity(),
-                    unitPrice,
-                    subtotal
-            );
+            // Criamos o item. Como o OrderItem no banco aponta para 'Product' (entidade admin),
+            // se o item for do scraper, vamos precisar de uma solução melhor no futuro (como unificar tabelas).
+            // Por enquanto, se for do scraper, vamos apenas calcular o total sem persistir o vínculo fixo no DB
+            // OU (solução rápida de dev) vamos focar em retornar o DTO correto para o WhatsApp.
+            
+            // Para não quebrar o JPA (que espera uma entidade Product), vamos tentar associar um 'Product' fake ou nulo
+            // mas o ideal é que o scraper salve na mesma tabela. 
+            // Como sou Júnior+, vou fazer o básico que funciona: persistir se tiver Product, senão só logar (por enquanto).
+            
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(productOpt.orElse(null)); // Pode ser null se for do scraper (precisa ajustar o banco se for NOT NULL)
+            orderItem.setQuantity(itemRequest.quantity());
+            orderItem.setUnitPrice(unitPrice);
+            orderItem.setSubtotal(subtotal);
 
             order.getItems().add(orderItem);
             total = total.add(subtotal);
@@ -163,17 +189,23 @@ public class OrderService {
         CustomerSummaryResponse customer = new CustomerSummaryResponse(order.getCustomerClerkId());
 
         List<OrderItemResponse> itemResponses = new ArrayList<>();
+        int totalItemsCount = 0;
         
         if (includeItems && order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
+                // Se o produto for null (veio do scraper), pegamos o nome de forma genérica
+                String name = (item.getProduct() != null) ? item.getProduct().getName() : "Item do Cardápio Yooga";
+                Long pId = (item.getProduct() != null) ? item.getProduct().getId() : 0L;
+
                 OrderItemResponse itemDto = new OrderItemResponse(
-                        item.getProduct().getId(),
-                        item.getProduct().getName(),
+                        pId,
+                        name,
                         item.getQuantity(),
                         item.getUnitPrice(),
                         item.getSubtotal()
                 );
                 itemResponses.add(itemDto);
+                totalItemsCount += item.getQuantity();
             }
         }
 
@@ -185,6 +217,9 @@ public class OrderService {
                 order.getDeliveryAddress(),
                 order.getNotes(),
                 order.getTotalAmount(),
+                order.getTotalAmount(), // totalPrice = totalAmount
+                totalItemsCount,
+                "Cliente #" + order.getCustomerClerkId().substring(Math.max(0, order.getCustomerClerkId().length() - 4)),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 customer,

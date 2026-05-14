@@ -26,6 +26,18 @@ export interface TokenResponse {
   expiresIn: number;
 }
 
+export interface ClerkUser {
+  id: string;
+  fullName: string | null;
+  imageUrl?: string;
+  primaryEmailAddress?: { emailAddress: string } | null;
+  primaryPhoneNumber?: { phoneNumber: string } | null;
+  publicMetadata: {
+    cpf?: string;
+    [key: string]: any;
+  };
+}
+
 export interface AuthSession {
   accessToken: string;
   refreshToken: string;

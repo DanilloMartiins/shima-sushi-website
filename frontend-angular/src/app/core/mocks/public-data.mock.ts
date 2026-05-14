@@ -19,8 +19,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
     products: [
       {
         id: 101,
-        categoryId: 1,
-        categoryTitle: 'Combinados',
+        category: { id: 1, name: 'Combinados' },
         name: 'Combinado Salmao (20 pecas)',
         description: '10 sashimis de salmao, 5 niguiris de salmao e 5 uramakis de salmao.',
         price: 55,
@@ -30,8 +29,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 102,
-        categoryId: 1,
-        categoryTitle: 'Combinados',
+        category: { id: 1, name: 'Combinados' },
         name: 'Combinado Especial (30 pecas)',
         description: '10 sashimis variados, 10 niguiris variados e 10 enrolados especiais.',
         price: 85,
@@ -41,8 +39,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 103,
-        categoryId: 1,
-        categoryTitle: 'Combinados',
+        category: { id: 1, name: 'Combinados' },
         name: 'Combinado Hot (16 pecas)',
         description: '8 hot rolls classicos e 8 hot rolls especiais com cream cheese e cebolinha.',
         price: 45,
@@ -59,8 +56,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
     products: [
       {
         id: 201,
-        categoryId: 2,
-        categoryTitle: 'Temakis',
+        category: { id: 2, name: 'Temakis' },
         name: 'Temaki de Salmao Completo',
         description: 'Salmao batido com cream cheese e cebolinha.',
         price: 25,
@@ -69,8 +65,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 202,
-        categoryId: 2,
-        categoryTitle: 'Temakis',
+        category: { id: 2, name: 'Temakis' },
         name: 'Temaki Hot',
         description: 'Temaki de salmao empanado e frito, com cream cheese e molho tare.',
         price: 28,
@@ -79,8 +74,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 203,
-        categoryId: 2,
-        categoryTitle: 'Temakis',
+        category: { id: 2, name: 'Temakis' },
         name: 'Temaki Skin',
         description: 'Pele de salmao grelhada, cream cheese e molho tare.',
         price: 20,
@@ -96,8 +90,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
     products: [
       {
         id: 301,
-        categoryId: 3,
-        categoryTitle: 'Bebidas',
+        category: { id: 3, name: 'Bebidas' },
         name: 'Refrigerante lata',
         description: 'Bebida gelada em lata.',
         price: 6,
@@ -105,8 +98,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 302,
-        categoryId: 3,
-        categoryTitle: 'Bebidas',
+        category: { id: 3, name: 'Bebidas' },
         name: 'Agua Mineral',
         description: 'Agua mineral sem gas.',
         price: 3,
@@ -114,8 +106,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 303,
-        categoryId: 3,
-        categoryTitle: 'Bebidas',
+        category: { id: 3, name: 'Bebidas' },
         name: 'Cha Gelado (Copo)',
         description: 'Cha gelado com limao.',
         price: 8,
@@ -130,8 +121,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
     products: [
       {
         id: 401,
-        categoryId: 4,
-        categoryTitle: 'Acompanhamentos',
+        category: { id: 4, name: 'Acompanhamentos' },
         name: 'Sunomono',
         description: 'Saladinha de pepino agridoce com gergelim.',
         price: 12,
@@ -139,8 +129,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 402,
-        categoryId: 4,
-        categoryTitle: 'Acompanhamentos',
+        category: { id: 4, name: 'Acompanhamentos' },
         name: 'Porcao de Gengibre',
         description: 'Porcao de gengibre em conserva.',
         price: 5,
@@ -148,8 +137,7 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       },
       {
         id: 403,
-        categoryId: 4,
-        categoryTitle: 'Acompanhamentos',
+        category: { id: 4, name: 'Acompanhamentos' },
         name: 'Edamame',
         description: 'Porcao de graos de soja verde cozidos e salgados.',
         price: 15,

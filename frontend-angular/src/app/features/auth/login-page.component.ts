@@ -28,7 +28,7 @@ export class LoginPageComponent implements OnInit {
     // Redireciona automaticamente se o usuário já estiver autenticado
     effect(() => {
       if (this.clerk.user()) {
-        void this.router.navigateByUrl('/perfil');
+        void this.router.navigateByUrl('/');
       }
     });
   }
@@ -36,7 +36,7 @@ export class LoginPageComponent implements OnInit {
   ngOnInit(): void {
     // Se já entrar logado (ex: volta do Google), já redireciona de cara
     if (this.clerk.user()) {
-      void this.router.navigateByUrl('/perfil');
+      void this.router.navigateByUrl('/');
       return;
     }
     

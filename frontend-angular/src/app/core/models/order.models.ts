@@ -29,6 +29,14 @@ export interface OrderItemResponse {
   subtotal: number;
 }
 
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
 export interface OrderResponse {
   id: number;
   status: OrderStatus;
@@ -37,11 +45,14 @@ export interface OrderResponse {
   deliveryAddress?: string | null;
   notes?: string | null;
   totalAmount: number;
+  totalPrice: number;
+  totalItems: number;
   createdAt: string;
   updatedAt: string;
   customer: {
     clerkId: string;
   };
+  customerName?: string;
   items: OrderItemResponse[];
 }
 

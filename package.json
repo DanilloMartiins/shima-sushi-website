@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -k -n FRONT,BACK -c cyan,green \"npm run dev:angular\" \"npm run dev:backend\"",
     "dev:angular": "npm --prefix frontend-angular start",
-    "dev:backend": "houseburgergrill-backend\\mvnw.cmd -f houseburgergrill-backend/pom.xml spring-boot:run",
+    "dev:backend": "seuShimaSushi-backend\\mvnw.cmd -f seuShimaSushi-backend/pom.xml spring-boot:run",
     "install:all": "npm install && npm --prefix frontend-angular install",
     "build": "npm --prefix frontend-angular run build",
     "lint": "npm --prefix frontend-angular run lint",

@@ -7,6 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { AddressService } from '../../core/services/address.service';
+import { ClerkService } from '../../core/services/clerk.service';
 import { CreateOrderRequest, DeliveryType, OrderResponse, PaymentMethod } from '../../core/models/order.models';
 import { AddressResponse } from '../../core/models/address.models';
 
@@ -51,9 +52,45 @@ import { AddressResponse } from '../../core/models/address.models';
               </div>
 
               <ng-template #addressForm>
-                <div class="form-group">
-                  <label>Endereço Completo</label>
-                  <input type="text" formControlName="fullAddress" placeholder="Rua, Número, Bairro" />
+                <div class="address-form-grid">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>CEP</label>
+                      <input type="text" formControlName="zipCode" placeholder="00000-000" (blur)="onCepBlur()" />
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Rua / Logradouro</label>
+                      <input type="text" formControlName="street" placeholder="Ex: Av. Rui Barbosa" />
+                    </div>
+                    <div class="form-group small">
+                      <label>Nº</label>
+                      <input type="text" formControlName="number" placeholder="123" />
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Bairro</label>
+                      <input type="text" formControlName="neighborhood" placeholder="Ex: Centro" />
+                    </div>
+                    <div class="form-group">
+                      <label>Cidade</label>
+                      <input type="text" formControlName="city" readonly class="input-readonly" />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Complemento (Opcional)</label>
+                    <input type="text" formControlName="complement" placeholder="Ex: Bloco A, Apto 10" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Ponto de Referência (Opcional)</label>
+                    <input type="text" formControlName="referencePoint" placeholder="Ex: Perto da farmácia" />
+                  </div>
                 </div>
                 
                 <div class="save-default-check" *ngIf="isEditingAddress() || !hasDefaultAddress()">
@@ -68,10 +105,22 @@ import { AddressResponse } from '../../core/models/address.models';
           <div class="section-box">
             <h3>2. Pagamento</h3>
             <select formControlName="paymentMethod">
-              <option value="PIX">PIX</option>
+              <option value="PIX">PIX - Cobrança antecipada</option>
               <option value="CARTAO_CREDITO">Cartão de Crédito (na entrega)</option>
               <option value="DINHEIRO">Dinheiro</option>
             </select>
+
+            <!-- Campo de Troco -->
+            <div *ngIf="form.get('paymentMethod')?.value === 'DINHEIRO'" class="change-fields animate-fade">
+              <label class="inline">
+                <input type="checkbox" formControlName="needsChange" /> Precisa de troco?
+              </label>
+              
+              <div *ngIf="form.get('needsChange')?.value" class="form-group animate-fade">
+                <label>Troco pra quanto?</label>
+                <input type="number" formControlName="changeFor" placeholder="Ex: 50" />
+              </div>
+            </div>
           </div>
 
           <div class="section-box">
@@ -120,6 +169,9 @@ import { AddressResponse } from '../../core/models/address.models';
     .radio-card.selected { border-color: var(--brand-orange); background: rgba(234, 106, 61, 0.05); color: var(--brand-orange-strong); }
     .radio-card input { display: none; }
 
+    .address-form-grid { display: grid; gap: 1rem; margin-top: 1rem; }
+    .change-fields { margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef; }
+
     .default-address-alert { background: #fdf6f2; padding: 1rem; border-radius: 12px; border: 1px solid #f9d8c6; }
     .address-preview { margin: 0.8rem 0; display: grid; }
     
@@ -127,9 +179,12 @@ import { AddressResponse } from '../../core/models/address.models';
     .btn-clear { background: #fff; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 0.5rem 1rem; border-radius: 99px; cursor: pointer; }
     .btn-confirm { width: 100%; padding: 1rem; background: var(--brand-orange); color: #fff; border: none; border-radius: 99px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
 
-    .form-group { display: grid; gap: 0.4rem; margin-top: 1rem; }
+    .form-row { display: flex; gap: 1rem; }
+    .form-group { display: grid; gap: 0.4rem; flex: 1; }
+    .form-group.small { flex: 0.3; }
+    .input-readonly { background: #f9f9f9; cursor: not-allowed; }
     input, select, textarea { padding: 0.8rem; border-radius: 10px; border: 1px solid var(--brand-border); width: 100%; }
-    .inline { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .inline { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; font-weight: bold; }
 
     .cart-summary { background: #fff; padding: 1.5rem; border-radius: 15px; border: 1px solid var(--brand-border); height: fit-content; }
     .cart-summary ul { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.8rem; }
@@ -150,6 +205,7 @@ export class CheckoutPageComponent implements OnInit {
   readonly cartService = inject(CartService);
   private readonly ordersService = inject(OrdersService);
   private readonly addressService = inject(AddressService);
+  private readonly clerkService = inject(ClerkService);
   private readonly router = inject(Router);
 
   readonly cartItems = this.cartService.items;
@@ -163,8 +219,16 @@ export class CheckoutPageComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     deliveryType: this.fb.nonNullable.control<DeliveryType>('RETIRADA'),
     paymentMethod: this.fb.nonNullable.control<PaymentMethod>('PIX'),
-    fullAddress: [''],
+    zipCode: ['', [Validators.pattern(/^\d{5}-?\d{3}$/)]],
+    street: [''],
+    number: [''],
+    neighborhood: [''],
+    city: ['Garanhuns'],
+    complement: [''],
+    referencePoint: [''],
     saveAsDefault: [false],
+    needsChange: [false],
+    changeFor: [null as number | null],
     notes: ['']
   });
 
@@ -174,7 +238,12 @@ export class CheckoutPageComponent implements OnInit {
       if (addr) {
         this.defaultAddress.set(addr);
         this.form.patchValue({
-          fullAddress: `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}`
+          street: addr.street,
+          number: addr.number,
+          neighborhood: addr.neighborhood,
+          city: addr.city,
+          complement: addr.complement,
+          referencePoint: addr.referencePoint
         });
       }
     });
@@ -187,6 +256,21 @@ export class CheckoutPageComponent implements OnInit {
     });
   }
 
+  onCepBlur(): void {
+    const cep = this.form.get('zipCode')?.value;
+    if (cep && cep.length >= 8) {
+      this.addressService.lookupCep(cep).subscribe(data => {
+        if (!data.erro) {
+          this.form.patchValue({
+            street: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade
+          });
+        }
+      });
+    }
+  }
+
   clearCart(): void {
     if (confirm('Deseja realmente limpar o carrinho?')) {
       this.cartService.clear();
@@ -195,19 +279,7 @@ export class CheckoutPageComponent implements OnInit {
 
   startEditingAddress(): void {
     this.isEditingAddress.set(true);
-    this.form.patchValue({ fullAddress: '' });
-  }
-
-  cancelEdit(): void {
-    if (this.hasDefaultAddress()) {
-      const addr = this.defaultAddress()!;
-      this.isEditingAddress.set(false);
-      this.form.patchValue({
-        fullAddress: `${addr.street}, ${addr.number} - ${addr.neighborhood}, ${addr.city}`
-      });
-    } else {
-      this.form.patchValue({ deliveryType: 'RETIRADA' });
-    }
+    this.form.patchValue({ zipCode: '', street: '', number: '', neighborhood: '', city: 'Garanhuns', complement: '', referencePoint: '' });
   }
 
   submit(): void {
@@ -222,15 +294,15 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   private saveNewDefaultAddress(): void {
-    const fullText = this.form.get('fullAddress')?.value || '';
-    const parts = fullText.split(',');
-    
+    const val = this.form.getRawValue();
     this.addressService.saveAddress({
-      street: parts[0]?.trim() || 'Não informado',
-      number: parts[1]?.trim() || 'SN',
-      neighborhood: 'Não informado',
-      city: 'Garanhuns',
-      zipCode: '00000000',
+      street: val.street,
+      number: val.number,
+      neighborhood: val.neighborhood,
+      city: val.city,
+      zipCode: val.zipCode,
+      complement: val.complement,
+      referencePoint: val.referencePoint,
       isDefault: true
     }).subscribe();
   }
@@ -239,10 +311,14 @@ export class CheckoutPageComponent implements OnInit {
     this.submitting.set(true);
     const formValue = this.form.getRawValue();
 
+    const fullAddressText = formValue.deliveryType === 'ENTREGA' 
+      ? `${formValue.street}, ${formValue.number} - ${formValue.neighborhood}, ${formValue.city}`
+      : undefined;
+
     const payload: CreateOrderRequest = {
       deliveryType: formValue.deliveryType,
       paymentMethod: formValue.paymentMethod,
-      deliveryAddress: formValue.deliveryType === 'ENTREGA' ? formValue.fullAddress : undefined,
+      deliveryAddress: fullAddressText,
       notes: formValue.notes,
       items: this.cartItems().map(item => ({
         productId: item.productId,
@@ -252,7 +328,7 @@ export class CheckoutPageComponent implements OnInit {
 
     this.ordersService.createOrder(payload).subscribe({
       next: (order) => {
-        alert('Pedido realizado com sucesso!');
+        this.redirectToWhatsApp(order);
         this.cartService.clear();
         void this.router.navigateByUrl('/orders');
       },
@@ -261,5 +337,51 @@ export class CheckoutPageComponent implements OnInit {
         this.submitting.set(false);
       }
     });
+  }
+
+  private redirectToWhatsApp(order: OrderResponse): void {
+    const user = this.clerkService.user();
+    const customerName = user?.fullName || 'Cliente';
+    const customerPhone = user?.primaryPhoneNumber?.phoneNumber || 'Não informado';
+    const customerCpf = user?.publicMetadata?.['cpf'] || 'Não informado';
+
+    const date = new Date().toLocaleDateString('pt-BR');
+    const paymentLabels: Record<PaymentMethod, string> = {
+      PIX: 'Pix - Cobrança antecipada',
+      CARTAO_CREDITO: 'Cartão de Crédito (na entrega)',
+      DINHEIRO: 'Dinheiro'
+    };
+
+    let msg = `*Pedido:* #${order.id}\n`;
+    msg += `*Data:* ${date}\n\n`;
+    msg += `*Cliente:* ${customerName}\n`;
+    msg += `*CPF:* ${customerCpf}\n`;
+    msg += `*Telefone:* ${customerPhone}\n`;
+    msg += `------------------------------\n`;
+
+    this.cartItems().forEach(item => {
+      msg += `*${item.name.toUpperCase()}*\n`;
+      msg += `   ${item.quantity} UN x R$ ${item.price.toFixed(2).replace('.', ',')} = R$ ${(item.quantity * item.price).toFixed(2).replace('.', ',')}\n`;
+    });
+
+    msg += `------------------------------\n`;
+    msg += `*SUBTOTAL:* R$ ${this.cartService.totalPrice().toFixed(2).replace('.', ',')}\n\n`;
+    
+    let paymentStr = paymentLabels[order.paymentMethod];
+    const formValue = this.form.getRawValue();
+    if (order.paymentMethod === 'DINHEIRO' && formValue.needsChange) {
+      paymentStr += ` (Troco para R$ ${formValue.changeFor})`;
+    }
+    
+    msg += `*Pagamento:* ${paymentStr}\n`;
+    msg += order.deliveryType === 'ENTREGA' ? `*Entrega no endereço:* ${order.deliveryAddress}` : `*Retirada na loja*`;
+
+    if (order.notes) {
+      msg += `\n\n*Obs:* ${order.notes}`;
+    }
+
+    const encodedMsg = encodeURIComponent(msg);
+    const whatsappUrl = `https://wa.me/5527996518265?text=${encodedMsg}`;
+    window.open(whatsappUrl, '_blank');
   }
 }
