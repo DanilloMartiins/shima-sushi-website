@@ -58,7 +58,4 @@ services:
       - key: FRONTEND_API_BASE_URL
         value: /api/v1
       - key: BACKEND_URL
-        fromService:
-          type: web
-          name: seushimasushi-backend-test
-          property: host
+        value: seushimasushi-backend-test
