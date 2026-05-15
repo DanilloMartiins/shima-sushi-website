@@ -19,12 +19,14 @@ public class CardapioScheduler {
         this.produtoService = produtoService;
     }
 
+    /* 
     // Roda logo que o sistema termina de subir
     @EventListener(ApplicationReadyEvent.class)
     public void cargaInicial() {
         log.info("Executando carga inicial do cardápio via scraping...");
         produtoService.atualizarProdutos();
     }
+    */
 
     // Roda a cada 30 minutos (usando CRON)
     @Scheduled(cron = "0 0/30 * * * *")
