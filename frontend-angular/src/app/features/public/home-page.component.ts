@@ -22,7 +22,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
     <section class="hero-copy">
       <h1>Seu Shima Sushi</h1>
-      <p>O melhor sushi de Garanhuns, agora com o cardápio oficial atualizado!</p>
+      <p>O melhor sushi de Vitoria, agora com o cardápio oficial atualizado!</p>
     </section>
 
     <section *ngIf="loading()" class="loading-state">
