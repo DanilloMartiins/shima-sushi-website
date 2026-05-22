@@ -132,4 +132,12 @@ export class ClerkService {
     await this.clerk?.signOut();
     this.user.set(null);
   }
+
+  isUserAdmin(): boolean {
+    const u = this.user();
+    if (!u || !u.publicMetadata) {
+      return false;
+    }
+    return (u.publicMetadata as { role?: string }).role === 'admin';
+  }
 }

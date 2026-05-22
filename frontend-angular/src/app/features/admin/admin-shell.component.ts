@@ -1,62 +1,99 @@
-import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-admin-shell',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <section class="admin-shell">
-      <header class="admin-header">
-        <h1>Painel Admin</h1>
-        <nav>
-          <a routerLink="/admin/products" routerLinkActive="active">Produtos</a>
-          <a routerLink="/admin/settings" routerLinkActive="active">Loja</a>
-          <a routerLink="/admin/orders" routerLinkActive="active">Pedidos</a>
-          <a routerLink="/">Voltar ao site</a>
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <h2 class="sidebar-title">Seu Shima</h2>
+        <nav class="admin-nav">
+          <a
+            routerLink="/admin/products"
+            routerLinkActive="active"
+            class="nav-link"
+            >Produtos</a
+          >
+          <a
+            routerLink="/admin/orders"
+            routerLinkActive="active"
+            class="nav-link"
+            >Pedidos</a
+          >
+          <a
+            routerLink="/admin/settings"
+            routerLinkActive="active"
+            class="nav-link"
+            >Configurações</a
+          >
         </nav>
-      </header>
-
-      <router-outlet />
-    </section>
+      </aside>
+      <main class="admin-main-content">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   `,
   styles: [
     `
-      .admin-shell {
-        display: grid;
-        gap: 1rem;
+      :host {
+        display: block;
+        height: 100vh;
+        background-color: #f4f7fa;
       }
 
-      .admin-header {
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: rgba(10, 12, 18, 0.8);
-        border-radius: 14px;
-        padding: 1rem;
-      }
-
-      .admin-header h1 {
-        margin: 0 0 0.6rem;
-      }
-
-      .admin-header nav {
+      .admin-layout {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
+        height: 100%;
       }
 
-      .admin-header a {
-        color: #f1f4ff;
+      .admin-sidebar {
+        width: 240px;
+        background-color: #ffffff;
+        border-right: 1px solid #e0e6ed;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 32px;
+        text-align: center;
+      }
+
+      .admin-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .nav-link {
+        color: #555;
         text-decoration: none;
-        border-radius: 999px;
-        padding: 0.35rem 0.65rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-size: 16px;
+        padding: 12px 16px;
+        border-radius: 6px;
+        transition: background-color 0.2s, color 0.2s;
       }
 
-      .admin-header a.active {
-        border-color: transparent;
-        background: #f9bd44;
-        color: #2a2014;
+      .nav-link:hover {
+        background-color: #f0f0f0;
+      }
+
+      .nav-link.active {
+        background-color: #3498db;
+        color: #ffffff;
+        font-weight: 500;
+      }
+
+      .admin-main-content {
+        flex: 1;
+        padding: 32px;
+        overflow-y: auto;
       }
     `,
   ],

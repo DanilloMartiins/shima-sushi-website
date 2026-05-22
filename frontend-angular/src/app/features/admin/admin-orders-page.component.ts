@@ -1,184 +1,213 @@
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
 
-import { OrderResponse, OrderStatus } from '../../core/models/order.models';
-import { OrdersService } from '../../core/services/orders.service';
+interface Order {
+  id: string;
+  customerName: string;
+  date: Date;
+  totalValue: number;
+  status: 'Concluído' | 'Em Preparo' | 'Saiu para Entrega' | 'Cancelado';
+}
 
 @Component({
   selector: 'app-admin-orders-page',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe],
+  imports: [CommonModule],
   template: `
-    <article class="card">
-      <h2>Gestao de pedidos</h2>
+    <div class="orders-page">
+      <header class="page-header">
+        <h1>Relatório de Pedidos</h1>
+      </header>
 
-      <p *ngIf="loading()">
-        <span class="shima-loader">
-          <span class="shima-loader-icon" aria-hidden="true"></span>
-          Carregando pedidos...
-        </span>
-      </p>
-      <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
-
-      <div *ngFor="let order of orders(); trackBy: trackOrder" class="order-line">
-        <div>
-          <p class="title">Pedido #{{ order.id }} - {{ order.totalPrice | currency: 'BRL' }}</p>
-          <p>
-            {{ order.customerName }} - {{ order.createdAt | date: 'dd/MM/yyyy HH:mm' }} -
-            {{ order.deliveryType }}
-          </p>
-        </div>
-
-        <div class="status-box">
-          <select #statusSelect [value]="order.status">
-            <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
-          </select>
-          <button type="button" (click)="updateStatus(order, statusSelect.value)">Atualizar</button>
-        </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID do Pedido</th>
+              <th>Nome do Cliente</th>
+              <th>Data</th>
+              <th>Valor Total</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of orders">
+              <td>#{{ order.id.slice(0, 6) }}...</td>
+              <td>{{ order.customerName }}</td>
+              <td>{{ order.date | date : 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ order.totalValue | currency : 'BRL' }}</td>
+              <td>
+                <span
+                  class="status-badge"
+                  [ngClass]="{
+                    'status-completed': order.status === 'Concluído',
+                    'status-preparing': order.status === 'Em Preparo',
+                    'status-delivery': order.status === 'Saiu para Entrega',
+                    'status-canceled': order.status === 'Cancelado'
+                  }"
+                  >{{ order.status }}</span
+                >
+              </td>
+              <td class="actions">
+                <button class="action-btn details-btn">Ver Detalhes</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-    </article>
+    </div>
   `,
   styles: [
+    // Reutilizando os mesmos estilos do AdminProductsPageComponent para consistência
     `
-      .card {
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        background: rgba(9, 11, 17, 0.8);
-        padding: 1rem;
+      .orders-page {
+        animation: fadeIn 0.3s ease-in-out;
       }
 
-      .order-line {
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
-        padding: 0.8rem;
-        margin-top: 0.7rem;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .page-header {
         display: flex;
         justify-content: space-between;
-        gap: 0.8rem;
-      }
-
-      .title {
-        margin: 0;
-        font-weight: 700;
-      }
-
-      .order-line p {
-        margin: 0.25rem 0 0;
-      }
-
-      .status-box {
-        display: flex;
-        gap: 0.5rem;
         align-items: center;
+        margin-bottom: 24px;
       }
 
-      select {
+      .page-header h1 {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .table-container {
+        background-color: #ffffff;
         border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(7, 9, 14, 0.65);
-        color: #f7f9ff;
-        padding: 0.35rem 0.45rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
       }
 
-      button {
-        border: 0;
-        border-radius: 999px;
-        padding: 0.4rem 0.75rem;
-        background: #f9bd44;
-        color: #2a2115;
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 16px 20px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #555;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background-color: #f5f5f5;
+      }
+
+      .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      /* Cores para status de pedido */
+      .status-completed {
+        background-color: #eaf7f0;
+        color: #28a745;
+      }
+      .status-preparing {
+        background-color: #e6f3ff;
+        color: #007bff;
+      }
+      .status-delivery {
+        background-color: #fff8e1;
+        color: #ffc107;
+      }
+      .status-canceled {
+        background-color: #fbeae5;
+        color: #dc3545;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .action-btn {
+        border: none;
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 6px;
         cursor: pointer;
+        transition: background-color 0.2s;
       }
 
-      .error {
-        color: #ff9f9f;
+      .details-btn {
+        background-color: #f0f0f0;
+        color: #333;
       }
-
-      @media (max-width: 830px) {
-        .order-line {
-          flex-direction: column;
-          gap: 1rem;
-        }
-        .status-box {
-          justify-content: space-between;
-          width: 100%;
-        }
-        .status-box select { flex: 1; }
+      .details-btn:hover {
+        background-color: #e0e0e0;
       }
     `,
   ],
 })
-export class AdminOrdersPageComponent implements OnInit {
-  private readonly ordersService = inject(OrdersService);
-
-  readonly orders = signal<OrderResponse[]>([]);
-  readonly loading = signal(true);
-  readonly errorMessage = signal<string | null>(null);
-
-  readonly statuses: OrderStatus[] = [
-    'CREATED',
-    'CONFIRMED',
-    'PREPARING',
-    'OUT_FOR_DELIVERY',
-    'COMPLETED',
-    'CANCELLED',
+export class AdminOrdersPageComponent {
+  orders: Order[] = [
+    {
+      id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+      customerName: 'Carlos Silva',
+      date: new Date(2026, 4, 21, 19, 30),
+      totalValue: 97.5,
+      status: 'Em Preparo',
+    },
+    {
+      id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
+      customerName: 'Mariana Oliveira',
+      date: new Date(2026, 4, 21, 19, 15),
+      totalValue: 120.0,
+      status: 'Saiu para Entrega',
+    },
+    {
+      id: 'c3d4e5f6-a7b8-9012-3456-7890abcdef2',
+      customerName: 'João Pereira',
+      date: new Date(2026, 4, 20, 20, 0),
+      totalValue: 75.0,
+      status: 'Concluído',
+    },
+    {
+      id: 'd4e5f6a7-b8c9-0123-4567-890abcdef3',
+      customerName: 'Ana Costa',
+      date: new Date(2026, 4, 20, 18, 45),
+      totalValue: 55.5,
+      status: 'Concluído',
+    },
+    {
+      id: 'e5f6a7b8-c9d0-1234-5678-90abcdef4',
+      customerName: 'Lucas Souza',
+      date: new Date(2026, 4, 19, 21, 10),
+      totalValue: 42.0,
+      status: 'Cancelado',
+    },
   ];
-
-  ngOnInit(): void {
-    this.refresh();
-    // Atualiza a lista automaticamente a cada 30 segundos (polling simples)
-    this.startPolling();
-  }
-
-  private startPolling(): void {
-    const intervalId = setInterval(() => {
-      // Só atualiza se não estiver carregando algo manualmente
-      if (!this.loading()) {
-        this.refresh(false); // refresh sem mostrar o loader principal
-      }
-    }, 30000);
-
-    // Garante que o intervalo seja limpo quando o componente for destruído
-    inject(DestroyRef).onDestroy(() => clearInterval(intervalId));
-  }
-
-  updateStatus(order: OrderResponse, nextStatus: string): void {
-    if (!isOrderStatus(nextStatus) || nextStatus === order.status) {
-      return;
-    }
-
-    this.ordersService.updateOrderStatus(order.id, nextStatus).subscribe({
-      next: () => this.refresh(true),
-      error: () => this.errorMessage.set('Falha ao atualizar status do pedido.'),
-    });
-  }
-
-  trackOrder(_index: number, order: OrderResponse): number {
-    return order.id;
-  }
-
-  private refresh(showLoader = true): void {
-    if (showLoader) this.loading.set(true);
-    
-    this.ordersService.getAdminOrders().subscribe({
-      next: (data) => {
-        this.orders.set(data.content);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('Nao foi possivel carregar os pedidos.');
-        this.loading.set(false);
-      },
-    });
-  }
-}
-
-function isOrderStatus(value: string): value is OrderStatus {
-  return (
-    value === 'CREATED' ||
-    value === 'CONFIRMED' ||
-    value === 'PREPARING' ||
-    value === 'OUT_FOR_DELIVERY' ||
-    value === 'COMPLETED' ||
-    value === 'CANCELLED'
-  );
 }

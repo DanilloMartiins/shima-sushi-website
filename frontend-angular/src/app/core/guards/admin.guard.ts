@@ -6,13 +6,10 @@ export const adminGuard = () => {
   const clerkService = inject(ClerkService);
   const router = inject(Router);
 
-  const user = clerkService.user();
-  
-  // Regra de exemplo: checa se o email é o do admin ou se tem a role nas publicMetadata
-  if (user && (user.publicMetadata?.['role'] === 'ADMIN' || user.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com')) {
+  if (clerkService.isUserAdmin()) {
     return true;
   }
 
-  void router.navigate(['/']);
+  void router.navigate(['/']); // Redireciona para a home se não for admin
   return false;
 };

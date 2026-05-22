@@ -1,188 +1,113 @@
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
 
-import { CreateProductRequest, ProductResponse } from '../../core/models/menu.models';
-import { MenuService } from '../../core/services/menu.service';
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  status: 'Ativo' | 'Inativo';
+}
 
 @Component({
   selector: 'app-admin-products-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CurrencyPipe],
+  imports: [CommonModule],
   template: `
-    <section class="admin-grid">
-      <article class="card form-card">
-        <h2>{{ editingProductId() ? 'Editar produto' : 'Novo produto' }}</h2>
+    <div class="products-page">
+      <header class="page-header">
+        <h1>Gerenciamento de Produtos</h1>
+        <button class="add-product-btn">Adicionar Novo Produto</button>
+      </header>
 
-        <form [formGroup]="form" (ngSubmit)="save()">
-          <label>
-            Nome
-            <input type="text" formControlName="name" />
-          </label>
-
-          <label>
-            Descricao
-            <textarea rows="3" formControlName="description"></textarea>
-          </label>
-
-          <label>
-            Preco
-            <input type="number" min="0" step="0.01" formControlName="price" />
-          </label>
-
-          <label>
-            Categoria ID
-            <input type="number" min="1" formControlName="categoryId" />
-          </label>
-
-          <label>
-            URL da imagem
-            <input type="url" formControlName="imageUrl" />
-          </label>
-
-          <div class="upload-row">
-            <input type="file" (change)="onFileSelected($event)" accept="image/*" />
-            <button type="button" class="ghost" (click)="uploadImage()" [disabled]="!selectedFile()">
-              Upload imagem
-            </button>
-          </div>
-
-          <label>
-            Tag
-            <input type="text" formControlName="tag" />
-          </label>
-
-          <label>
-            Chamada
-            <input type="text" formControlName="pitch" />
-          </label>
-
-          <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
-
-          <div class="actions">
-            <button type="submit" [disabled]="form.invalid || saving()">
-              <ng-container *ngIf="!saving(); else savingLabel">Salvar</ng-container>
-              <ng-template #savingLabel>
-                <span class="shima-loader">
-                  <span class="shima-loader-icon" aria-hidden="true"></span>
-                  Salvando...
-                </span>
-              </ng-template>
-            </button>
-            <button type="button" class="ghost" (click)="resetForm()">Limpar</button>
-          </div>
-        </form>
-      </article>
-
-      <article class="card">
-        <h2>Produtos cadastrados</h2>
-
-        <p *ngIf="loading()">
-          <span class="shima-loader">
-            <span class="shima-loader-icon" aria-hidden="true"></span>
-            Carregando produtos...
-          </span>
-        </p>
-
-        <section *ngIf="!loading() && !errorMessage()" class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Preco</th>
-                <th>Categoria</th>
-                <th>Acoes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let product of products(); trackBy: trackProduct">
-                <td>{{ product.id }}</td>
-                <td>{{ product.name }}</td>
-                <td>{{ product.price | currency: 'BRL' }}</td>
-                <td>{{ product.category?.name || 'Sem cat.' }} ({{ product.category?.id }})</td>
-                <td>
-                  <button type="button" class="ghost" (click)="edit(product)">Editar</button>
-                  <button type="button" class="danger" (click)="remove(product)">Excluir</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-      </article>
-    </section>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome do Produto</th>
+              <th>Categoria</th>
+              <th>Preço</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let product of products">
+              <td>{{ product.name }}</td>
+              <td>{{ product.category }}</td>
+              <td>{{ product.price | currency : 'BRL' }}</td>
+              <td>
+                <span
+                  class="status-badge"
+                  [ngClass]="{
+                    'status-active': product.status === 'Ativo',
+                    'status-inactive': product.status === 'Inativo'
+                  }"
+                  >{{ product.status }}</span
+                >
+              </td>
+              <td class="actions">
+                <button class="action-btn edit-btn">Editar</button>
+                <button class="action-btn toggle-btn">
+                  {{ product.status === 'Ativo' ? 'Desativar' : 'Ativar' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   `,
   styles: [
     `
-      .admin-grid {
-        display: grid;
-        grid-template-columns: 0.95fr 1.05fr;
-        gap: 1rem;
+      .products-page {
+        animation: fadeIn 0.3s ease-in-out;
       }
 
-      .card {
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        background: rgba(8, 10, 16, 0.8);
-        padding: 1rem;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
-      form {
-        display: grid;
-        gap: 0.8rem;
-      }
-
-      label {
-        display: grid;
-        gap: 0.3rem;
-      }
-
-      input,
-      textarea {
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(7, 9, 14, 0.65);
-        color: #f7f9ff;
-        padding: 0.5rem 0.6rem;
-      }
-
-      .upload-row {
+      .page-header {
         display: flex;
-        gap: 0.6rem;
+        justify-content: space-between;
         align-items: center;
+        margin-bottom: 24px;
       }
 
-      .actions {
-        display: flex;
-        gap: 0.6rem;
+      .page-header h1 {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
       }
 
-      button {
-        border: 0;
-        border-radius: 999px;
-        padding: 0.45rem 0.8rem;
+      .add-product-btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 16px;
+        border-radius: 6px;
         cursor: pointer;
+        transition: background-color 0.2s;
       }
 
-      button[type='submit'] {
-        background: #f9bd44;
-        color: #241b0f;
+      .add-product-btn:hover {
+        background-color: #2980b9;
       }
 
-      .ghost {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        color: #e8ecff;
-      }
-
-      .danger {
-        background: rgba(231, 86, 86, 0.22);
-        color: #ffb8b8;
-      }
-
-      .error {
-        margin: 0;
-        color: #ff9f9f;
+      .table-container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
       }
 
       table {
@@ -192,155 +117,111 @@ import { MenuService } from '../../core/services/menu.service';
 
       th,
       td {
+        padding: 16px 20px;
         text-align: left;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.45rem;
+        border-bottom: 1px solid #f0f0f0;
       }
 
-      td:last-child {
+      thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #555;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background-color: #f5f5f5;
+      }
+
+      .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .status-active {
+        background-color: #eaf7f0;
+        color: #28a745;
+      }
+
+      .status-inactive {
+        background-color: #f8f9fa;
+        color: #6c757d;
+      }
+
+      .actions {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
+        gap: 10px;
       }
 
-      @media (max-width: 1020px) {
-        .admin-grid {
-          grid-template-columns: 1fr;
-        }
+      .action-btn {
+        border: none;
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .edit-btn {
+        background-color: #f0f0f0;
+        color: #333;
+      }
+      .edit-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      .toggle-btn {
+        background-color: #fff0f0;
+        color: #c0392b;
+      }
+      .toggle-btn:hover {
+        background-color: #fad4d4;
       }
     `,
   ],
 })
-export class AdminProductsPageComponent implements OnInit {
-  private readonly menuService = inject(MenuService);
-  private readonly fb = inject(FormBuilder);
-
-  readonly products = signal<ProductResponse[]>([]);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly errorMessage = signal<string | null>(null);
-  readonly editingProductId = signal<number | null>(null);
-  readonly selectedFile = signal<File | null>(null);
-
-  readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required]],
-    description: ['', [Validators.required]],
-    price: [0, [Validators.required, Validators.min(0.01)]],
-    categoryId: [1, [Validators.required, Validators.min(1)]],
-    imageUrl: [''],
-    tag: [''],
-    pitch: [''],
-  });
-
-  ngOnInit(): void {
-    this.loadProducts();
-  }
-
-  save(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.saving.set(true);
-    this.errorMessage.set(null);
-
-    const payload: CreateProductRequest = this.form.getRawValue();
-    const productId = this.editingProductId();
-
-    const request$ = productId
-      ? this.menuService.updateAdminProduct(productId, payload)
-      : this.menuService.createAdminProduct(payload);
-
-    request$.subscribe({
-      next: () => {
-        this.loadProducts();
-        this.resetForm();
-      },
-      error: () => {
-        this.errorMessage.set('Nao foi possivel salvar o produto.');
-      },
-      complete: () => {
-        this.saving.set(false);
-      },
-    });
-  }
-
-  edit(product: ProductResponse): void {
-    this.editingProductId.set(product.id);
-    this.form.patchValue({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      categoryId: product.category?.id ?? 1,
-      imageUrl: product.imageUrl ?? '',
-      tag: product.tag ?? '',
-      pitch: product.pitch ?? '',
-    });
-  }
-
-  remove(product: ProductResponse): void {
-    if (!confirm(`Excluir o produto "${product.name}"?`)) {
-      return;
-    }
-
-    this.menuService.deleteAdminProduct(product.id).subscribe({
-      next: () => this.loadProducts(),
-      error: () => this.errorMessage.set('Nao foi possivel remover o produto.'),
-    });
-  }
-
-  resetForm(): void {
-    this.form.reset({
-      name: '',
-      description: '',
-      price: 0,
-      categoryId: 1,
-      imageUrl: '',
-      tag: '',
-      pitch: '',
-    });
-    this.editingProductId.set(null);
-    this.selectedFile.set(null);
-  }
-
-  onFileSelected(event: Event): void {
-    const inputElement = event.target as HTMLInputElement;
-    const selected = inputElement.files?.item(0) ?? null;
-    this.selectedFile.set(selected);
-  }
-
-  uploadImage(): void {
-    const file = this.selectedFile();
-    if (!file) {
-      return;
-    }
-
-    this.menuService.uploadProductImage(file).subscribe({
-      next: (response) => {
-        this.form.patchValue({ imageUrl: response.url });
-      },
-      error: () => {
-        this.errorMessage.set('Falha ao enviar imagem.');
-      },
-    });
-  }
-
-  trackProduct(_index: number, product: ProductResponse): number {
-    return product.id;
-  }
-
-  private loadProducts(): void {
-    this.loading.set(true);
-    this.menuService.getAdminProducts().subscribe({
-      next: (products) => {
-        this.products.set(products);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('Nao foi possivel carregar produtos.');
-        this.loading.set(false);
-      },
-    });
-  }
+export class AdminProductsPageComponent {
+  products: Product[] = [
+    {
+      id: '1',
+      name: 'Combinado Salmão (20 peças)',
+      category: 'Combinados',
+      price: 65.0,
+      status: 'Ativo',
+    },
+    {
+      id: '2',
+      name: 'Temaki Salmão Completo',
+      category: 'Temakis',
+      price: 32.5,
+      status: 'Ativo',
+    },
+    {
+      id: '3',
+      name: 'Hot Roll (10 unidades)',
+      category: 'Quentes',
+      price: 28.0,
+      status: 'Ativo',
+    },
+    {
+      id: '4',
+      name: 'Shimeji na Manteiga',
+      category: 'Entradas',
+      price: 35.0,
+      status: 'Inativo',
+    },
+    {
+      id: '5',
+      name: 'Refrigerante Lata',
+      category: 'Bebidas',
+      price: 6.0,
+      status: 'Ativo',
+    },
+  ];
 }

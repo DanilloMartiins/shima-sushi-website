@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
+import { homeGuard } from './core/guards/home.guard';
 import { AdminShellComponent } from './features/admin/admin-shell.component';
 import { PublicShellComponent } from './layout/public-shell.component';
 
@@ -11,6 +12,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [homeGuard],
         loadComponent: () =>
           import('./features/public/home-page.component').then((m) => m.HomePageComponent),
       },
@@ -47,7 +49,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminShellComponent,
-    canActivate: [adminGuard],
+    canActivate: [authGuard, adminGuard],
     children: [
       {
         path: 'products',
