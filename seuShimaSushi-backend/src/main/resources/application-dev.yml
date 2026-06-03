@@ -20,6 +20,7 @@ spring:
       admin_name: ${ADMIN_NAME:Seu Shima Sushi Admin}
       admin_email: ${ADMIN_EMAIL:admin@seushimasushi.com}
       admin_password: ${ADMIN_PASSWORD:Admin@123}
+      admin_clerk_id: ${ADMIN_CLERK_ID:placeholder-clerk-id}
 
   security:
     oauth2:

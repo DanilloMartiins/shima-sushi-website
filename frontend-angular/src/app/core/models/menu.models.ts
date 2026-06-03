@@ -24,18 +24,28 @@ export interface MenuCategoryResponse {
   products: ProductResponse[];
 }
 
+export interface PagedResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 export interface CreateProductRequest {
   name: string;
   description: string;
   price: number;
-  imageUrl?: string;
-  tag?: string;
-  pitch?: string;
+  imageUrl: string;
+  available: boolean;
   categoryId: number;
 }
 
 export type UpdateProductRequest = CreateProductRequest;
 
 export interface UploadImageResponse {
-  url: string;
+  productId: number;
+  imageUrl: string;
+  message: string;
 }

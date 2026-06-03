@@ -40,6 +40,7 @@ services:
       ADMIN_NAME: ${ADMIN_NAME:-Seu Shima Sushi Admin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@seushimasushi.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      ADMIN_CLERK_ID: ${ADMIN_CLERK_ID:-user_3De3NSZ1E0OVrz83mzJH6R9Z64q}
     ports:
       - "8080:8080"
     volumes:

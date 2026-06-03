@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
@@ -17,5 +19,10 @@ public class CategoryService {
     public Category findByIdOrThrow(Long id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Categoria nao encontrada"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Category> listActive() {
+        return categoryRepository.findByActiveTrueOrderByNameAsc();
     }
 }

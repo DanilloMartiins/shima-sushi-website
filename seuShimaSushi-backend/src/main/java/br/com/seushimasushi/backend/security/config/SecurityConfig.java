@@ -22,6 +22,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final AppProperties appProperties;
+    private final JwtAuthConverter jwtAuthConverter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,17 +32,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
-                        // Com Clerk, não precisamos de endpoints de login/register no nosso back
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/produtos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/imagem").permitAll()
                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                        // Rotas de admin exigirão que o token do Clerk tenha a permissão necessária
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
-                // Ativa a validação automática do token do Clerk (OAuth2 Resource Server)
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)));
 
         return http.build();
     }

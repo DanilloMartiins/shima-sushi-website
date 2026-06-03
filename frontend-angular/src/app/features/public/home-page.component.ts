@@ -42,7 +42,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         <div class="product-grid">
           <article *ngFor="let item of category.products; trackBy: trackProduct" class="product-card">
             <!-- Proxy de imagem para evitar bloqueio de CORS do Yooga -->
-            <img *ngIf="item.imageUrl" [src]="'/api/imagem?url=' + item.imageUrl" [alt]="item.name" loading="lazy" />
+            <img *ngIf="item.imageUrl" [src]="item.imageUrl.startsWith('/assets/') ? item.imageUrl : '/api/imagem?url=' + item.imageUrl" [alt]="item.name" loading="lazy" referrerpolicy="no-referrer" />
             
             <div class="product-info">
               <h4>{{ item.name }}</h4>

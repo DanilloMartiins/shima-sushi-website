@@ -8,7 +8,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   template: `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <h2 class="sidebar-title">Seu Shima</h2>
+        <a routerLink="/" class="sidebar-title">Seu Shima</a>
         <nav class="admin-nav">
           <a
             routerLink="/admin/products"
@@ -63,6 +63,9 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         color: #333;
         margin-bottom: 32px;
         text-align: center;
+        display: block;
+        text-decoration: none;
+        cursor: pointer;
       }
 
       .admin-nav {
