@@ -88,6 +88,10 @@ export class MenuService {
     return this.http.delete<void>(`${API_BASE_URL}/admin/products/${id}`);
   }
 
+  deleteAdminProducts(ids: number[]): Observable<void> {
+    return this.http.delete<void>(`${API_BASE_URL}/admin/products/batch`, { body: ids });
+  }
+
   uploadProductImage(productId: number, file: File): Observable<UploadImageResponse> {
     const formData = new FormData();
     formData.append('image', file);

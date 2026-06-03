@@ -13,7 +13,7 @@ export class ClerkService {
   readonly loaded = signal(false);
   readonly user = signal<ClerkUser | null>(null);
   private inactivityTimeout: any;
-  private readonly INACTIVITY_TIME = 5 * 60 * 1000; // 5 minutos
+  private readonly INACTIVITY_TIME = 10 * 60 * 1000; // 10 minutos
 
   async init(): Promise<void> {
     if (this.clerk || (window as any).Clerk) {

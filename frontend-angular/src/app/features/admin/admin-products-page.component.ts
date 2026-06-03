@@ -12,7 +12,17 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
     <div class="products-page">
       <header class="page-header">
         <h1>Gerenciamento de Produtos</h1>
-        <button class="add-product-btn" (click)="abrirModal()">+ Adicionar Produto</button>
+        <div class="header-actions">
+          <button class="add-product-btn" (click)="abrirModal()">+ Adicionar Produto</button>
+          <button
+            class="bulk-delete-btn"
+            [ngClass]="{ 'bulk-delete-active': modoSelecao }"
+            (click)="modoSelecao ? excluirSelecionados() : alternarModoSelecao()"
+          >
+            {{ modoSelecao ? 'Excluir (' + selecionados.size + ')' : 'Excluir' }}
+          </button>
+          <button class="cancel-select-btn" *ngIf="modoSelecao" (click)="alternarModoSelecao()">Cancelar</button>
+        </div>
       </header>
 
       <div class="loading" *ngIf="loading">
@@ -27,6 +37,9 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
         <table>
           <thead>
             <tr>
+              <th class="check-cell" *ngIf="modoSelecao">
+                <input type="checkbox" (change)="selecionarTodos()" [checked]="selecionados.size === products.length && products.length > 0" />
+              </th>
               <th>Imagem</th>
               <th>Nome</th>
               <th>Categoria</th>
@@ -36,7 +49,10 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let product of products">
+            <tr *ngFor="let product of products" [ngClass]="{ 'row-selected': selecionados.has(product.id) }">
+              <td class="check-cell" *ngIf="modoSelecao">
+                <input type="checkbox" [checked]="selecionados.has(product.id)" (change)="toggleSelecao(product.id)" />
+              </td>
               <td class="image-cell">
                 <img
                   *ngIf="product.imageUrl; else noImage"
@@ -75,11 +91,10 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
                 >
                   {{ product.available ? 'Desativar' : 'Ativar' }}
                 </button>
-                <button class="action-btn delete-btn" (click)="excluirProduto(product)">Excluir</button>
               </td>
             </tr>
             <tr *ngIf="products.length === 0">
-              <td colspan="6" class="empty-state">Nenhum produto encontrado</td>
+              <td [attr.colspan]="modoSelecao ? 7 : 6" class="empty-state">Nenhum produto encontrado</td>
             </tr>
           </tbody>
         </table>
@@ -188,6 +203,12 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
         margin: 0;
       }
 
+      .header-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
       .add-product-btn {
         background-color: #27ae60;
         color: white;
@@ -202,6 +223,43 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
 
       .add-product-btn:hover {
         background-color: #219a52;
+      }
+
+      .bulk-delete-btn {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.2s;
+      }
+
+      .bulk-delete-btn:hover {
+        background-color: #c0392b;
+      }
+
+      .bulk-delete-active {
+        background-color: #c0392b;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      .cancel-select-btn {
+        background-color: #f0f0f0;
+        color: #555;
+        border: none;
+        padding: 12px 20px;
+        font-size: 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.2s;
+      }
+
+      .cancel-select-btn:hover {
+        background-color: #e0e0e0;
       }
 
       .loading {
@@ -370,13 +428,19 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
         background-color: #c8f0d9;
       }
 
-      .delete-btn {
-        background-color: #ffe0e0;
-        color: #c0392b;
+      .check-cell {
+        width: 40px;
+        text-align: center;
       }
 
-      .delete-btn:hover {
-        background-color: #ffcaca;
+      .check-cell input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .row-selected {
+        background-color: #fff3e0 !important;
       }
 
       .empty-state {
@@ -614,6 +678,9 @@ export class AdminProductsPageComponent implements OnInit {
     available: true,
   };
 
+  modoSelecao = false;
+  selecionados = new Set<number>();
+
   ngOnInit() {
     this.carregarProdutos();
     this.carregarCategorias();
@@ -663,6 +730,45 @@ export class AdminProductsPageComponent implements OnInit {
     this.menuService.updateAdminProduct(produto.id, payload).subscribe({
       next: () => this.carregarProdutos(),
       error: () => (this.errorMsg = 'Erro ao alterar disponibilidade do produto'),
+    });
+  }
+
+  alternarModoSelecao() {
+    this.modoSelecao = !this.modoSelecao;
+    if (!this.modoSelecao) {
+      this.selecionados.clear();
+    }
+  }
+
+  toggleSelecao(id: number) {
+    if (this.selecionados.has(id)) {
+      this.selecionados.delete(id);
+    } else {
+      this.selecionados.add(id);
+    }
+  }
+
+  selecionarTodos() {
+    if (this.selecionados.size === this.products.length) {
+      this.selecionados.clear();
+    } else {
+      this.products.forEach((p) => this.selecionados.add(p.id));
+    }
+  }
+
+  excluirSelecionados() {
+    const ids = Array.from(this.selecionados);
+    if (ids.length === 0) return;
+
+    if (!confirm(`Tem certeza que deseja excluir ${ids.length} produto(s)?`)) return;
+
+    this.menuService.deleteAdminProducts(ids).subscribe({
+      next: () => {
+        this.modoSelecao = false;
+        this.selecionados.clear();
+        this.carregarProdutos();
+      },
+      error: () => (this.errorMsg = 'Erro ao excluir produtos'),
     });
   }
 

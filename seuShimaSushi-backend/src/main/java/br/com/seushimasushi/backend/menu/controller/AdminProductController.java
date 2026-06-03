@@ -2,6 +2,7 @@ package br.com.seushimasushi.backend.menu.controller;
 
 import br.com.seushimasushi.backend.menu.dto.admin.AdminProductResponse;
 import br.com.seushimasushi.backend.menu.dto.admin.ProductImageUploadResponse;
+import java.util.List;
 import br.com.seushimasushi.backend.menu.dto.admin.ProductUpsertRequest;
 import br.com.seushimasushi.backend.menu.dto.common.PagedResponse;
 import br.com.seushimasushi.backend.menu.service.AdminProductService;
@@ -68,6 +69,13 @@ public class AdminProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         adminProductService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Endpoint para excluir varios produtos de uma vez
+    @DeleteMapping("/batch")
+    public ResponseEntity<Void> deleteBatch(@RequestBody List<Long> ids) {
+        adminProductService.deleteAll(ids);
         return ResponseEntity.noContent().build();
     }
 

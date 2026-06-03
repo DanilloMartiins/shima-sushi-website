@@ -8,12 +8,12 @@ import br.com.seushimasushi.backend.menu.dto.admin.ProductUpsertRequest;
 import br.com.seushimasushi.backend.menu.dto.common.PagedResponse;
 import br.com.seushimasushi.backend.menu.model.Product;
 import br.com.seushimasushi.backend.menu.repository.ProductRepository;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,8 +38,8 @@ public class AdminProductService {
 
     @Transactional(readOnly = true)
     public PagedResponse<AdminProductResponse> list(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<AdminProductResponse> productPage = productRepository.findAll(pageable).map(this::toAdminResponse);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AdminProductResponse> productPage = productRepository.findAllWithCategory(pageable).map(this::toAdminResponse);
         return PagedResponse.from(productPage);
     }
 
@@ -83,6 +83,15 @@ public class AdminProductService {
             throw new NotFoundException("Produto nao encontrado");
         }
         productRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteAll(List<Long> ids) {
+        List<Product> produtos = productRepository.findAllById(ids);
+        if (produtos.size() != ids.size()) {
+            throw new NotFoundException("Um ou mais produtos nao encontrados");
+        }
+        productRepository.deleteAll(produtos);
     }
 
     @Transactional

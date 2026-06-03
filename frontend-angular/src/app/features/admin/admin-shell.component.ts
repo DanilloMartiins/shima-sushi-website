@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ClerkService } from '../../core/services/clerk.service';
 
 @Component({
   selector: 'app-admin-shell',
@@ -8,7 +9,10 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   template: `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <a routerLink="/" class="sidebar-title">Seu Shima</a>
+        <a class="brand" routerLink="/">
+          <span>Seu Shima Sushi</span>
+          <span class="brand-mini-logo" aria-hidden="true"></span>
+        </a>
         <nav class="admin-nav">
           <a
             routerLink="/admin/products"
@@ -29,6 +33,10 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
             >Configurações</a
           >
         </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <button type="button" class="btn-logout" (click)="logout()">Sair</button>
       </aside>
       <main class="admin-main-content">
         <router-outlet></router-outlet>
@@ -57,15 +65,29 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         flex-direction: column;
       }
 
-      .sidebar-title {
-        font-size: 24px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 32px;
-        text-align: center;
-        display: block;
+      .brand {
+        color: var(--brand-ink);
         text-decoration: none;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        font-size: 1.45rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 32px;
         cursor: pointer;
+      }
+
+      .brand-mini-logo {
+        position: relative; width: 20px; height: 20px; display: inline-block;
+      }
+      .brand-mini-logo::before {
+        content: ''; position: absolute; top: 0; left: -1px; width: 22px; height: 9px;
+        background: #ea6a3d; clip-path: polygon(10% 100%, 45% 0%, 99% 72%); border-radius: 6px;
+      }
+      .brand-mini-logo::after {
+        content: ''; position: absolute; left: 6px; top: 7px; width: 10px; height: 10px;
+        background: #171214; border-radius: 50%; box-shadow: 0 7px 0 -2px #171214;
       }
 
       .admin-nav {
@@ -93,6 +115,27 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         font-weight: 500;
       }
 
+      .sidebar-spacer {
+        flex: 1;
+      }
+
+      .btn-logout {
+        background: transparent;
+        border: none;
+        color: #e74c3c;
+        font-size: 16px;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: left;
+        transition: background-color 0.2s;
+      }
+
+      .btn-logout:hover {
+        background-color: #fff1f1;
+      }
+
       .admin-main-content {
         flex: 1;
         padding: 32px;
@@ -101,4 +144,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     `,
   ],
 })
-export class AdminShellComponent {}
+export class AdminShellComponent {
+  private readonly clerk = inject(ClerkService);
+  private readonly router = inject(Router);
+
+  logout(): void {
+    void this.clerk.signOut().then(() => {
+      void this.router.navigateByUrl('/');
+    });
+  }
+}
