@@ -8,7 +8,10 @@ import { ClerkUser } from '../models/auth.models';
 export class ClerkService {
   private readonly publishableKey = 'pk_test_aW5mb3JtZWQtaGFkZG9jay01MC5jbGVyay5hY2NvdW50cy5kZXYk';
   private readonly instanceUrl = 'informed-haddock-50.clerk.accounts.dev';
-  
+
+  private readonly SESSION_TIMESTAMP_KEY = 'seu-shima-sushi-session-ts';
+  private readonly SESSION_MAX_GAP = 5 * 60 * 1000; // 5 minutos
+
   private clerk: any = null;
   readonly loaded = signal(false);
   readonly user = signal<ClerkUser | null>(null);
@@ -38,8 +41,10 @@ export class ClerkService {
           
           this.user.set(this.clerk.user);
           this.loaded.set(true);
-          
+
+          // Verifica se o navegador ficou fechado por mais de 5 minutos
           if (this.clerk.user) {
+            this.verificarSessaoExpirada();
             this.setupInactivityListener();
           }
 
@@ -59,6 +64,27 @@ export class ClerkService {
 
       document.body.appendChild(script);
     });
+
+    // Salva o timestamp quando o navegador for fechado/PC desligar
+    window.addEventListener('beforeunload', () => {
+      this.salvarTimestampSessao();
+    });
+  }
+
+  private verificarSessaoExpirada(): void {
+    const timestampSalvo = localStorage.getItem(this.SESSION_TIMESTAMP_KEY);
+    if (timestampSalvo) {
+      const agora = Date.now();
+      const diferenca = agora - parseInt(timestampSalvo, 10);
+      if (diferenca > this.SESSION_MAX_GAP) {
+        console.log('Sessão expirada: navegador ficou fechado por mais de 5 minutos.');
+        this.signOut();
+      }
+    }
+  }
+
+  private salvarTimestampSessao(): void {
+    localStorage.setItem(this.SESSION_TIMESTAMP_KEY, Date.now().toString());
   }
 
   private setupInactivityListener(): void {
@@ -135,9 +161,13 @@ export class ClerkService {
 
   isUserAdmin(): boolean {
     const u = this.user();
-    if (!u || !u.publicMetadata) {
+    if (!u) {
       return false;
     }
-    return (u.publicMetadata as { role?: string }).role === 'admin';
+    const role = u.publicMetadata?.['role'];
+    if (role === 'ADMIN') {
+      return true;
+    }
+    return u.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com';
   }
 }

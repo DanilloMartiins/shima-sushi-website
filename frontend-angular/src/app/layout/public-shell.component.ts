@@ -22,7 +22,7 @@ import { CartService } from '../core/services/cart.service';
             >Cardapio</a
           >
           <a routerLink="/orders" routerLinkActive="is-active">Meus pedidos</a>
-          <a *ngIf="isUserAdmin()" routerLink="/admin" routerLinkActive="is-active"
+          <a *ngIf="clerk.isUserAdmin()" routerLink="/admin" routerLinkActive="is-active"
             >Admin</a
           >
         </nav>
@@ -97,86 +97,57 @@ import { CartService } from '../core/services/cart.service';
       background: #171214; border-radius: 50%; box-shadow: 0 7px 0 -2px #171214;
     }
 
-    .menu-links { display: flex; align-items: center; gap: 0.4rem; }
+    .menu-links { display: flex; align-items: stretch; gap: 0.25rem; }
     .menu-links a {
-      color: var(--brand-muted); text-decoration: none; font-size: 0.95rem;
-      padding: 0.4rem 0.6rem; border-radius: 999px; transition: 180ms ease;
-      white-space: nowrap;
+      color: var(--brand-muted); text-decoration: none; font-size: 0.85rem;
+      padding: 0.35rem 0.55rem; border-radius: 8px; transition: 180ms ease;
+      white-space: nowrap; display: flex; align-items: center; line-height: 1.35;
     }
     .menu-links a.is-active { background: rgba(234, 106, 61, 0.14); color: var(--brand-orange-strong); }
 
-    .topbar-actions { display: flex; align-items: center; gap: 0.6rem; }
+    .topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
 
     .cart-chip {
       text-decoration: none; color: #fff; background: var(--brand-ink);
-      padding: 0.4rem 0.75rem; border-radius: 999px; font-size: 0.8rem;
-      display: flex; align-items: center; gap: 0.3rem;
+      border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 0.3rem; line-height: 1.35;
     }
 
-    /* Estilo do novo Perfil */
     .user-profile-link {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      padding: 0.2rem;
-      border-radius: 99px;
-      transition: background 0.2s;
+      display: flex; align-items: center; gap: 0.4rem;
+      text-decoration: none; padding: 0.15rem 0.2rem;
+      border-radius: 99px; transition: background 0.2s;
     }
     .user-profile-link:hover { background: rgba(0,0,0,0.04); }
 
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1.5px solid var(--brand-orange);
-    }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--brand-orange); }
 
-    .user-name {
-      color: var(--brand-ink);
-      font-weight: 600;
-      font-size: 0.85rem;
-      max-width: 100px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .user-name { color: var(--brand-ink); font-weight: 600; font-size: 0.82rem; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .btn-logout {
-      background: transparent;
-      border: none;
-      color: var(--brand-muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      padding: 0.4rem;
-      border-radius: 50%;
-      transition: 0.2s;
-    }
+    .btn-logout { background: transparent; border: none; color: var(--brand-muted); cursor: pointer; display: flex; align-items: center; padding: 0.3rem; border-radius: 50%; transition: 0.2s; }
     .btn-logout:hover { background: #fff1f1; color: #ff4d4d; }
 
-    .btn {
-      border: 1px solid transparent; border-radius: 999px; padding: 0.4rem 0.7rem;
-      font-size: 0.8rem; text-decoration: none; cursor: pointer;
-    }
+    .btn { border-radius: 8px; padding: 0.35rem 0.8rem; font-size: 0.85rem; text-decoration: none; cursor: pointer; line-height: 1.35; border: 1px solid transparent; }
     .btn.ghost { color: var(--brand-ink); background: transparent; border-color: var(--brand-border); }
-    .btn.solid { color: #fff; background: var(--brand-orange); }
+    .btn.solid { color: #fff; background: var(--brand-orange); border-color: var(--brand-orange); }
 
     .content-wrap { width: min(1280px, 100% - 1.5rem); margin: 1.2rem auto 3rem; }
 
     @media (max-width: 900px) {
-      .topbar { padding: 0.7rem 1rem; }
-      .menu-links { order: 3; width: 100%; justify-content: space-around; border-top: 1px solid var(--brand-border); padding-top: 0.5rem; }
+      .topbar { padding: 0.55rem 0.75rem; }
+      .menu-links { order: 3; width: 100%; justify-content: space-around; border-top: 1px solid var(--brand-border); padding-top: 0.35rem; margin-top: 0.15rem; }
       .topbar-actions { margin-left: auto; }
       .user-name { display: none; }
-      .brand { font-size: 1.25rem; }
+      .brand { font-size: 1.1rem; }
+      .menu-links a { font-size: 0.82rem; padding: 0.3rem 0.45rem; }
     }
     
     @media (max-width: 480px) {
-      .menu-links a { font-size: 0.85rem; padding: 0.3rem 0.5rem; }
-      .topbar-actions { gap: 0.4rem; }
-      .btn { padding: 0.35rem 0.6rem; }
+      .topbar { gap: 0.4rem; }
+      .menu-links a { font-size: 0.8rem; padding: 0.25rem 0.35rem; }
+      .topbar-actions { gap: 0.3rem; }
+      .btn { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
+      .brand { font-size: 0.95rem; }
     }
   `,
   ],
@@ -186,11 +157,6 @@ export class PublicShellComponent {
   readonly cartService = inject(CartService);
 
   private readonly router = inject(Router);
-
-  isUserAdmin(): boolean {
-    const user = this.clerk.user();
-    return !!(user && (user.publicMetadata?.['role'] === 'ADMIN' || user.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com'));
-  }
 
   logout(): void {
     void this.clerk.signOut().then(() => {

@@ -268,36 +268,27 @@ import { AddressResponse } from '../../core/models/address.models';
     
     .btn-change { 
       align-self: flex-start;
-      background: #fff; 
-      border: 1px solid #fee6d8; 
-      color: var(--brand-orange-strong); 
-      padding: 0.5rem 1.25rem; 
-      border-radius: 99px; 
-      cursor: pointer; 
-      font-size: 0.85rem; 
-      font-weight: 600;
-      transition: all 0.2s;
+      background: #fff; border: 1px solid #fee6d8;
+      color: var(--brand-orange-strong);
+      padding: 0.35rem 0.8rem; border-radius: 8px;
+      cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      line-height: 1.35; transition: all 0.2s;
     }
     .btn-change:hover { border-color: var(--brand-orange); background: var(--brand-orange); color: #fff; }
 
-    .btn-clear { background: transparent; color: #ff4d4d; border: 0; padding: 0.5rem 1rem; border-radius: 99px; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+    .btn-clear { background: transparent; color: #ff4d4d; border: 0; padding: 0.35rem 0.8rem; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 0.85rem; line-height: 1.35; }
     .btn-clear:hover { background: #fff1f1; }
 
     .btn-confirm { 
-      width: 100%; 
-      padding: 1.1rem; 
-      background: var(--brand-orange); 
-      color: #fff; 
-      border: none; 
-      border-radius: 99px; 
-      font-weight: 700; 
-      font-size: 1.15rem; 
-      cursor: pointer; 
-      box-shadow: 0 10px 20px rgba(234, 106, 61, 0.2);
-      transition: all 0.3s ease;
-      margin-top: 1rem;
+      width: 100%; padding: 0.6rem;
+      background: var(--brand-orange); color: #fff;
+      border: none; border-radius: 8px;
+      font-weight: 700; font-size: 0.95rem;
+      cursor: pointer; line-height: 1.35;
+      box-shadow: 0 8px 16px rgba(234, 106, 61, 0.18);
+      transition: all 0.25s ease; margin-top: 1rem;
     }
-    .btn-confirm:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(234, 106, 61, 0.3); background: #d3542d; }
+    .btn-confirm:hover:not(:disabled) { filter: brightness(1.1); box-shadow: 0 10px 20px rgba(234, 106, 61, 0.25); }
     .btn-confirm:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
     .form-row { display: flex; gap: 1.25rem; }
@@ -348,8 +339,8 @@ import { AddressResponse } from '../../core/models/address.models';
 
     .empty-box { text-align: center; padding: 5rem 2rem; background: #fff; border-radius: 24px; border: 1px solid var(--brand-border); box-shadow: 0 4px 24px rgba(0,0,0,0.03); }
     .empty-box p { font-size: 1.2rem; color: #666; margin-bottom: 2rem; }
-    .btn-back { display: inline-block; background: var(--brand-ink); color: #fff; text-decoration: none; padding: 1rem 2.5rem; border-radius: 99px; font-weight: 700; transition: all 0.2s; }
-    .btn-back:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+    .btn-back { display: inline-block; background: var(--brand-ink); color: #fff; text-decoration: none; padding: 0.35rem 0.8rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; line-height: 1.35; transition: all 0.2s; }
+    .btn-back:hover { filter: brightness(1.2); }
 
     .animate-fade { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

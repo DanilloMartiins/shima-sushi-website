@@ -132,9 +132,9 @@ import { AddressResponse } from '../../core/models/address.models';
 
     .form-actions { display: flex; gap: 1rem; margin-top: 1rem; }
     
-    .btn-add, .btn-save { background: var(--brand-orange); color: #fff; border: none; padding: 0.8rem 1.5rem; border-radius: 99px; cursor: pointer; font-weight: bold; }
-    .btn-edit { background: white; color: var(--brand-orange-strong); border: 1px solid var(--brand-orange-strong); padding: 0.6rem 1rem; border-radius: 99px; cursor: pointer; }
-    .btn-cancel, .btn-delete { background: transparent; color: var(--brand-muted); border: 1px solid var(--brand-border); padding: 0.6rem 1rem; border-radius: 99px; cursor: pointer; }
+    .btn-add, .btn-save { background: var(--brand-orange); color: #fff; border: none; border-radius: 8px; padding: 0.35rem 0.8rem; cursor: pointer; font-weight: 700; font-size: 0.85rem; line-height: 1.35; }
+    .btn-edit { background: white; color: var(--brand-orange-strong); border: 1px solid var(--brand-orange-strong); border-radius: 8px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.85rem; line-height: 1.35; }
+    .btn-cancel, .btn-delete { background: transparent; color: var(--brand-muted); border: 1px solid var(--brand-border); border-radius: 8px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.85rem; line-height: 1.35; }
     .btn-delete:hover { background: #fff1f1; color: #ff4d4d; border-color: #ff4d4d; }
 
     @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }

@@ -39,10 +39,11 @@ public class PublicMenuService {
 
             List<PublicMenuProductResponse> productResponses = new ArrayList<>();
             for (Produto p : produtosDaCategoria) {
+                String descricao = gerarDescricao(p.getNome(), nomeCategoria);
                 productResponses.add(new PublicMenuProductResponse(
                         p.getId(),
                         p.getNome(),
-                        "Item do Cardápio Yooga - " + nomeCategoria,
+                        descricao,
                         p.getPreco(),
                         p.getUrlImagem()
                 ));
@@ -61,11 +62,103 @@ public class PublicMenuService {
         if (!semCategoria.isEmpty()) {
             List<PublicMenuProductResponse> extraResponses = new ArrayList<>();
             for (Produto p : semCategoria) {
-                extraResponses.add(new PublicMenuProductResponse(p.getId(), p.getNome(), "Cardápio Geral", p.getPreco(), p.getUrlImagem()));
+                String descricao = gerarDescricao(p.getNome(), "Geral");
+                extraResponses.add(new PublicMenuProductResponse(p.getId(), p.getNome(), descricao, p.getPreco(), p.getUrlImagem()));
             }
             categorias.add(new PublicMenuCategoryResponse(999L, "Geral", "Outros produtos", extraResponses));
         }
 
         return categorias;
+    }
+
+    /**
+     * Gera uma descricao bonitinha pro produto baseada no nome.
+     * Como os produtos do scraper nao tem descricao, a gente improvisa.
+     */
+    private String gerarDescricao(String nome, String categoria) {
+        if (nome == null || nome.isBlank()) {
+            return "Produto delicioso do nosso cardapio.";
+        }
+
+        String nomeLower = nome.toLowerCase();
+
+        // Combinados
+        if (nomeLower.contains("combinado")) {
+            if (nomeLower.contains("salmao")) {
+                return "Selecao especial de sushis e sashimis de salmao fresco.";
+            }
+            if (nomeLower.contains("hot")) {
+                return "Combinado de sushis empanados e fritos, crocantes por fora e macios por dentro.";
+            }
+            return "Variados sushis e sashimis selecionados para compartilhar.";
+        }
+
+        // Hot rolls (ex: Hot Philadelphia, Hot Filadelfia, etc.)
+        if (nomeLower.contains("hot") && !nomeLower.contains("combinado") && !nomeLower.contains("temaki")) {
+            if (nomeLower.contains("philadelphia") || nomeLower.contains("filadelfia")) {
+                return "Hot roll recheado com salmao e cream cheese, empanado e frito.";
+            }
+            if (nomeLower.contains("salmao")) {
+                return "Hot roll de salmao, empanado e frito, com molho especial.";
+            }
+            return "Hot roll empanado e frito, crocante por fora e macio por dentro.";
+        }
+
+        // Temakis
+        if (nomeLower.contains("temaki")) {
+            if (nomeLower.contains("salmao") && !nomeLower.contains("hot") && !nomeLower.contains("skin")) {
+                return "Cone de nori recheado com salmao, cream cheese e cebolinha.";
+            }
+            if (nomeLower.contains("hot")) {
+                return "Cone de nori recheado com salmao, empanado e frito, com cream cheese e molho tare.";
+            }
+            if (nomeLower.contains("skin")) {
+                return "Cone de nori com pele de salmao grelhada, cream cheese e molho tare.";
+            }
+            return "Cone de nori recheado com ingredientes selecionados.";
+        }
+
+        // Bebidas
+        if (nomeLower.contains("refrigerante") || nomeLower.contains("lata")) {
+            return "Bebida gelada na lata para acompanhar seu pedido.";
+        }
+        if (nomeLower.contains("agua") || nomeLower.contains("agua")) {
+            return "Agua mineral fresquinha.";
+        }
+        if (nomeLower.contains("cha") || nomeLower.contains("cha")) {
+            return "Cha gelado refrescante para acompanhar seu sushi.";
+        }
+
+        // Ceviche
+        if (nomeLower.contains("ceviche")) {
+            return "Ceviche fresquinho preparado na hora com peixe e temperos especiais.";
+        }
+
+        // Acompanhamentos
+        if (nomeLower.contains("sunomono")) {
+            return "Saladinha de pepino agridoce com gergelim, tradicional da culinaria japonesa.";
+        }
+        if (nomeLower.contains("gengibre")) {
+            return "Fatias de gengibre em conserva para limpar o paladar entre as pecas.";
+        }
+        if (nomeLower.contains("edamame")) {
+            return "Graos de soja verde cozidos e levemente salgados.";
+        }
+
+        // Fallback generico baseado na categoria
+        if (categoria != null) {
+            String catLower = categoria.toLowerCase();
+            if (catLower.contains("bebida")) {
+                return "Bebida para acompanhar seu pedido.";
+            }
+            if (catLower.contains("temaki")) {
+                return "Temaki fresquinho preparado na hora.";
+            }
+            if (catLower.contains("combinado") || catLower.contains("combinado")) {
+                return "Combinado de sushis e sashimis selecionados.";
+            }
+        }
+
+        return "Produto fresco e saboroso do Seu Shima Sushi.";
     }
 }
