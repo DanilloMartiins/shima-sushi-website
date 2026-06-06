@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record UpdateStoreSettingsRequest(
         @NotNull(message = "Status da loja e obrigatorio")
@@ -29,6 +30,18 @@ public record UpdateStoreSettingsRequest(
 
         @NotNull(message = "Pedido minimo e obrigatorio")
         @DecimalMin(value = "0.00", message = "Pedido minimo nao pode ser negativo")
-        BigDecimal minimumOrderValue
+        BigDecimal minimumOrderValue,
+
+        @NotBlank(message = "Tempo estimado de entrega e obrigatorio")
+        String estimatedDeliveryTime,
+
+        @NotNull(message = "Horarios de funcionamento sao obrigatorios")
+        List<BusinessHoursDayDto> businessHours,
+
+        @NotNull(message = "Metodos de pagamento sao obrigatorios")
+        PaymentMethodsConfigDto paymentMethods,
+
+        @NotNull(message = "Perfil da loja e obrigatorio")
+        StoreProfileDto storeProfile
 ) {
 }

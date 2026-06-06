@@ -1,5 +1,5 @@
 import { MenuCategoryResponse } from '../models/menu.models';
-import { StoreSettingsResponse } from '../models/store.models';
+import { StoreSettingsResponse, DEFAULT_BUSINESS_HOURS, DEFAULT_PAYMENT_METHODS } from '../models/store.models';
 
 export const PUBLIC_STORE_SETTINGS_MOCK: StoreSettingsResponse = {
   id: 1,
@@ -9,6 +9,19 @@ export const PUBLIC_STORE_SETTINGS_MOCK: StoreSettingsResponse = {
   whatsappNumber: '5581989543788',
   deliveryFee: 5.0,
   minimumOrderValue: 30.0,
+  businessHours: DEFAULT_BUSINESS_HOURS,
+  paymentMethods: DEFAULT_PAYMENT_METHODS,
+  estimatedDeliveryTime: '40 - 60 min',
+  storeProfile: {
+    logoUrl: '',
+    coverUrl: '',
+    addressStreet: 'Rua Exemplo',
+    addressNumber: '123',
+    neighborhood: 'Centro',
+    city: 'Cidade Exemplo',
+    zipCode: '00000-000',
+    referencePoint: '',
+  },
 };
 
 export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [

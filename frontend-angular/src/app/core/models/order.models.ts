@@ -2,6 +2,7 @@ export type DeliveryType = 'RETIRADA' | 'ENTREGA';
 export type PaymentMethod = 'PIX' | 'CARTAO_CREDITO' | 'DINHEIRO';
 export type OrderStatus =
   | 'CREATED'
+  | 'PENDING_PAYMENT'
   | 'CONFIRMED'
   | 'PREPARING'
   | 'OUT_FOR_DELIVERY'

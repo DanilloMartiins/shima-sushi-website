@@ -18,9 +18,7 @@ import { CartService } from '../core/services/cart.service';
         </a>
 
         <nav class="menu-links">
-          <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
-            >Cardapio</a
-          >
+          <a routerLink="/cardapio" routerLinkActive="is-active">Cardapio</a>
           <a routerLink="/orders" routerLinkActive="is-active">Meus pedidos</a>
           <a *ngIf="clerk.isUserAdmin()" routerLink="/admin" routerLinkActive="is-active"
             >Admin</a
@@ -127,7 +125,7 @@ import { CartService } from '../core/services/cart.service';
     .btn-logout { background: transparent; border: none; color: var(--brand-muted); cursor: pointer; display: flex; align-items: center; padding: 0.3rem; border-radius: 50%; transition: 0.2s; }
     .btn-logout:hover { background: #fff1f1; color: #ff4d4d; }
 
-    .btn { border-radius: 8px; padding: 0.35rem 0.8rem; font-size: 0.85rem; text-decoration: none; cursor: pointer; line-height: 1.35; border: 1px solid transparent; }
+    .btn { border-radius: 8px; padding: 0.35rem 0.8rem; font-size: 0.85rem; text-decoration: none; cursor: pointer; line-height: 1.35; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; }
     .btn.ghost { color: var(--brand-ink); background: transparent; border-color: var(--brand-border); }
     .btn.solid { color: #fff; background: var(--brand-orange); border-color: var(--brand-orange); }
 

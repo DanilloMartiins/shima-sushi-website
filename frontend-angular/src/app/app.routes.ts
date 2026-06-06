@@ -17,6 +17,11 @@ export const routes: Routes = [
           import('./features/public/home-page.component').then((m) => m.HomePageComponent),
       },
       {
+        path: 'cardapio',
+        loadComponent: () =>
+          import('./features/public/menu-page.component').then((m) => m.MenuPageComponent),
+      },
+      {
         path: 'login',
         loadComponent: () =>
           import('./features/auth/login-page.component').then((m) => m.LoginPageComponent),

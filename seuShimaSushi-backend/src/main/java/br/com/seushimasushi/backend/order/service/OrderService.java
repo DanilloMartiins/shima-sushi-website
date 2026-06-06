@@ -15,6 +15,7 @@ import br.com.seushimasushi.backend.order.model.DeliveryType;
 import br.com.seushimasushi.backend.order.model.Order;
 import br.com.seushimasushi.backend.order.model.OrderItem;
 import br.com.seushimasushi.backend.order.model.OrderStatus;
+import br.com.seushimasushi.backend.order.model.PaymentMethod;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +58,7 @@ public class OrderService {
         // Criamos a instância do pedido com o ID do Clerk
         Order order = new Order(
                 customerClerkId,
-                OrderStatus.CREATED,
+                OrderStatus.PENDING_PAYMENT,
                 request.paymentMethod(),
                 request.deliveryType(),
                 normalizeNullable(request.deliveryAddress()),
@@ -74,7 +76,6 @@ public class OrderService {
             }
 
             // Tentamos buscar primeiro na tabela de produtos manuais (Admin)
-            // Se não achar, buscamos na tabela de produtos raspados (Yooga)
             String productName;
             BigDecimal unitPrice;
 
@@ -121,13 +122,113 @@ public class OrderService {
     public List<OrderResponse> getMyOrders(String customerClerkId) {
         // Buscamos os pedidos filtrando pelo ID do Clerk
         List<Order> orders = orderRepository.findByCustomerClerkIdOrderByCreatedAtDesc(customerClerkId);
+
+        // Mock para testes — se não tiver pedidos reais, retorna dados fictícios
+        if (orders.isEmpty()) {
+            return getMockOrders(customerClerkId);
+        }
+
         List<OrderResponse> responses = new ArrayList<>();
-        
         for (Order order : orders) {
             responses.add(toResponse(order, true));
         }
-        
         return responses;
+    }
+
+    private List<OrderResponse> getMockOrders(String clerkId) {
+        CustomerSummaryResponse customer = new CustomerSummaryResponse(clerkId);
+        Instant now = Instant.now();
+
+        return List.of(
+            // 1. Pendente de pagamento
+            new OrderResponse(
+                1000L, OrderStatus.PENDING_PAYMENT, PaymentMethod.PIX, DeliveryType.ENTREGA,
+                "Rua Sete de Setembro, 300 - Centro, Vitória - ES",
+                "Pagamento via Pix pendente", BigDecimal.valueOf(85), BigDecimal.valueOf(85), 2,
+                "Pedro Almeida", now.minusSeconds(120), now.minusSeconds(120), customer,
+                List.of(
+                    new OrderItemResponse(1L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65)),
+                    new OrderItemResponse(2L, "Temaki Hot", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20))
+                )
+            ),
+            // 2. Confirmado
+            new OrderResponse(
+                1001L, OrderStatus.CONFIRMED, PaymentMethod.PIX, DeliveryType.ENTREGA,
+                "Rua das Palmeiras, 150 - Jardim da Penha, Vitória - ES",
+                "Sem cebola", BigDecimal.valueOf(62.5), BigDecimal.valueOf(62.5), 3,
+                "Cliente Teste", now.minusSeconds(36000), now.minusSeconds(35800), customer,
+                List.of(
+                    new OrderItemResponse(1L, "Combinado Salmão (20 peças)", 1, BigDecimal.valueOf(38), BigDecimal.valueOf(38)),
+                    new OrderItemResponse(2L, "Hot Roll Filadélfia (8 peças)", 1, BigDecimal.valueOf(18), BigDecimal.valueOf(18)),
+                    new OrderItemResponse(3L, "H2O Limão 500ml", 1, BigDecimal.valueOf(6.5), BigDecimal.valueOf(6.5))
+                )
+            ),
+            // 2. Em preparação
+            new OrderResponse(
+                1002L, OrderStatus.PREPARING, PaymentMethod.DINHEIRO, DeliveryType.RETIRADA,
+                null, null, BigDecimal.valueOf(45), BigDecimal.valueOf(45), 3,
+                "Cliente Teste", now.minusSeconds(1800), now.minusSeconds(1200), customer,
+                List.of(
+                    new OrderItemResponse(4L, "Temaki de Salmão Completo", 1, BigDecimal.valueOf(25), BigDecimal.valueOf(25)),
+                    new OrderItemResponse(5L, "Sunomono", 1, BigDecimal.valueOf(12), BigDecimal.valueOf(12)),
+                    new OrderItemResponse(6L, "Jōgo de Chá", 1, BigDecimal.valueOf(8), BigDecimal.valueOf(8))
+                )
+            ),
+            // 3. Saiu para entrega
+            new OrderResponse(
+                1003L, OrderStatus.OUT_FOR_DELIVERY, PaymentMethod.CARTAO_CREDITO, DeliveryType.ENTREGA,
+                "Av. Marechal Campos, 500 - Mata da Praia, Vitória - ES",
+                "Tocar interfone 2x", BigDecimal.valueOf(97.5), BigDecimal.valueOf(97.5), 4,
+                "Cliente Teste", now.minusSeconds(5400), now.minusSeconds(2400), customer,
+                List.of(
+                    new OrderItemResponse(7L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65)),
+                    new OrderItemResponse(8L, "Temaki Hot", 1, BigDecimal.valueOf(28), BigDecimal.valueOf(28)),
+                    new OrderItemResponse(9L, "Refrigerante lata", 2, BigDecimal.valueOf(6), BigDecimal.valueOf(12))
+                )
+            ),
+            // 4. Cancelado
+            new OrderResponse(
+                1004L, OrderStatus.CANCELLED, PaymentMethod.PIX, DeliveryType.ENTREGA,
+                "Rua da Praia, 88 - Praia do Canto, Vitória - ES",
+                "Cliente desistiu", BigDecimal.valueOf(32), BigDecimal.valueOf(32), 1,
+                "Cliente Teste", now.minusSeconds(172800), now.minusSeconds(171900), customer,
+                List.of(
+                    new OrderItemResponse(10L, "Uramaki Filadélfia (12 peças)", 1, BigDecimal.valueOf(32), BigDecimal.valueOf(32))
+                )
+            ),
+            // 5. Completo
+            new OrderResponse(
+                1005L, OrderStatus.COMPLETED, PaymentMethod.PIX, DeliveryType.RETIRADA,
+                null, "Quero wasabi extra", BigDecimal.valueOf(28), BigDecimal.valueOf(28), 3,
+                "Cliente Teste", now.minusSeconds(86400), now.minusSeconds(85800), customer,
+                List.of(
+                    new OrderItemResponse(11L, "Temaki Skin", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20)),
+                    new OrderItemResponse(12L, "Água Mineral", 1, BigDecimal.valueOf(3), BigDecimal.valueOf(3)),
+                    new OrderItemResponse(13L, "Chá Gelado (Copo)", 1, BigDecimal.valueOf(5), BigDecimal.valueOf(5))
+                )
+            )
+        );
+    }
+
+    @Transactional
+    public OrderResponse cancelMyOrder(Long orderId, String clerkUserId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Pedido não encontrado"));
+
+        if (!order.getCustomerClerkId().equals(clerkUserId)) {
+            throw new BadRequestException("Esse pedido não pertence ao usuário logado");
+        }
+
+        if (!order.getStatus().canTransitionTo(OrderStatus.CANCELLED)) {
+            throw new BadRequestException(
+                    "Não é possível cancelar um pedido com status " + order.getStatus()
+            );
+        }
+
+        order.setNotes(reason);
+        order.setStatus(OrderStatus.CANCELLED);
+        Order updated = orderRepository.save(order);
+        return toResponse(updated, true);
     }
 
     @Transactional(readOnly = true)

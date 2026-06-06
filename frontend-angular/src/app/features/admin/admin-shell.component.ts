@@ -9,10 +9,10 @@ import { ClerkService } from '../../core/services/clerk.service';
   template: `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <a class="brand" routerLink="/">
+        <span class="brand">
           <span>Seu Shima Sushi</span>
           <span class="brand-mini-logo" aria-hidden="true"></span>
-        </a>
+        </span>
         <nav class="admin-nav">
           <a
             routerLink="/admin/products"
@@ -67,7 +67,6 @@ import { ClerkService } from '../../core/services/clerk.service';
 
       .brand {
         color: var(--brand-ink);
-        text-decoration: none;
         font-weight: 800;
         letter-spacing: 0.4px;
         font-size: 1.45rem;
@@ -75,7 +74,6 @@ import { ClerkService } from '../../core/services/clerk.service';
         align-items: center;
         gap: 0.45rem;
         margin-bottom: 32px;
-        cursor: pointer;
       }
 
       .brand-mini-logo {

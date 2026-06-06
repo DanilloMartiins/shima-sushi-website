@@ -1,6 +1,7 @@
 package br.com.seushimasushi.backend.menu.dto.store;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record StoreSettingsResponse(
         Integer id,
@@ -9,6 +10,10 @@ public record StoreSettingsResponse(
         String closingMessage,
         String whatsappNumber,
         BigDecimal deliveryFee,
-        BigDecimal minimumOrderValue
+        BigDecimal minimumOrderValue,
+        String estimatedDeliveryTime,
+        List<BusinessHoursDayDto> businessHours,
+        PaymentMethodsConfigDto paymentMethods,
+        StoreProfileDto storeProfile
 ) {
 }

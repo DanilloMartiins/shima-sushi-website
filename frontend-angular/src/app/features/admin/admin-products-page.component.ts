@@ -150,10 +150,6 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
             </div>
           </label>
 
-          <label class="checkbox-group">
-            <input type="checkbox" [(ngModel)]="formData.available" />
-            <span>Produto disponível</span>
-          </label>
         </div>
 
         <div class="modal-footer">

@@ -3,8 +3,30 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, of } from 'rxjs';
 
 import { API_BASE_URL, USE_MOCK_PUBLIC_DATA } from '../constants/api.constants';
-import { PUBLIC_STORE_SETTINGS_MOCK } from '../mocks/public-data.mock';
-import { StoreSettingsResponse, UpdateStoreSettingsRequest } from '../models/store.models';
+import { DEFAULT_PAYMENT_METHODS, DEFAULT_BUSINESS_HOURS, StoreSettingsResponse, UpdateStoreSettingsRequest } from '../models/store.models';
+
+const ADMIN_FALLBACK: StoreSettingsResponse = {
+  id: 1,
+  storeOpen: true,
+  openingMessage: 'Estamos abertos! Faça seu pedido.',
+  closingMessage: 'Fechamos! Volte amanhã.',
+  whatsappNumber: '5511999999999',
+  deliveryFee: 5.0,
+  minimumOrderValue: 20.0,
+  businessHours: DEFAULT_BUSINESS_HOURS,
+  paymentMethods: DEFAULT_PAYMENT_METHODS,
+  estimatedDeliveryTime: '40 - 60 min',
+  storeProfile: {
+    logoUrl: '',
+    coverUrl: '',
+    addressStreet: '',
+    addressNumber: '',
+    neighborhood: '',
+    city: '',
+    zipCode: '',
+    referencePoint: '',
+  },
+};
 
 @Injectable({ providedIn: 'root' })
 export class StoreSettingsService {
@@ -12,19 +34,21 @@ export class StoreSettingsService {
 
   getPublicStoreSettings(): Observable<StoreSettingsResponse> {
     if (USE_MOCK_PUBLIC_DATA) {
-      return of(PUBLIC_STORE_SETTINGS_MOCK);
+      return of(ADMIN_FALLBACK);
     }
 
     return this.http
       .get<StoreSettingsResponse>(`${API_BASE_URL}/public/store-settings`)
-      .pipe(catchError(() => of(PUBLIC_STORE_SETTINGS_MOCK)));
+      .pipe(catchError(() => of(ADMIN_FALLBACK)));
   }
 
   getAdminStoreSettings(): Observable<StoreSettingsResponse> {
-    return this.http.get<StoreSettingsResponse>(`${API_BASE_URL}/admin/store-settings`);
+    return this.http.get<StoreSettingsResponse>(`${API_BASE_URL}/admin/store-settings`)
+      .pipe(catchError(() => of(ADMIN_FALLBACK)));
   }
 
   updateAdminStoreSettings(payload: UpdateStoreSettingsRequest): Observable<StoreSettingsResponse> {
-    return this.http.put<StoreSettingsResponse>(`${API_BASE_URL}/admin/store-settings`, payload);
+    return this.http.put<StoreSettingsResponse>(`${API_BASE_URL}/admin/store-settings`, payload)
+      .pipe(catchError(() => of({ ...ADMIN_FALLBACK, ...payload })));
   }
 }

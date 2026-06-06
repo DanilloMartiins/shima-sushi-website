@@ -26,6 +26,13 @@ export class OrdersService {
     return this.http.get<OrderResponse[]>(`${this.ordersEndpoint}/me`);
   }
 
+  cancelMyOrder(orderId: number, reason: string): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(
+      `${this.ordersEndpoint}/${orderId}/cancel`,
+      { reason },
+    );
+  }
+
   getAdminOrders(page = 0, size = 20): Observable<PagedResponse<OrderResponse>> {
     return this.http.get<PagedResponse<OrderResponse>>(this.adminOrdersEndpoint, {
       params: { page: page.toString(), size: size.toString() },
