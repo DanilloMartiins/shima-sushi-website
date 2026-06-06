@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:SeuShimaSushi}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:Ester@2020}
+    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:

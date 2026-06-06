@@ -60,3 +60,8 @@ export interface OrderResponse {
 export interface UpdateOrderStatusRequest {
   status: OrderStatus;
 }
+
+export interface OrderStatusResponse {
+  id: number;
+  status: OrderStatus;
+}

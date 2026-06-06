@@ -44,6 +44,12 @@ export const routes: Routes = [
           import('./features/orders/my-orders-page.component').then((m) => m.MyOrdersPageComponent),
       },
       {
+        path: 'pedido/:id',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/orders/order-status-page.component').then((m) => m.OrderStatusPageComponent),
+      },
+      {
         path: 'perfil',
         canActivate: [authGuard],
         loadComponent: () =>
