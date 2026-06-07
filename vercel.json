@@ -1,7 +1,6 @@
 {
-  "rootDirectory": "frontend-angular",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/frontend-angular/browser",
+  "buildCommand": "cd frontend-angular && npm install && npm run build",
+  "outputDirectory": "frontend-angular/dist/frontend-angular/browser",
   "nodeVersion": "20.x",
   "rewrites": [
     {
