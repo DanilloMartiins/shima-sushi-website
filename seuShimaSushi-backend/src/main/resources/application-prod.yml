@@ -1,9 +1,12 @@
 spring:
   datasource:
-    url: jdbc:${DATABASE_URL}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      ssl: true
+      maximum-pool-size: 5
+      minimum-idle: 1
   jpa:
     open-in-view: false
     hibernate:
