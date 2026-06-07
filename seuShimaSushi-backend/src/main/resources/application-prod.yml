@@ -1,19 +1,23 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}?sslmode=require
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      ssl: true
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+    show-sql: false
   flyway:
     enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
     placeholders:
       admin_name: ${ADMIN_NAME}
       admin_email: ${ADMIN_EMAIL}
-      admin_password: ${ADMIN_PASSWORD}
-
+      admin_clerk_id: ${ADMIN_CLERK_ID}
   security:
     oauth2:
       resourceserver:
