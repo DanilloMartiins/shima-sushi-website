@@ -84,6 +84,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'orders',
+        loadComponent: () =>
+          import('./features/admin/admin-orders-page.component').then(
+            (m) => m.AdminOrdersPageComponent,
+          ),
+      },
+      {
         path: 'users',
         loadComponent: () =>
           import('./features/admin/admin-users-page.component').then(
