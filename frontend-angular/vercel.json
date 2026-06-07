@@ -1,4 +1,5 @@
 {
+  "rootDirectory": "frontend-angular",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/frontend-angular/browser",
   "nodeVersion": "20.x",
