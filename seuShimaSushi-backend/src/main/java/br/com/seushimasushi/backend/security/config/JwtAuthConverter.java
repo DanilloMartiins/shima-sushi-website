@@ -31,34 +31,45 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
         if (clerkId != null) {
-            Optional<User> userOpt = userRepository.findByClerkId(clerkId);
+            User user = buscarOuCriarUsuario(jwt, clerkId);
 
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
-
-                if ("ADMIN".equals(user.getRole())) {
-                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                }
-            } else {
-                // fallback: tenta encontrar pelo email do JWT (Clerk envia email no claim padrao)
-                String email = jwt.getClaimAsString("email");
-                if (email != null) {
-                    Optional<User> userByEmail = userRepository.findByEmail(email);
-                    if (userByEmail.isPresent()) {
-                        User user = userByEmail.get();
-
-                        // atualiza o clerk_id pra proxima vez bater direto
-                        user.setClerkId(clerkId);
-                        userRepository.save(user);
-
-                        if ("ADMIN".equals(user.getRole())) {
-                            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                        }
-                    }
-                }
+            if (user != null && "ADMIN".equals(user.getRole())) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             }
         }
 
         return new JwtAuthenticationToken(jwt, authorities);
+    }
+
+    /*
+     * Busca usuario pelo clerk_id. Se nao existir, tenta pelo email do JWT.
+     * Se ainda nao existir, cria um novo registro automaticamente.
+     * Isso garante que qualquer pessoa que fizer login vai ter um registro na tabela users.
+     */
+    private User buscarOuCriarUsuario(Jwt jwt, String clerkId) {
+        Optional<User> userOpt = userRepository.findByClerkId(clerkId);
+        if (userOpt.isPresent()) {
+            return userOpt.get();
+        }
+
+        String email = jwt.getClaimAsString("email");
+        if (email != null && !email.isBlank()) {
+            Optional<User> userByEmail = userRepository.findByEmail(email);
+            if (userByEmail.isPresent()) {
+                User user = userByEmail.get();
+                user.setClerkId(clerkId);
+                return userRepository.save(user);
+            }
+        }
+
+        User novo = new User();
+        novo.setClerkId(clerkId);
+        novo.setEmail(email != null ? email : "");
+        String nome = jwt.getClaimAsString("name");
+        novo.setFullName(nome != null ? nome : clerkId);
+        novo.setPasswordHash("$2a$12$clerk.auth.placeholder.xxxxxxxxxxxxxxx");
+        novo.setRole("CUSTOMER");
+        novo.setActive(true);
+        return userRepository.save(novo);
     }
 }
