@@ -2,6 +2,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
 import { CartService } from '../../core/services/cart.service';
 import { MenuService } from '../../core/services/menu.service';
@@ -30,7 +31,7 @@ import { MenuService } from '../../core/services/menu.service';
                    class="product-card"
                    (click)="openProductModal(item)">
             <img *ngIf="item.imageUrl"
-                 [src]="item.imageUrl.startsWith('/assets/') ? item.imageUrl : '/api/imagem?url=' + item.imageUrl"
+                 [src]="getImageUrl(item.imageUrl)"
                  [alt]="item.name" loading="lazy" referrerpolicy="no-referrer" />
 
             <div class="product-info">
@@ -221,6 +222,13 @@ export class MenuPageComponent implements OnInit {
 
   trackProduct(_index: number, product: ProductResponse): number {
     return product.id;
+  }
+
+  getImageUrl(imageUrl: string | null): string {
+    if (!imageUrl || imageUrl.startsWith('/assets/')) {
+      return imageUrl ?? '';
+    }
+    return `${API_BASE_RAW}/api/imagem?url=${imageUrl}`;
   }
 
   private loadMenu(): void {
