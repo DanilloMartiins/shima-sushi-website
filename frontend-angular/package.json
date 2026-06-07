@@ -11,6 +11,10 @@
     "dev:front": "npm start",
     "dev:back": "cd ../seuShimaSushi-backend && mvnw.cmd spring-boot:run"
   },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
