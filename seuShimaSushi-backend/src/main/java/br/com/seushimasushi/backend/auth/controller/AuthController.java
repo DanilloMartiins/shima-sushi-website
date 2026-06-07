@@ -21,8 +21,7 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of(
             "clerkId", jwt.getSubject(),
-            "email", jwt.getClaimAsString("email"),
-            "claims", jwt.getClaims()
+            "email", jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : ""
         ));
     }
 }
