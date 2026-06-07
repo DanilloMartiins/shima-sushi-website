@@ -2,6 +2,8 @@ package br.com.seushimasushi.backend.security.config;
 
 import br.com.seushimasushi.backend.user.model.User;
 import br.com.seushimasushi.backend.user.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -16,6 +18,8 @@ import java.util.Optional;
 
 @Component
 public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthConverter.class);
 
     private final UserRepository userRepository;
 
@@ -45,34 +49,77 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     }
 
     /*
-     * Busca usuario pelo clerk_id. Se nao existir, tenta pelo email do JWT.
-     * Se ainda nao existir, cria um novo registro automaticamente.
-     * Isso garante que qualquer pessoa que fizer login vai ter um registro na tabela users.
+     * Busca usuario pelo clerk_id. Se encontrar, sincroniza nome/email com os dados do Clerk.
+     * Se nao existir, tenta pelo email do JWT.
+     * Se ainda nao existir, procura um admin sem clerkId (criado por migration) e vincula.
+     * Por ultimo, cria um novo registro automaticamente.
      */
     private User buscarOuCriarUsuario(Jwt jwt, String clerkId) {
+        String email = jwt.getClaimAsString("email");
+        String nome = jwt.getClaimAsString("name");
+
+        // 1. Busca pelo clerkId — se achar, sincroniza os dados
         Optional<User> userOpt = userRepository.findByClerkId(clerkId);
         if (userOpt.isPresent()) {
-            return userOpt.get();
+            User user = userOpt.get();
+            sincronizarDados(user, nome, email);
+            return user;
         }
 
-        String email = jwt.getClaimAsString("email");
+        // 2. Tenta vincular pelo email do JWT
         if (email != null && !email.isBlank()) {
             Optional<User> userByEmail = userRepository.findByEmail(email);
             if (userByEmail.isPresent()) {
                 User user = userByEmail.get();
                 user.setClerkId(clerkId);
+                sincronizarDados(user, nome, email);
+                log.info("Usuario vinculado ao Clerk: email={}, clerkId={}", email, clerkId);
                 return userRepository.save(user);
             }
         }
 
+        // 3. Procura admin orfao (criado por migration sem clerkId) e vincula
+        List<String> adminRoles = List.of("ADMIN", "SUPER_ADMIN");
+        Optional<User> adminOrfao = userRepository.findFirstByClerkIdIsNullAndRoleIn(adminRoles);
+        if (adminOrfao.isPresent()) {
+            User user = adminOrfao.get();
+            user.setClerkId(clerkId);
+            sincronizarDados(user, nome, email);
+            log.info("Admin orfao vinculado ao Clerk: id={}, clerkId={}, email={}", user.getId(), clerkId, email);
+            return userRepository.save(user);
+        }
+
+        // 4. Cria um novo usuario
         User novo = new User();
         novo.setClerkId(clerkId);
         novo.setEmail(email != null ? email : "");
-        String nome = jwt.getClaimAsString("name");
         novo.setFullName(nome != null ? nome : clerkId);
         novo.setPasswordHash("$2a$12$clerk.auth.placeholder.xxxxxxxxxxxxxxx");
         novo.setRole("CUSTOMER");
         novo.setActive(true);
+        log.info("Novo usuario criado via Clerk: clerkId={}, email={}", clerkId, email);
         return userRepository.save(novo);
+    }
+
+    /*
+     * Atualiza nome e email do usuario com os dados mais recentes do Clerk
+     */
+    private void sincronizarDados(User user, String nome, String email) {
+        boolean alterou = false;
+
+        if (nome != null && !nome.isBlank() && !nome.equals(user.getFullName())) {
+            user.setFullName(nome);
+            alterou = true;
+        }
+
+        if (email != null && !email.isBlank() && !email.equals(user.getEmail())) {
+            user.setEmail(email);
+            alterou = true;
+        }
+
+        if (alterou) {
+            userRepository.save(user);
+            log.info("Dados do usuario sincronizados com Clerk: id={}", user.getId());
+        }
     }
 }

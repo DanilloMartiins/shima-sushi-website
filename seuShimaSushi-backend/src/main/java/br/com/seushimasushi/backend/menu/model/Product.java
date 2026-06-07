@@ -46,6 +46,9 @@ public class Product {
     @Column(nullable = false)
     private Boolean available = Boolean.TRUE;
 
+    @Column(name = "is_featured", nullable = false)
+    private Boolean isFeatured = Boolean.FALSE;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
@@ -65,6 +68,7 @@ public class Product {
         this.price = price;
         this.imageUrl = imageUrl;
         this.available = available;
+        this.isFeatured = Boolean.FALSE;
         this.category = category;
     }
 }

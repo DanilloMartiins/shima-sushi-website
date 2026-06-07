@@ -10,6 +10,7 @@ public record AdminProductResponse(
         BigDecimal price,
         String imageUrl,
         Boolean available,
+        Boolean isFeatured,
         CategorySummaryResponse category,
         Instant createdAt,
         Instant updatedAt

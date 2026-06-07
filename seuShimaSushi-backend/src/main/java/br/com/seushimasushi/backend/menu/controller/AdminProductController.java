@@ -79,6 +79,13 @@ public class AdminProductController {
         return ResponseEntity.noContent().build();
     }
 
+    // Alterna o destaque do produto (featured). Maximo 3 produtos em destaque.
+    @PostMapping("/{id}/toggle-featured")
+    public ResponseEntity<AdminProductResponse> toggleFeatured(@PathVariable Long id) {
+        AdminProductResponse response = adminProductService.toggleFeatured(id);
+        return ResponseEntity.ok(response);
+    }
+
     // Endpoint especial para fazer o upload da imagem do produto
     @PostMapping("/{id}/image")
     public ResponseEntity<ProductImageUploadResponse> uploadImage(

@@ -1,27 +1,24 @@
 package br.com.seushimasushi.backend.user.controller;
 
-import br.com.seushimasushi.backend.user.model.User;
-import br.com.seushimasushi.backend.user.repository.UserRepository;
+import br.com.seushimasushi.backend.user.dto.UserResponse;
+import br.com.seushimasushi.backend.user.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/admin")
 public class AdminUserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public AdminUserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public AdminUserController(UserService userService) {
+        this.userService = userService;
     }
 
     /*
@@ -30,8 +27,7 @@ public class AdminUserController {
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> minhaRole(@AuthenticationPrincipal Jwt jwt) {
         String clerkId = jwt.getSubject();
-        Optional<String> role = userRepository.findByClerkId(clerkId)
-                .map(User::getRole);
+        String role = userService.buscarRolePorClerkId(clerkId).orElse("CUSTOMER");
 
         List<String> authorities = jwt.getClaimAsStringList("authorities");
         if (authorities == null) {
@@ -40,17 +36,17 @@ public class AdminUserController {
 
         return ResponseEntity.ok(Map.of(
                 "clerkId", clerkId,
-                "role", role.orElse("CUSTOMER"),
+                "role", role,
                 "authorities", authorities
         ));
     }
 
     /*
-     * Lista todos os usuarios cadastrados
+     * Lista todos os usuarios cadastrados (sem dados sensiveis)
      */
     @GetMapping("/users")
-    public ResponseEntity<List<User>> listar() {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<List<UserResponse>> listar() {
+        return ResponseEntity.ok(userService.listar());
     }
 
     /*
@@ -67,19 +63,12 @@ public class AdminUserController {
             return ResponseEntity.badRequest().body(Map.of("erro", "clerkId é obrigatorio"));
         }
 
-        Optional<User> userOpt = userRepository.findByClerkId(clerkId);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "Usuario nao encontrado"));
+        try {
+            String mensagem = userService.promover(clerkId);
+            return ResponseEntity.ok(Map.of("mensagem", mensagem));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
-
-        User user = userOpt.get();
-        if ("SUPER_ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "Nao pode promover um SUPER_ADMIN"));
-        }
-        user.setRole("ADMIN");
-        userRepository.save(user);
-
-        return ResponseEntity.ok(Map.of("mensagem", "Usuario promovido a admin com sucesso"));
     }
 
     /*
@@ -96,18 +85,11 @@ public class AdminUserController {
             return ResponseEntity.badRequest().body(Map.of("erro", "clerkId é obrigatorio"));
         }
 
-        Optional<User> userOpt = userRepository.findByClerkId(clerkId);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "Usuario nao encontrado"));
+        try {
+            String mensagem = userService.rebaixar(clerkId);
+            return ResponseEntity.ok(Map.of("mensagem", mensagem));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
-
-        User user = userOpt.get();
-        if ("SUPER_ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "Nao pode rebaixar um SUPER_ADMIN"));
-        }
-        user.setRole("CUSTOMER");
-        userRepository.save(user);
-
-        return ResponseEntity.ok(Map.of("mensagem", "Usuario rebaixado para customer com sucesso"));
     }
 }

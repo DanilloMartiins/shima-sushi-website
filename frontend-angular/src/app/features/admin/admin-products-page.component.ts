@@ -45,6 +45,7 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
               <th>Categoria</th>
               <th>Preço</th>
               <th>Disponível</th>
+              <th>Destaque</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -82,6 +83,16 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
                   {{ product.available ? 'Sim' : 'Não' }}
                 </span>
               </td>
+              <td>
+                <button
+                  class="star-btn"
+                  [ngClass]="{ 'star-active': product.isFeatured }"
+                  (click)="toggleDestaque(product)"
+                  [title]="product.isFeatured ? 'Remover destaque' : 'Marcar como destaque'"
+                >
+                  ★
+                </button>
+              </td>
               <td class="actions">
                 <button class="action-btn edit-btn" (click)="editarProduto(product)">Editar</button>
                 <button
@@ -94,7 +105,7 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
               </td>
             </tr>
             <tr *ngIf="products.length === 0">
-              <td [attr.colspan]="modoSelecao ? 7 : 6" class="empty-state">Nenhum produto encontrado</td>
+              <td [attr.colspan]="modoSelecao ? 8 : 7" class="empty-state">Nenhum produto encontrado</td>
             </tr>
           </tbody>
         </table>
@@ -240,6 +251,25 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
       .bulk-delete-active {
         background-color: #c0392b;
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      .star-btn {
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        color: #ddd;
+        transition: color 0.2s, transform 0.2s;
+        line-height: 1;
+        padding: 2px 6px;
+      }
+
+      .star-btn:hover {
+        transform: scale(1.2);
+      }
+
+      .star-active {
+        color: #f1c40f;
       }
 
       .cancel-select-btn {
@@ -710,6 +740,15 @@ export class AdminProductsPageComponent implements OnInit {
     this.menuService.deleteAdminProduct(produto.id).subscribe({
       next: () => this.carregarProdutos(),
       error: () => (this.errorMsg = 'Erro ao excluir produto'),
+    });
+  }
+
+  toggleDestaque(produto: ProductResponse) {
+    this.menuService.toggleFeaturedProduct(produto.id).subscribe({
+      next: () => this.carregarProdutos(),
+      error: (err) => {
+        this.errorMsg = err.error?.message ?? err.message ?? 'Erro ao alternar destaque';
+      },
     });
   }
 

@@ -2,17 +2,20 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { interval } from 'rxjs';
 
 import { DAY_LABELS } from '../../core/models/store.models';
 import { StoreSettingsResponse, StoreStatusSnapshot } from '../../core/models/store.models';
 import { StoreSettingsService } from '../../core/services/store-settings.service';
+import { MenuService } from '../../core/services/menu.service';
+import { FeaturedProductResponse } from '../../core/models/menu.models';
 import { buildStoreStatus } from '../../core/utils/store-status.util';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <section class="status-banner" [class.open]="storeStatus()?.isOpenNow">
       <h2>{{ storeStatus()?.statusLabel ?? 'Carregando status...' }}</h2>
@@ -22,6 +25,34 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
     <section class="hero-copy">
       <h1>Seu Shima Sushi</h1>
       <p>O melhor sushi de Vitória, agora com o cardápio oficial atualizado!</p>
+    </section>
+
+    <!-- Carrossel: Os Mais Pedidos -->
+    <section class="featured-section" *ngIf="featuredProducts().length > 0">
+      <div class="featured-header">
+        <h2>Os Mais Pedidos</h2>
+        <a class="featured-link" routerLink="/cardapio">Ver cardápio completo →</a>
+      </div>
+      <div class="featured-carousel">
+        <div
+          class="featured-card"
+          *ngFor="let product of featuredProducts(); trackBy: trackFeatured"
+        >
+          <div class="featured-card-img">
+            <img
+              [src]="product.imageUrl"
+              [alt]="product.name"
+              loading="lazy"
+              (error)="product.imageUrl = '/assets/images/product_placeholder.png'"
+            />
+          </div>
+          <div class="featured-card-body">
+            <h3>{{ product.name }}</h3>
+            <p>{{ product.description }}</p>
+            <span class="featured-price">{{ product.price | currency : 'BRL' }}</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Informações da Loja -->
@@ -304,7 +335,98 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         white-space: nowrap;
       }
 
+      /* Featured / Mais Pedidos */
+      .featured-section {
+        margin-bottom: 2rem;
+      }
+
+      .featured-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .featured-header h2 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
+      .featured-link {
+        font-size: 0.85rem;
+        color: var(--brand-orange-strong, #c85a2f);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .featured-link:hover {
+        text-decoration: underline;
+      }
+
+      .featured-carousel {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+      }
+
+      .featured-card {
+        background: #fff;
+        border: 1px solid var(--brand-border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+
+      .featured-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+      }
+
+      .featured-card-img {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        background: #f8f8f8;
+      }
+
+      .featured-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .featured-card-body {
+        padding: 0.75rem 1rem;
+      }
+
+      .featured-card-body h3 {
+        margin: 0 0 0.25rem;
+        font-size: 0.95rem;
+        line-height: 1.3;
+      }
+
+      .featured-card-body p {
+        margin: 0 0 0.4rem;
+        font-size: 0.8rem;
+        color: var(--brand-muted);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .featured-price {
+        font-weight: 700;
+        color: #27ae60;
+        font-size: 1rem;
+      }
+
       @media (max-width: 700px) {
+        .featured-carousel {
+          grid-template-columns: 1fr;
+        }
+
         .location-content {
           grid-template-columns: 1fr;
         }
@@ -322,10 +444,12 @@ export class HomePageComponent implements OnInit {
   private readonly storeSettingsService = inject(StoreSettingsService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly menuService = inject(MenuService);
   private readonly latestStoreSettings = signal<Parameters<typeof buildStoreStatus>[0] | null>(null);
 
   readonly storeStatus = signal<StoreStatusSnapshot | null>(null);
   readonly storeSettings = signal<StoreSettingsResponse | null>(null);
+  readonly featuredProducts = signal<FeaturedProductResponse[]>([]);
 
   readonly DAY_LABELS = DAY_LABELS;
 
@@ -341,10 +465,15 @@ export class HomePageComponent implements OnInit {
   ngOnInit(): void {
     this.loadStoreStatus();
     this.watchStoreStatus();
+    this.loadFeaturedProducts();
   }
 
   trackDay(_index: number, day: { dayOfWeek: number }): number {
     return day.dayOfWeek;
+  }
+
+  trackFeatured(_index: number, product: FeaturedProductResponse): number {
+    return product.id;
   }
 
   private loadStoreStatus(): void {
@@ -361,6 +490,12 @@ export class HomePageComponent implements OnInit {
           detailLabel: 'Nao conseguimos obter o horario agora.',
         });
       },
+    });
+  }
+
+  private loadFeaturedProducts(): void {
+    this.menuService.getFeaturedProducts().subscribe({
+      next: (products) => this.featuredProducts.set(products),
     });
   }
 

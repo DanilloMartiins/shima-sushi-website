@@ -7,6 +7,7 @@ import { PUBLIC_MENU_MOCK } from '../mocks/public-data.mock';
 import {
   CategorySummaryResponse,
   CreateProductRequest,
+  FeaturedProductResponse,
   MenuCategoryResponse,
   PagedResponse,
   ProductResponse,
@@ -48,6 +49,14 @@ export class MenuService {
       );
 
     return this.menuCache$;
+  }
+
+  getFeaturedProducts(): Observable<FeaturedProductResponse[]> {
+    return this.http.get<FeaturedProductResponse[]>(`${API_BASE_URL}/public/featured-products`);
+  }
+
+  toggleFeaturedProduct(id: number): Observable<ProductResponse> {
+    return this.http.post<ProductResponse>(`${API_BASE_URL}/admin/products/${id}/toggle-featured`, {});
   }
 
   clearCache(): void {

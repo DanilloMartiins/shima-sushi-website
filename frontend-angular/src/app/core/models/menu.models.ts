@@ -10,11 +10,20 @@ export interface ProductResponse {
   price: number;
   imageUrl?: string | null;
   available?: boolean;
+  isFeatured?: boolean;
   category?: CategorySummaryResponse;
   // Campos opcionais usados em outras partes do front
   tag?: string;
   pitch?: string;
   dataAtualizacao?: string;
+}
+
+export interface FeaturedProductResponse {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
 }
 
 export interface MenuCategoryResponse {

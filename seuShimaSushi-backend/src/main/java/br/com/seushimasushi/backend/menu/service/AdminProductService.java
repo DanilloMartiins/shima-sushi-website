@@ -6,6 +6,7 @@ import br.com.seushimasushi.backend.menu.dto.admin.CategorySummaryResponse;
 import br.com.seushimasushi.backend.menu.dto.admin.ProductImageUploadResponse;
 import br.com.seushimasushi.backend.menu.dto.admin.ProductUpsertRequest;
 import br.com.seushimasushi.backend.menu.dto.common.PagedResponse;
+import br.com.seushimasushi.backend.menu.dto.publicview.FeaturedProductResponse;
 import br.com.seushimasushi.backend.menu.model.Product;
 import br.com.seushimasushi.backend.menu.repository.ProductRepository;
 import java.util.List;
@@ -94,6 +95,40 @@ public class AdminProductService {
         productRepository.deleteAll(produtos);
     }
 
+    @Transactional(readOnly = true)
+    public List<FeaturedProductResponse> getFeaturedProducts() {
+        return productRepository.findByIsFeaturedTrueAndAvailableTrueAndCategoryActiveTrue()
+                .stream()
+                .map(p -> new FeaturedProductResponse(
+                        p.getId(),
+                        p.getName(),
+                        p.getDescription(),
+                        p.getPrice(),
+                        p.getImageUrl()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public AdminProductResponse toggleFeatured(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Produto nao encontrado"));
+
+        Boolean novoStatus = !product.getIsFeatured();
+
+        // Se for marcar como destaque, verifica se ja nao tem 3 destacados
+        if (novoStatus) {
+            long featuredCount = productRepository.countByIsFeaturedTrue();
+            if (featuredCount >= 3) {
+                throw new IllegalStateException("Limite maximo de 3 produtos em destaque atingido");
+            }
+        }
+
+        product.setIsFeatured(novoStatus);
+        Product saved = productRepository.save(product);
+        return toAdminResponse(saved);
+    }
+
     @Transactional
     public ProductImageUploadResponse uploadImage(Long productId, MultipartFile file) {
         Product product = productRepository.findById(productId)
@@ -122,6 +157,7 @@ public class AdminProductService {
                 product.getPrice(),
                 product.getImageUrl(),
                 product.getAvailable(),
+                product.getIsFeatured(),
                 new CategorySummaryResponse(product.getCategory().getId(), product.getCategory().getName()),
                 product.getCreatedAt(),
                 product.getUpdatedAt()
