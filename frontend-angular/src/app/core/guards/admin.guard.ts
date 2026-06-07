@@ -10,6 +10,6 @@ export const adminGuard = () => {
     return true;
   }
 
-  void router.navigate(['/']); // Redireciona para a home se não for admin
+  void router.navigate(['/']);
   return false;
 };

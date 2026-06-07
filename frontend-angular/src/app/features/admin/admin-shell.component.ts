@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ClerkService } from '../../core/services/clerk.service';
 
@@ -25,6 +25,12 @@ import { ClerkService } from '../../core/services/clerk.service';
             routerLinkActive="active"
             class="nav-link"
             >Pedidos</a
+          >
+          <a
+            routerLink="/admin/users"
+            routerLinkActive="active"
+            class="nav-link"
+            >Usuários</a
           >
           <a
             routerLink="/admin/settings"
@@ -142,9 +148,17 @@ import { ClerkService } from '../../core/services/clerk.service';
     `,
   ],
 })
-export class AdminShellComponent {
+export class AdminShellComponent implements OnInit {
   private readonly clerk = inject(ClerkService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    /*
+     * Busca a role no backend pra cacahcar no ClerkService
+     * Isso garante que usuarios promovidos via API sejam reconhecidos
+     */
+    void this.clerk.fetchBackendRole();
+  }
 
   logout(): void {
     void this.clerk.signOut().then(() => {

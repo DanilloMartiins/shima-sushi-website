@@ -77,10 +77,17 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'orders',
+        path: 'settings',
         loadComponent: () =>
-          import('./features/admin/admin-orders-page.component').then(
-            (m) => m.AdminOrdersPageComponent,
+          import('./features/admin/admin-store-settings-page.component').then(
+            (m) => m.AdminStoreSettingsPageComponent,
+          ),
+      },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/admin/admin-users-page.component').then(
+            (m) => m.AdminUsersPageComponent,
           ),
       },
       { path: '', pathMatch: 'full', redirectTo: 'products' },

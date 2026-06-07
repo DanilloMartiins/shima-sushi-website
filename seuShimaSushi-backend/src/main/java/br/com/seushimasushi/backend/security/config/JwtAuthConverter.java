@@ -33,8 +33,11 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
         if (clerkId != null) {
             User user = buscarOuCriarUsuario(jwt, clerkId);
 
-            if (user != null && "ADMIN".equals(user.getRole())) {
+            if (user != null && ("ADMIN".equals(user.getRole()) || "SUPER_ADMIN".equals(user.getRole()))) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            }
+            if (user != null && "SUPER_ADMIN".equals(user.getRole())) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
             }
         }
 

@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { ptBR } from '@clerk/localizations';
 import { ClerkUser } from '../models/auth.models';
+import { API_BASE_URL } from '../constants/api.constants';
 
 @Injectable({
   providedIn: 'root',
@@ -15,6 +16,7 @@ export class ClerkService {
   private clerk: any = null;
   readonly loaded = signal(false);
   readonly user = signal<ClerkUser | null>(null);
+  readonly backendRole = signal<string | null>(null);
   private inactivityTimeout: any;
   private readonly INACTIVITY_TIME = 10 * 60 * 1000; // 10 minutos
 
@@ -46,14 +48,17 @@ export class ClerkService {
           if (this.clerk.user) {
             this.verificarSessaoExpirada();
             this.setupInactivityListener();
+            void this.fetchBackendRole();
           }
 
           this.clerk.addListener((resources: any) => {
             this.user.set(resources.user);
             if (resources.user) {
               this.setupInactivityListener();
+              void this.fetchBackendRole(); // ja puxa a role do backend
             } else {
               this.clearInactivityListener();
+              this.backendRole.set(null);
             }
           });
           resolve();
@@ -157,17 +162,63 @@ export class ClerkService {
   async signOut(): Promise<void> {
     await this.clerk?.signOut();
     this.user.set(null);
+    this.backendRole.set(null);
   }
 
+  /*
+   * Busca a role do usuario logado direto do backend (fonte da verdade)
+   */
+  async fetchBackendRole(): Promise<string | null> {
+    const token = await this.getToken();
+    if (!token) return null;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      this.backendRole.set(data.role);
+      return data.role;
+    } catch {
+      return null;
+    }
+  }
+
+  /*
+   * Checa se o usuario tem role ADMIN ou SUPER_ADMIN
+   * Prioriza a role do backend (sempre atualizada), fallback pro Clerk metadata
+   */
   isUserAdmin(): boolean {
+    const bRole = this.backendRole();
+    if (bRole === 'ADMIN' || bRole === 'SUPER_ADMIN') {
+      return true;
+    }
+
     const u = this.user();
     if (!u) {
       return false;
     }
     const role = u.publicMetadata?.['role'];
-    if (role === 'ADMIN') {
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
       return true;
     }
     return u.primaryEmailAddress?.emailAddress === 'admin@seushimasushi.com';
+  }
+
+  /*
+   * Checa se o usuario tem role SUPER_ADMIN
+   * Prioriza o backend, fallback pro Clerk metadata
+   */
+  isUserSuperAdmin(): boolean {
+    if (this.backendRole() === 'SUPER_ADMIN') {
+      return true;
+    }
+
+    const u = this.user();
+    if (!u) {
+      return false;
+    }
+    return u.publicMetadata?.['role'] === 'SUPER_ADMIN';
   }
 }
