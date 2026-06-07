@@ -51,11 +51,26 @@ import { CartService } from '../core/services/cart.service';
       <main class="content-wrap">
         <router-outlet />
       </main>
+
+      <footer class="site-footer">
+        <div class="footer-inner">
+          <span class="footer-copy">
+            &copy; 2026 Seu Shima Sushi. Todos os direitos reservados.
+          </span>
+          <span class="footer-dev">
+            Desenvolvido por
+            <a href="https://www.linkedin.com/in/danillomartins/" target="_blank" rel="noopener noreferrer">
+              Danillo Martins
+            </a>
+          </span>
+          <span class="footer-version">v4.1.1</span>
+        </div>
+      </footer>
     </div>
   `,
   styles: [
     `
-    .page-shell { min-height: 100vh; }
+    .page-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
     .topbar {
       position: sticky;
@@ -129,7 +144,37 @@ import { CartService } from '../core/services/cart.service';
     .btn.ghost { color: var(--brand-ink); background: transparent; border-color: var(--brand-border); }
     .btn.solid { color: #fff; background: var(--brand-orange); border-color: var(--brand-orange); }
 
-    .content-wrap { width: min(1280px, 100% - 1.5rem); margin: 1.2rem auto 3rem; }
+    .content-wrap { width: min(1280px, 100% - 1.5rem); margin: 1.2rem auto; flex: 1; }
+
+    .site-footer {
+      border-top: 1px solid var(--brand-border);
+      background: #fafafa;
+      padding: 1.5rem 1.25rem;
+    }
+    .footer-inner {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--brand-muted);
+    }
+    .footer-dev a {
+      color: var(--brand-orange-strong);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-dev a:hover {
+      text-decoration: underline;
+    }
+    .footer-version {
+      font-family: monospace;
+      font-size: 0.78rem;
+      opacity: 0.6;
+    }
 
     @media (max-width: 900px) {
       .topbar { padding: 0.55rem 0.75rem; }
