@@ -39,6 +39,23 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
                 if ("ADMIN".equals(user.getRole())) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 }
+            } else {
+                // fallback: tenta encontrar pelo email do JWT (Clerk envia email no claim padrao)
+                String email = jwt.getClaimAsString("email");
+                if (email != null) {
+                    Optional<User> userByEmail = userRepository.findByEmail(email);
+                    if (userByEmail.isPresent()) {
+                        User user = userByEmail.get();
+
+                        // atualiza o clerk_id pra proxima vez bater direto
+                        user.setClerkId(clerkId);
+                        userRepository.save(user);
+
+                        if ("ADMIN".equals(user.getRole())) {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                        }
+                    }
+                }
             }
         }
 
