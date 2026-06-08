@@ -122,9 +122,13 @@ export class ClerkService {
 
     if (this.loaded()) {
       this.clerk.mountSignIn(el, {
-        signUpUrl: '/register',
         forceRedirectUrl: '/',
-        fallbackRedirectUrl: '/'
+        fallbackRedirectUrl: '/',
+        appearance: {
+          elements: {
+            footerAction: { display: 'none' }
+          }
+        }
       });
     } else {
       setTimeout(() => this.mountSignIn(containerId), 500);
@@ -137,9 +141,13 @@ export class ClerkService {
 
     if (this.loaded()) {
       this.clerk.mountSignUp(el, {
-        signInUrl: '/login',
         forceRedirectUrl: '/',
-        fallbackRedirectUrl: '/'
+        fallbackRedirectUrl: '/',
+        appearance: {
+          elements: {
+            footerAction: { display: 'none' }
+          }
+        }
       });
     } else {
       setTimeout(() => this.mountSignUp(containerId), 500);
