@@ -10,10 +10,9 @@ const config = {};
 
 if (apiBaseUrl) {
   config.apiBaseUrl = apiBaseUrl;
-  config.useMockPublicData = useMockPublicData === 'true';
-} else {
-  config.useMockPublicData = true;
 }
+// Mock só ativa com env var explicita (USE_MOCK_PUBLIC_DATA=true)
+config.useMockPublicData = useMockPublicData === 'true';
 
 const conteudo = `window.__SEU_SHIMA_SUSHI_CONFIG__ = ${JSON.stringify(config, null, 2)};
 `;
