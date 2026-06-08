@@ -27,6 +27,12 @@ public class ImageController {
 
     @GetMapping("/products/{filename}")
     public ResponseEntity<Resource> getProductImage(@PathVariable String filename) {
+        // Bloqueia path traversal: rejeita qualquer filename com .. ou separadores
+        if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            log.warn("Tentativa de path traversal bloqueada: {}", filename);
+            return ResponseEntity.badRequest().build();
+        }
+
         try {
             Path imagePath = imageUploadService.getImagePath(filename);
 

@@ -106,7 +106,7 @@ public class WebhookProcessorService {
     }
 
     private void processPayment(String payload) {
-        log.debug("Simulando processamento do pagamento: {}", payload);
+        log.debug("Simulando processamento do pagamento (tamanho={} caracteres)", payload != null ? payload.length() : 0);
 
         // Se o payload tiver "fail", simula uma falha no processamento
         if (payload != null && payload.contains("fail")) {
