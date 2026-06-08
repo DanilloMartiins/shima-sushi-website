@@ -3,30 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, of } from 'rxjs';
 
 import { API_BASE_URL, USE_MOCK_PUBLIC_DATA } from '../constants/api.constants';
+import { PUBLIC_STORE_SETTINGS_MOCK } from '../mocks/public-data.mock';
 import { DEFAULT_PAYMENT_METHODS, DEFAULT_BUSINESS_HOURS, StoreSettingsResponse, UpdateStoreSettingsRequest } from '../models/store.models';
 
-const ADMIN_FALLBACK: StoreSettingsResponse = {
-  id: 1,
-  storeOpen: true,
-  openingMessage: 'Estamos abertos! Faça seu pedido.',
-  closingMessage: 'Fechamos! Volte amanhã.',
-  whatsappNumber: '5511999999999',
-  deliveryFee: 5.0,
-  minimumOrderValue: 20.0,
-  businessHours: DEFAULT_BUSINESS_HOURS,
-  paymentMethods: DEFAULT_PAYMENT_METHODS,
-  estimatedDeliveryTime: '40 - 60 min',
-  storeProfile: {
-    logoUrl: '',
-    coverUrl: '',
-    addressStreet: '',
-    addressNumber: '',
-    neighborhood: '',
-    city: '',
-    zipCode: '',
-    referencePoint: '',
-  },
-};
+const ADMIN_FALLBACK: StoreSettingsResponse = { ...PUBLIC_STORE_SETTINGS_MOCK };
 
 @Injectable({ providedIn: 'root' })
 export class StoreSettingsService {

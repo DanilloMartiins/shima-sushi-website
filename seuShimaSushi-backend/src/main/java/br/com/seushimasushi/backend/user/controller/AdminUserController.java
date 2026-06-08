@@ -1,5 +1,6 @@
 package br.com.seushimasushi.backend.user.controller;
 
+import br.com.seushimasushi.backend.clerk.ClerkSyncScheduler;
 import br.com.seushimasushi.backend.user.dto.UserResponse;
 import br.com.seushimasushi.backend.user.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +18,11 @@ import java.util.Set;
 public class AdminUserController {
 
     private final UserService userService;
+    private final ClerkSyncScheduler clerkSyncScheduler;
 
-    public AdminUserController(UserService userService) {
+    public AdminUserController(UserService userService, ClerkSyncScheduler clerkSyncScheduler) {
         this.userService = userService;
+        this.clerkSyncScheduler = clerkSyncScheduler;
     }
 
     /*
@@ -121,5 +124,17 @@ public class AdminUserController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
+    }
+
+    /*
+     * Dispara o sync manual com Clerk para atualizar nomes e emails
+     * Ex: POST /api/v1/admin/users/sync-clerk
+     * So SUPER_ADMIN pode triggerar
+     */
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @PostMapping("/users/sync-clerk")
+    public ResponseEntity<Map<String, Object>> syncClerk() {
+        clerkSyncScheduler.syncClerkUsers();
+        return ResponseEntity.ok(Map.of("mensagem", "Sync com Clerk finalizado"));
     }
 }

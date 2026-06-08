@@ -34,6 +34,14 @@ interface OpcaoRole {
         </div>
       }
 
+      @if (isSuperAdmin) {
+        <div class="sync-bar">
+          <button class="btn-sync" (click)="syncClerk()" [disabled]="syncing()">
+            {{ syncing() ? 'Sincronizando...' : 'Sincronizar Nomes do Clerk' }}
+          </button>
+        </div>
+      }
+
       <div class="table-wrapper">
         <table class="user-table">
           <thead>
@@ -223,6 +231,35 @@ interface OpcaoRole {
       background: #f5f5f5;
     }
 
+    .sync-bar {
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-sync {
+      padding: 8px 18px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      color: #333;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-sync:hover:not(:disabled) {
+      background: #f5f5f5;
+      border-color: #ea6a3d;
+      color: #ea6a3d;
+    }
+
+    .btn-sync:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .restricted-msg {
       margin-top: 16px;
       font-size: 0.85rem;
@@ -242,6 +279,7 @@ export class AdminUsersPageComponent implements OnInit {
 
   users: User[] = [];
   isSuperAdmin = false;
+  readonly syncing = signal(false);
 
   readonly toast = signal<{ texto: string; tipo: 'sucesso' | 'erro' } | null>(null);
 
@@ -337,6 +375,39 @@ export class AdminUsersPageComponent implements OnInit {
               texto: err.error?.erro || 'Erro ao alterar cargo',
               tipo: 'erro',
             });
+          },
+        });
+    });
+  }
+
+  syncClerk(): void {
+    this.syncing.set(true);
+    this.limparToast();
+
+    this.getToken().then((token) => {
+      if (!token) {
+        this.syncing.set(false);
+        return;
+      }
+
+      this.http
+        .post<{ mensagem: string }>(
+          `${API_BASE_URL}/admin/users/sync-clerk`,
+          {},
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        )
+        .subscribe({
+          next: (res) => {
+            this.toast.set({ texto: res.mensagem, tipo: 'sucesso' });
+            this.syncing.set(false);
+            this.carregarUsuarios();
+          },
+          error: (err) => {
+            this.toast.set({
+              texto: err.error?.erro || 'Erro ao sincronizar com Clerk',
+              tipo: 'erro',
+            });
+            this.syncing.set(false);
           },
         });
     });

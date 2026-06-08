@@ -297,11 +297,11 @@ export class MenuPageComponent implements OnInit {
     }
   }
 
-  getImageUrl(imageUrl: string | null): string {
-    if (!imageUrl || imageUrl.startsWith('/assets/')) {
+  getImageUrl(imageUrl: string | null | undefined): string {
+    if (!imageUrl || imageUrl.startsWith('/assets/') || imageUrl.startsWith('/images/')) {
       return imageUrl ?? '';
     }
-    return `${API_BASE_RAW}/api/imagem?url=${imageUrl}`;
+    return `${API_BASE_RAW}/api/imagem?url=${encodeURIComponent(imageUrl)}`;
   }
 
   onCategoriaChange(slug: string): void {
