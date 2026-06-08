@@ -35,3 +35,5 @@ app:
     base-directory: ${IMAGE_UPLOAD_BASE_DIR:uploads/products}
     max-file-size: ${IMAGE_UPLOAD_MAX_SIZE:5242880}
     allowed-extensions: jpg,jpeg,png
+  clerk:
+    secret-key: ${CLERK_SECRET_KEY:}

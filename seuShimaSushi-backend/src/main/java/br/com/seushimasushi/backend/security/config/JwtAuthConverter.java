@@ -1,5 +1,6 @@
 package br.com.seushimasushi.backend.security.config;
 
+import br.com.seushimasushi.backend.clerk.ClerkApiClient;
 import br.com.seushimasushi.backend.user.model.User;
 import br.com.seushimasushi.backend.user.repository.UserRepository;
 import org.slf4j.Logger;
@@ -22,10 +23,12 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     private static final Logger log = LoggerFactory.getLogger(JwtAuthConverter.class);
 
     private final UserRepository userRepository;
+    private final ClerkApiClient clerkApiClient;
 
     @Autowired
-    public JwtAuthConverter(UserRepository userRepository) {
+    public JwtAuthConverter(UserRepository userRepository, ClerkApiClient clerkApiClient) {
         this.userRepository = userRepository;
+        this.clerkApiClient = clerkApiClient;
     }
 
     @Override
@@ -89,15 +92,28 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
             return userRepository.save(user);
         }
 
-        // 4. Cria um novo usuario
+        // 4. Busca dados reais no Clerk antes de criar
+        String nomeReal = nome;
+        String emailReal = email;
+
+        if (nomeReal == null || nomeReal.isBlank()) {
+            ClerkApiClient.ClerkUserData dadosClerk = clerkApiClient.buscarPorId(clerkId);
+            if (dadosClerk != null) {
+                nomeReal = dadosClerk.fullName();
+                if (emailReal == null || emailReal.isBlank()) {
+                    emailReal = dadosClerk.email();
+                }
+            }
+        }
+
         User novo = new User();
         novo.setClerkId(clerkId);
-        novo.setEmail(email != null ? email : "");
-        novo.setFullName(nome != null ? nome : clerkId);
+        novo.setEmail(emailReal != null ? emailReal : "");
+        novo.setFullName(nomeReal != null ? nomeReal : clerkId);
         novo.setPasswordHash("$2a$12$clerk.auth.placeholder.xxxxxxxxxxxxxxx");
         novo.setRole("CUSTOMER");
         novo.setActive(true);
-        log.info("Novo usuario criado via Clerk: clerkId={}, email={}", clerkId, email);
+        log.info("Novo usuario criado via Clerk: clerkId={}, email={}", clerkId, emailReal);
         return userRepository.save(novo);
     }
 

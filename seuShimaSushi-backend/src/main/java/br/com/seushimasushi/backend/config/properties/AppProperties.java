@@ -27,6 +27,9 @@ public class AppProperties {
     @NotNull
     private final ImageUpload imageUpload = new ImageUpload();
 
+    @NotNull
+    private final Clerk clerk = new Clerk();
+
     @Getter
     @Setter
     public static class Security {
@@ -66,5 +69,12 @@ public class AppProperties {
         private long maxFileSize = 5242880; // 5MB
 
         private List<String> allowedExtensions = new ArrayList<>(List.of("jpg", "jpeg", "png"));
+    }
+
+    @Getter
+    @Setter
+    public static class Clerk {
+
+        private String secretKey;
     }
 }
