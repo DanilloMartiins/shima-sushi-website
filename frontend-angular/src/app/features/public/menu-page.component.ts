@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
@@ -36,11 +36,7 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
 
     <div class="menu-page-container">
       @for (cat of categoriasExibidas(); track cat.slug) {
-        <section
-          class="category-wrap"
-          [id]="'categoria-' + cat.slug"
-          [attr.data-categoria]="cat.slug"
-        >
+        <section class="category-wrap">
           <h3>{{ cat.nome }}</h3>
 
           <div class="product-grid">
@@ -243,30 +239,33 @@ export class MenuPageComponent implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly cartService = inject(CartService);
 
-  @ViewChild(MenuCarouselComponent) carrossel!: MenuCarouselComponent;
-
   readonly menuCategories = signal<MenuCategoryResponse[]>([]);
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
-  readonly categoriaAtiva = signal('');
+  readonly categoriaAtiva = signal('todos');
 
   readonly selectedProduct = signal<ProductResponse | null>(null);
   readonly selectedQuantity = signal(1);
 
-  readonly categoriasCarrossel = computed<CategoriaCarrossel[]>(() =>
-    this.menuCategories().map((c) => ({
+  readonly categoriasCarrossel = computed<CategoriaCarrossel[]>(() => {
+    const cats = this.menuCategories().map((c) => ({
       slug: gerarSlug(c.name),
       nome: c.name,
-    })),
-  );
+    }));
+    return [{ slug: 'todos', nome: 'Todos' }, ...cats];
+  });
 
-  readonly categoriasExibidas = computed(() =>
-    this.menuCategories().map((c) => ({
+  readonly categoriasExibidas = computed(() => {
+    const slugAtivo = this.categoriaAtiva();
+    const todas = this.menuCategories().map((c) => ({
       slug: gerarSlug(c.name),
       nome: c.name,
       produtos: c.products,
-    })),
-  );
+    }));
+
+    if (slugAtivo === 'todos') return todas;
+    return todas.filter((c) => c.slug === slugAtivo);
+  });
 
   ngOnInit(): void {
     this.loadMenu();
@@ -319,11 +318,6 @@ export class MenuPageComponent implements OnInit {
       next: (categories) => {
         this.menuCategories.set(categories);
         this.loading.set(false);
-
-        // Agora que o DOM foi atualizado com as categorias, conecta o scroll spy
-        setTimeout(() => {
-          this.carrossel?.conectarScrollSpy();
-        });
       },
       error: () => {
         this.errorMessage.set('Nao foi possivel carregar o cardapio agora.');

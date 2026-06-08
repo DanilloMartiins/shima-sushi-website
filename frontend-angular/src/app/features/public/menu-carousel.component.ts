@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnDestroy, inject, signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface CategoriaCarrossel {
@@ -123,7 +123,7 @@ export interface CategoriaCarrossel {
     }
   `],
 })
-export class MenuCarouselComponent implements OnDestroy {
+export class MenuCarouselComponent {
   readonly elementRef = inject(ElementRef<HTMLElement>);
 
   @ViewChild('trackRef') trackRef!: ElementRef<HTMLElement>;
@@ -132,23 +132,12 @@ export class MenuCarouselComponent implements OnDestroy {
   @Input() ativa = '';
   @Output() categoriaChange = new EventEmitter<string>();
 
-  private observer: IntersectionObserver | null = null;
-
-  ngOnDestroy(): void {
-    this.observer?.disconnect();
-  }
-
   trackCategoria(_: number, cat: CategoriaCarrossel): string {
     return cat.slug;
   }
 
   selecionar(slug: string): void {
     this.categoriaChange.emit(slug);
-
-    const el = document.getElementById(`categoria-${slug}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   }
 
   podeVoltar(): boolean {
@@ -167,51 +156,5 @@ export class MenuCarouselComponent implements OnDestroy {
     const t = this.trackRef?.nativeElement;
     if (!t) return;
     t.scrollBy({ left: direcao * 180, behavior: 'smooth' });
-  }
-
-  rolarAteCategoria(slug: string): void {
-    const t = this.trackRef?.nativeElement;
-    if (!t) return;
-
-    const idx = this.categorias.findIndex((c) => c.slug === slug);
-    if (idx < 0) return;
-
-    const botoes = t.querySelectorAll('.carousel-item');
-    const alvo = botoes[idx] as HTMLElement | null;
-    if (!alvo) return;
-
-    alvo.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }
-
-  conectarScrollSpy(): void {
-    this.observer?.disconnect();
-
-    this.observer = new IntersectionObserver(
-      (entries) => {
-        let slugAtivo = '';
-
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            slugAtivo = entry.target.getAttribute('data-categoria') ?? '';
-          }
-        }
-
-        if (slugAtivo && slugAtivo !== this.ativa) {
-          this.categoriaChange.emit(slugAtivo);
-          this.rolarAteCategoria(slugAtivo);
-        }
-      },
-      {
-        rootMargin: '-80px 0px -65% 0px',
-        threshold: 0,
-      },
-    );
-
-    for (const cat of this.categorias) {
-      const el = document.getElementById(`categoria-${cat.slug}`);
-      if (el) {
-        this.observer.observe(el);
-      }
-    }
   }
 }
