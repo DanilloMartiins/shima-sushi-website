@@ -9,6 +9,7 @@ import { DAY_LABELS } from '../../core/models/store.models';
 import { StoreSettingsResponse, StoreStatusSnapshot } from '../../core/models/store.models';
 import { StoreSettingsService } from '../../core/services/store-settings.service';
 import { MenuService } from '../../core/services/menu.service';
+import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { ClerkService } from '../../core/services/clerk.service';
 import { CartService } from '../../core/services/cart.service';
 import { FeaturedProductResponse, ProductResponse } from '../../core/models/menu.models';
@@ -41,7 +42,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         <div class="featured-slideshow" (click)="abrirModalProduto(featuredProducts()[slideIndex()])">
           <div class="slideshow-track">
             <img
-              [src]="featuredProducts()[slideIndex()].imageUrl"
+              [src]="getImageUrl(featuredProducts()[slideIndex()].imageUrl)"
               [alt]="featuredProducts()[slideIndex()].name"
               loading="lazy"
               (error)="onSlideError()"
@@ -70,10 +71,10 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
             (click)="abrirModalProduto(product)"
           >
             <img
-              [src]="product.imageUrl"
+              [src]="getImageUrl(product.imageUrl)"
               [alt]="product.name"
               loading="lazy"
-              (error)="product.imageUrl = '/assets/images/product_placeholder.png'"
+              (error)="onCardError(product)"
             />
             <div class="featured-card-body">
               <h3>{{ product.name }}</h3>
@@ -89,8 +90,8 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       <div class="modal-content" (click)="$event.stopPropagation()">
         <button type="button" class="modal-close" (click)="fecharModal()">&times;</button>
 
-        <img [src]="product.imageUrl" [alt]="product.name" class="modal-image"
-             (error)="product.imageUrl = '/assets/images/product_placeholder.png'" />
+        <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image"
+             (error)="onCardError(product)" />
 
         <div class="modal-body">
           <h2>{{ product.name }}</h2>
@@ -701,11 +702,22 @@ export class HomePageComponent implements OnInit {
       });
   }
 
+  getImageUrl(imageUrl: string | null | undefined): string {
+    if (!imageUrl || imageUrl.startsWith('/assets/') || imageUrl.startsWith('/images/')) {
+      return imageUrl ?? '/assets/images/product_placeholder.png';
+    }
+    return `${API_BASE_RAW}/api/imagem?url=${encodeURIComponent(imageUrl)}`;
+  }
+
   onSlideError(): void {
     const p = this.featuredProducts()[this.slideIndex()];
     if (p) {
       p.imageUrl = '/assets/images/product_placeholder.png';
     }
+  }
+
+  onCardError(product: FeaturedProductResponse | ProductResponse): void {
+    product.imageUrl = '/assets/images/product_placeholder.png';
   }
 
   abrirModalProduto(product: FeaturedProductResponse): void {
