@@ -1,21 +1,23 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { interval } from 'rxjs';
 
 import { DAY_LABELS } from '../../core/models/store.models';
 import { StoreSettingsResponse, StoreStatusSnapshot } from '../../core/models/store.models';
 import { StoreSettingsService } from '../../core/services/store-settings.service';
 import { MenuService } from '../../core/services/menu.service';
-import { FeaturedProductResponse } from '../../core/models/menu.models';
+import { ClerkService } from '../../core/services/clerk.service';
+import { CartService } from '../../core/services/cart.service';
+import { FeaturedProductResponse, ProductResponse } from '../../core/models/menu.models';
 import { buildStoreStatus } from '../../core/utils/store-status.util';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, CurrencyPipe, RouterLink],
   template: `
     <section class="status-banner" [class.open]="storeStatus()?.isOpenNow">
       <h2>{{ storeStatus()?.statusLabel ?? 'Carregando status...' }}</h2>
@@ -27,33 +29,86 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       <p>O melhor sushi de Vitória, agora com o cardápio oficial atualizado!</p>
     </section>
 
-    <!-- Carrossel: Os Mais Pedidos -->
+    <!-- Carrossel + Cards: Os Mais Pedidos -->
     <section class="featured-section" *ngIf="featuredProducts().length > 0">
       <div class="featured-header">
         <h2>Os Mais Pedidos</h2>
         <a class="featured-link" routerLink="/cardapio">Ver cardápio completo →</a>
       </div>
-      <div class="featured-carousel">
-        <div
-          class="featured-card"
-          *ngFor="let product of featuredProducts(); trackBy: trackFeatured"
-        >
-          <div class="featured-card-img">
+
+      <div class="featured-layout">
+        <!-- Coluna 1: Slideshow -->
+        <div class="featured-slideshow" (click)="abrirModalProduto(featuredProducts()[slideIndex()])">
+          <div class="slideshow-track">
+            <img
+              [src]="featuredProducts()[slideIndex()].imageUrl"
+              [alt]="featuredProducts()[slideIndex()].name"
+              loading="lazy"
+              (error)="onSlideError()"
+            />
+            <div class="slideshow-overlay">
+              <h3>{{ featuredProducts()[slideIndex()].name }}</h3>
+              <p>{{ featuredProducts()[slideIndex()].description }}</p>
+              <span class="slideshow-price">{{ featuredProducts()[slideIndex()].price | currency : 'BRL' }}</span>
+            </div>
+          </div>
+          <div class="slideshow-dots">
+            <button
+              *ngFor="let p of featuredProducts(); let i = index; trackBy: trackFeatured"
+              class="dot"
+              [class.dot-active]="i === slideIndex()"
+              (click)="$event.stopPropagation(); slideIndex.set(i)"
+            ></button>
+          </div>
+        </div>
+
+        <!-- Coluna 2: Cards verticais -->
+        <div class="featured-cards">
+          <div
+            class="featured-card"
+            *ngFor="let product of featuredProducts(); trackBy: trackFeatured"
+            (click)="abrirModalProduto(product)"
+          >
             <img
               [src]="product.imageUrl"
               [alt]="product.name"
               loading="lazy"
               (error)="product.imageUrl = '/assets/images/product_placeholder.png'"
             />
-          </div>
-          <div class="featured-card-body">
-            <h3>{{ product.name }}</h3>
-            <p>{{ product.description }}</p>
-            <span class="featured-price">{{ product.price | currency : 'BRL' }}</span>
+            <div class="featured-card-body">
+              <h3>{{ product.name }}</h3>
+              <span class="featured-price">{{ product.price | currency : 'BRL' }}</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Modal do Produto -->
+    <div *ngIf="selectedProduct() as product" class="modal-overlay" (click)="fecharModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close" (click)="fecharModal()">&times;</button>
+
+        <img [src]="product.imageUrl" [alt]="product.name" class="modal-image"
+             (error)="product.imageUrl = '/assets/images/product_placeholder.png'" />
+
+        <div class="modal-body">
+          <h2>{{ product.name }}</h2>
+          <p *ngIf="product.description" class="modal-description">{{ product.description }}</p>
+          <strong class="modal-price">{{ product.price | currency : 'BRL' }}</strong>
+
+          <div class="modal-actions">
+            <div class="quantity-control">
+              <button type="button" (click)="diminuirQtd()" [disabled]="selectedQuantity() <= 1">-</button>
+              <span class="quantity-value">{{ selectedQuantity() }}</span>
+              <button type="button" (click)="aumentarQtd()">+</button>
+            </div>
+
+            <button type="button" class="btn-confirm" (click)="confirmarCarrinho()">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Informações da Loja -->
     <section class="store-info" *ngIf="storeSettings() as s">
@@ -363,55 +418,134 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         text-decoration: underline;
       }
 
-      .featured-carousel {
+      .featured-layout {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
+        align-items: start;
       }
 
-      .featured-card {
-        background: #fff;
-        border: 1px solid var(--brand-border);
+      /* Slideshow */
+      .featured-slideshow {
+        position: relative;
         border-radius: 12px;
         overflow: hidden;
-        transition: box-shadow 0.2s, transform 0.2s;
+        cursor: pointer;
+        aspect-ratio: 16 / 10;
+        background: #f0f0f0;
       }
 
-      .featured-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        transform: translateY(-2px);
-      }
-
-      .featured-card-img {
+      .slideshow-track {
         width: 100%;
-        aspect-ratio: 16 / 9;
-        overflow: hidden;
-        background: #f8f8f8;
+        height: 100%;
+        position: relative;
       }
 
-      .featured-card-img img {
+      .slideshow-track img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
       }
 
+      .slideshow-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem 1rem 0.5rem;
+        background: linear-gradient(transparent, rgba(0,0,0,0.7));
+        color: #fff;
+      }
+
+      .slideshow-overlay h3 {
+        margin: 0 0 0.2rem;
+        font-size: 1.1rem;
+      }
+
+      .slideshow-overlay p {
+        margin: 0 0 0.3rem;
+        font-size: 0.8rem;
+        opacity: 0.9;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .slideshow-price {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #4caf50;
+      }
+
+      .slideshow-dots {
+        position: absolute;
+        bottom: 0.3rem;
+        right: 0.75rem;
+        display: flex;
+        gap: 6px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.45);
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.2s;
+      }
+
+      .dot-active {
+        background: #fff;
+      }
+
+      /* Cards verticais */
+      .featured-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .featured-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: #fff;
+        border: 1px solid var(--brand-border);
+        border-radius: 12px;
+        padding: 0.6rem;
+        cursor: pointer;
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+
+      .featured-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        transform: translateX(3px);
+      }
+
+      .featured-card img {
+        width: 72px;
+        height: 72px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #f0f0f0;
+        flex-shrink: 0;
+      }
+
       .featured-card-body {
-        padding: 0.75rem 1rem;
+        flex: 1;
+        min-width: 0;
       }
 
       .featured-card-body h3 {
-        margin: 0 0 0.25rem;
-        font-size: 0.95rem;
+        margin: 0 0 0.2rem;
+        font-size: 0.9rem;
         line-height: 1.3;
-      }
-
-      .featured-card-body p {
-        margin: 0 0 0.4rem;
-        font-size: 0.8rem;
-        color: var(--brand-muted);
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
@@ -419,23 +553,98 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       .featured-price {
         font-weight: 700;
         color: #27ae60;
-        font-size: 1rem;
+        font-size: 0.9rem;
       }
 
-      @media (max-width: 700px) {
-        .featured-carousel {
-          grid-template-columns: 1fr;
-        }
+      /* Modal (igual ao do cardapio) */
+      .modal-overlay {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex; align-items: center; justify-content: center;
+        padding: 1rem;
+      }
+      .modal-content {
+        background: #fff; border-radius: 16px;
+        max-width: 380px; width: 100%;
+        overflow: hidden; position: relative;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      }
+      .modal-close {
+        position: absolute; top: 8px; right: 10px;
+        background: rgba(0,0,0,0.5); color: #fff;
+        border: none; border-radius: 8px;
+        width: 28px; height: 28px;
+        font-size: 1.1rem; line-height: 1;
+        cursor: pointer; z-index: 10;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .modal-image { width: 100%; height: 180px; object-fit: cover; background: #f0f0f0; }
+      .modal-body { padding: 1rem 1.1rem 1.1rem; }
+      .modal-body h2 { margin: 0 0 0.3rem; font-size: 1.15rem; }
+      .modal-description { color: var(--brand-muted); font-size: 0.85rem; margin: 0 0 0.5rem; line-height: 1.45; }
+      .modal-price { font-size: 1.2rem; color: var(--brand-orange-strong); display: block; margin-bottom: 0.85rem; }
+      .modal-actions { display: flex; align-items: center; gap: 0.6rem; }
+      .quantity-control {
+        display: flex; align-items: center; gap: 0;
+        border: 1px solid var(--brand-border); border-radius: 8px; overflow: hidden;
+        flex-shrink: 0;
+      }
+      .quantity-control button {
+        border: none; background: transparent;
+        width: 32px; height: 34px; font-size: 1rem;
+        cursor: pointer; color: var(--brand-ink);
+        font-weight: 700; transition: background 0.15s;
+      }
+      .quantity-control button:hover { background: rgba(0,0,0,0.05); }
+      .quantity-control button:disabled { opacity: 0.3; cursor: not-allowed; }
+      .quantity-control .quantity-value {
+        min-width: 28px; text-align: center; font-weight: 700; font-size: 0.85rem;
+      }
+      .btn-confirm {
+        flex: 1; border: none; border-radius: 8px;
+        padding: 0.35rem 0.8rem;
+        background: var(--brand-orange); color: #fff;
+        font-weight: 700; font-size: 0.85rem;
+        cursor: pointer; transition: filter 0.15s;
+        white-space: nowrap; line-height: 1.35;
+      }
+      .btn-confirm:hover { filter: brightness(1.1); }
 
-        .location-content {
+      @media (max-width: 700px) {
+        .featured-layout {
           grid-template-columns: 1fr;
         }
-        .map-wrapper {
-          min-height: 200px;
+        .featured-slideshow {
+          aspect-ratio: 16 / 9;
         }
-        .map-wrapper iframe {
-          min-height: 200px;
+        .featured-cards {
+          flex-direction: row;
+          overflow-x: auto;
+          gap: 0.5rem;
+          padding-bottom: 0.5rem;
         }
+        .featured-card {
+          flex: 0 0 160px;
+          flex-direction: column;
+          padding: 0.5rem;
+        }
+        .featured-card img {
+          width: 100%;
+          height: 80px;
+        }
+        .modal-content { max-width: 340px; }
+        .modal-image { height: 160px; }
+        .modal-body { padding: 0.85rem 0.9rem 0.95rem; }
+        .modal-body h2 { font-size: 1.05rem; }
+        .modal-actions { gap: 0.4rem; }
+        .quantity-control button { width: 30px; height: 30px; font-size: 0.9rem; }
+        .btn-confirm { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+      }
+
+      @media (max-width: 380px) {
+        .modal-content { max-width: 100%; margin: 0; border-radius: 0; }
+        .modal-overlay { padding: 0; align-items: flex-end; }
+        .modal-content { border-radius: 14px 14px 0 0; max-height: 90vh; overflow-y: auto; }
       }
     `,
   ],
@@ -445,11 +654,18 @@ export class HomePageComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly destroyRef = inject(DestroyRef);
   private readonly menuService = inject(MenuService);
+  private readonly cartService = inject(CartService);
+  private readonly clerk = inject(ClerkService);
+  private readonly router = inject(Router);
   private readonly latestStoreSettings = signal<Parameters<typeof buildStoreStatus>[0] | null>(null);
 
   readonly storeStatus = signal<StoreStatusSnapshot | null>(null);
   readonly storeSettings = signal<StoreSettingsResponse | null>(null);
   readonly featuredProducts = signal<FeaturedProductResponse[]>([]);
+
+  readonly slideIndex = signal(0);
+  readonly selectedProduct = signal<ProductResponse | null>(null);
+  readonly selectedQuantity = signal(1);
 
   readonly DAY_LABELS = DAY_LABELS;
 
@@ -466,6 +682,7 @@ export class HomePageComponent implements OnInit {
     this.loadStoreStatus();
     this.watchStoreStatus();
     this.loadFeaturedProducts();
+    this.iniciarSlideshow();
   }
 
   trackDay(_index: number, day: { dayOfWeek: number }): number {
@@ -474,6 +691,60 @@ export class HomePageComponent implements OnInit {
 
   trackFeatured(_index: number, product: FeaturedProductResponse): number {
     return product.id;
+  }
+
+  private iniciarSlideshow(): void {
+    interval(5000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.slideIndex.update(i => (i + 1) % this.featuredProducts().length);
+      });
+  }
+
+  onSlideError(): void {
+    const p = this.featuredProducts()[this.slideIndex()];
+    if (p) {
+      p.imageUrl = '/assets/images/product_placeholder.png';
+    }
+  }
+
+  abrirModalProduto(product: FeaturedProductResponse): void {
+    // Se nao estiver logado, manda pro login
+    if (!this.clerk.user()) {
+      void this.router.navigate(['/login']);
+      return;
+    }
+
+    // Converte FeaturedProductResponse pra ProductResponse pro modal
+    const productResponse: ProductResponse = {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    };
+    this.selectedProduct.set(productResponse);
+    this.selectedQuantity.set(1);
+  }
+
+  fecharModal(): void {
+    this.selectedProduct.set(null);
+  }
+
+  aumentarQtd(): void {
+    this.selectedQuantity.update(q => q + 1);
+  }
+
+  diminuirQtd(): void {
+    this.selectedQuantity.update(q => Math.max(1, q - 1));
+  }
+
+  confirmarCarrinho(): void {
+    const product = this.selectedProduct();
+    if (product) {
+      this.cartService.addProduct(product, this.selectedQuantity());
+      this.fecharModal();
+    }
   }
 
   private loadStoreStatus(): void {
