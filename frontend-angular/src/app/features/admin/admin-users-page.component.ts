@@ -264,9 +264,13 @@ export class AdminUsersPageComponent implements OnInit {
     this.carregarUsuarios();
   }
 
+  private pareceClerkId(valor: string): boolean {
+    return /^user_[a-zA-Z0-9]+$/.test(valor);
+  }
+
   nomeExibicao(user: User): string {
     const nome = user.fullName?.trim();
-    if (!nome || nome === '${ADMIN_NAME}' || nome === 'ADMIN_NAME') {
+    if (!nome || this.pareceClerkId(nome)) {
       return user.clerkId || 'Sem nome';
     }
     return nome;
@@ -274,7 +278,7 @@ export class AdminUsersPageComponent implements OnInit {
 
   emailExibicao(user: User): string {
     const email = user.email?.trim();
-    if (!email || email === '${ADMIN_EMAIL}' || email === 'ADMIN_EMAIL') {
+    if (!email || this.pareceClerkId(email) || email === '${ADMIN_EMAIL}' || email === 'ADMIN_EMAIL') {
       return user.clerkId ? `${user.clerkId.substring(0, 12)}...@clerk` : '-';
     }
     return email;

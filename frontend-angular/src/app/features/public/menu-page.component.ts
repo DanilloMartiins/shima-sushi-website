@@ -81,7 +81,7 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
 
           @if (product.imageUrl) {
             <img
-              [src]="product.imageUrl.startsWith('/assets/') ? product.imageUrl : '/api/imagem?url=' + product.imageUrl"
+              [src]="getImageUrl(product.imageUrl)"
               [alt]="product.name"
               class="modal-image"
             />
