@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { ClerkService } from '../core/services/clerk.service';
 import { CartService } from '../core/services/cart.service';
+import { APP_VERSION } from '../../environments/version';
 
 @Component({
   selector: 'app-public-shell',
@@ -55,7 +56,7 @@ import { CartService } from '../core/services/cart.service';
       <footer class="site-footer">
         <div class="footer-inner">
           <span class="footer-copy">
-            &copy; 2026 Seu Shima Sushi. Todos os direitos reservados.
+            &copy; {{ anoAtual }} Seu Shima Sushi. Todos os direitos reservados.
           </span>
           <span class="footer-dev">
             Desenvolvido por
@@ -63,7 +64,7 @@ import { CartService } from '../core/services/cart.service';
               Danillo Martins
             </a>
           </span>
-          <span class="footer-version">v4.1.1</span>
+          <span class="footer-version">{{ APP_VERSION }}</span>
         </div>
       </footer>
     </div>
@@ -198,6 +199,9 @@ import { CartService } from '../core/services/cart.service';
 export class PublicShellComponent {
   readonly clerk = inject(ClerkService);
   readonly cartService = inject(CartService);
+
+  readonly APP_VERSION = APP_VERSION;
+  readonly anoAtual = new Date().getFullYear();
 
   private readonly router = inject(Router);
 
