@@ -82,6 +82,14 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
             </div>
           </div>
         </div>
+
+        <!-- Coluna 3: Reservada para Promoções (futuro) -->
+        <div class="featured-promo-placeholder">
+          <div class="promo-placeholder-box">
+            <span class="promo-icon">&#127859;</span>
+            <span class="promo-text">Em breve<br/>Promoções</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -421,7 +429,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
       .featured-layout {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1.2fr 1fr 0.9fr;
         gap: 0.75rem;
         align-items: start;
       }
@@ -555,6 +563,41 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         font-weight: 700;
         color: #27ae60;
         font-size: 0.9rem;
+      }
+
+      /* Placeholder Promoções */
+      .featured-promo-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+
+      .promo-placeholder-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        width: 100%;
+        height: 100%;
+        min-height: 180px;
+        border: 2px dashed var(--brand-border);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.5);
+      }
+
+      .promo-icon {
+        font-size: 2rem;
+        opacity: 0.4;
+      }
+
+      .promo-text {
+        font-size: 0.8rem;
+        color: var(--brand-muted);
+        text-align: center;
+        line-height: 1.4;
+        opacity: 0.6;
       }
 
       /* Modal (igual ao do cardapio) */
