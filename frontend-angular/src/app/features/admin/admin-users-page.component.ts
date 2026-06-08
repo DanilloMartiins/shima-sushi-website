@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ClerkService } from '../../core/services/clerk.service';
@@ -15,6 +15,11 @@ interface User {
   updatedAt: string;
 }
 
+interface OpcaoRole {
+  value: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-admin-users-page',
   standalone: true,
@@ -23,6 +28,12 @@ interface User {
     <div class="page-container">
       <h2 class="page-title">Gerenciar Usuários</h2>
 
+      @if (toast()) {
+        <div class="toast" [class.toast--erro]="toast()?.tipo === 'erro'">
+          {{ toast()?.texto }}
+        </div>
+      }
+
       <div class="table-wrapper">
         <table class="user-table">
           <thead>
@@ -30,202 +41,200 @@ interface User {
               <th>Nome</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Cargo</th>
               <th>Clerk ID</th>
-              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of users">
-              <td class="cell-name">{{ user.fullName }}</td>
-              <td class="cell-email">{{ user.email || '-' }}</td>
-              <td>
-                <span
-                  class="role-badge"
-                  [class.role-super-admin]="user.role === 'SUPER_ADMIN'"
-                  [class.role-admin]="user.role === 'ADMIN'"
-                  [class.role-customer]="user.role === 'CUSTOMER'"
-                >
-                  {{ user.role }}
-                </span>
-              </td>
-              <td class="cell-clerk-id">{{ user.clerkId || '-' }}</td>
-              <td class="cell-actions">
-                <button
-                  *ngIf="user.role === 'CUSTOMER'"
-                  class="btn btn-promote"
-                  [disabled]="!isSuperAdmin"
-                  (click)="promover(user.clerkId)"
-                >
-                  Promover
-                </button>
-                <button
-                  *ngIf="user.role === 'ADMIN'"
-                  class="btn btn-demote"
-                  [disabled]="!isSuperAdmin"
-                  (click)="rebaixar(user.clerkId)"
-                >
-                  Rebaixar
-                </button>
-              </td>
-            </tr>
+            @for (user of users; track user.id) {
+              <tr>
+                <td class="cell-name">{{ nomeExibicao(user) }}</td>
+                <td class="cell-email">{{ emailExibicao(user) }}</td>
+                <td>
+                  <span
+                    class="role-badge"
+                    [class.role-super-admin]="user.role === 'SUPER_ADMIN'"
+                    [class.role-admin]="user.role === 'ADMIN'"
+                    [class.role-customer]="user.role === 'CUSTOMER'"
+                  >
+                    {{ user.role }}
+                  </span>
+                </td>
+                <td class="cell-actions">
+                  <select
+                    class="role-select"
+                    [disabled]="!isSuperAdmin"
+                    (change)="onRoleChange(user, $event)"
+                  >
+                    @for (opcao of opcoesPorRole(user.role); track opcao.value) {
+                      <option [value]="opcao.value" [selected]="opcao.value === user.role">
+                        {{ opcao.label }}
+                      </option>
+                    }
+                  </select>
+                </td>
+                <td class="cell-clerk-id">{{ user.clerkId || '-' }}</td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
 
-      <p *ngIf="mensagem" class="mensagem">{{ mensagem }}</p>
-      <p *ngIf="erro" class="erro">{{ erro }}</p>
+      @if (!isSuperAdmin) {
+        <p class="restricted-msg">Apenas SUPER_ADMIN pode alterar cargos.</p>
+      }
     </div>
   `,
-  styles: [
-    `
-      .page-container {
-        animation: fadeIn 0.3s ease-in-out;
-      }
+  styles: [`
+    .page-container {
+      animation: fadeIn 0.3s ease-in-out;
+    }
 
-      .page-title {
-        font-size: 1.75rem;
-        font-weight: 600;
-        color: #1a1a2e;
-        margin-bottom: 24px;
-      }
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 24px;
+    }
 
-      .table-wrapper {
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        overflow-x: auto;
-      }
+    .toast {
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      animation: fadeIn 0.25s ease-in-out;
+    }
 
-      .user-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-      }
+    .toast--erro {
+      background: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
 
-      .user-table thead {
-        background: #f8f9fc;
-      }
+    .table-wrapper {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow-x: auto;
+    }
 
-      .user-table th {
-        text-align: left;
-        padding: 14px 16px;
-        font-weight: 600;
-        color: #444;
-        border-bottom: 2px solid #e0e6ed;
-        white-space: nowrap;
-      }
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
 
-      .user-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #f0f0f0;
-        color: #333;
-      }
+    .user-table thead {
+      background: #f8f9fc;
+    }
 
-      .user-table tbody tr:hover {
-        background-color: #f8faff;
-      }
+    .user-table th {
+      text-align: left;
+      padding: 14px 16px;
+      font-weight: 600;
+      color: #444;
+      border-bottom: 2px solid #e0e6ed;
+      white-space: nowrap;
+    }
 
-      .cell-name {
-        font-weight: 500;
-      }
+    .user-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
 
-      .cell-email {
-        color: #666;
-      }
+    .user-table tbody tr:hover {
+      background-color: #f8faff;
+    }
 
-      .cell-clerk-id {
-        font-family: monospace;
-        font-size: 12px;
-        color: #888;
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+    .cell-name {
+      font-weight: 500;
+    }
 
-      .role-badge {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
+    .cell-email {
+      color: #666;
+    }
 
-      .role-super-admin {
-        background: #fff3cd;
-        color: #856404;
-      }
+    .cell-clerk-id {
+      font-family: monospace;
+      font-size: 12px;
+      color: #888;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-      .role-admin {
-        background: #d4edda;
-        color: #155724;
-      }
+    .role-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
 
-      .role-customer {
-        background: #e9ecef;
-        color: #495057;
-      }
+    .role-super-admin {
+      background: #fff3cd;
+      color: #856404;
+    }
 
-      .cell-actions {
-        white-space: nowrap;
-      }
+    .role-admin {
+      background: #d4edda;
+      color: #155724;
+    }
 
-      .btn {
-        padding: 6px 14px;
-        border: none;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s, opacity 0.2s;
-      }
+    .role-customer {
+      background: #e9ecef;
+      color: #495057;
+    }
 
-      .btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
+    .cell-actions {
+      min-width: 120px;
+    }
 
-      .btn-promote {
-        background: #28a745;
-        color: #fff;
-      }
+    .role-select {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      background: #fff;
+      color: #333;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: auto;
+    }
 
-      .btn-promote:not(:disabled):hover {
-        background: #218838;
-      }
+    .role-select:focus {
+      outline: none;
+      border-color: #ea6a3d;
+      box-shadow: 0 0 0 3px rgba(234, 106, 61, 0.15);
+    }
 
-      .btn-demote {
-        background: #dc3545;
-        color: #fff;
-      }
+    .role-select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f5f5f5;
+    }
 
-      .btn-demote:not(:disabled):hover {
-        background: #c82333;
-      }
+    .restricted-msg {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: #888;
+      font-style: italic;
+    }
 
-      .mensagem {
-        margin-top: 16px;
-        padding: 10px 16px;
-        background: #d4edda;
-        color: #155724;
-        border-radius: 6px;
-      }
-
-      .erro {
-        margin-top: 16px;
-        padding: 10px 16px;
-        background: #f8d7da;
-        color: #721c24;
-        border-radius: 6px;
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-    `,
-  ],
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  `],
 })
 export class AdminUsersPageComponent implements OnInit {
   private readonly http = inject(HttpClient);
@@ -233,18 +242,19 @@ export class AdminUsersPageComponent implements OnInit {
 
   users: User[] = [];
   isSuperAdmin = false;
-  mensagem = '';
-  erro = '';
+
+  readonly toast = signal<{ texto: string; tipo: 'sucesso' | 'erro' } | null>(null);
+
+  private readonly ROLES = ['CUSTOMER', 'ADMIN', 'SUPER_ADMIN'] as const;
+  private readonly LABELS: Record<string, string> = {
+    CUSTOMER: 'Cliente',
+    ADMIN: 'Administrador',
+    SUPER_ADMIN: 'Super Admin',
+  };
 
   ngOnInit(): void {
-    /*
-     * Pega a role do backend (ja foi carregada pelo AdminShellComponent)
-     */
     this.isSuperAdmin = this.clerk.isUserSuperAdmin();
 
-    /*
-     * Se ainda nao carregou, tenta buscar agora
-     */
     if (!this.isSuperAdmin) {
       this.clerk.fetchBackendRole().then((role) => {
         this.isSuperAdmin = role === 'SUPER_ADMIN';
@@ -252,6 +262,80 @@ export class AdminUsersPageComponent implements OnInit {
     }
 
     this.carregarUsuarios();
+  }
+
+  nomeExibicao(user: User): string {
+    const nome = user.fullName?.trim();
+    if (!nome || nome === '${ADMIN_NAME}' || nome === 'ADMIN_NAME') {
+      return user.clerkId || 'Sem nome';
+    }
+    return nome;
+  }
+
+  emailExibicao(user: User): string {
+    const email = user.email?.trim();
+    if (!email || email === '${ADMIN_EMAIL}' || email === 'ADMIN_EMAIL') {
+      return user.clerkId ? `${user.clerkId.substring(0, 12)}...@clerk` : '-';
+    }
+    return email;
+  }
+
+  opcoesPorRole(roleAtual: string): OpcaoRole[] {
+    if (roleAtual === 'CUSTOMER') {
+      return [
+        { value: 'CUSTOMER', label: 'Cliente' },
+        { value: 'ADMIN', label: 'Tornar ADMIN' },
+        { value: 'SUPER_ADMIN', label: 'Tornar SUPER_ADMIN' },
+      ];
+    }
+
+    if (roleAtual === 'ADMIN') {
+      return [
+        { value: 'ADMIN', label: 'Administrador' },
+        { value: 'CUSTOMER', label: 'Rebaixar para Cliente' },
+        { value: 'SUPER_ADMIN', label: 'Tornar SUPER_ADMIN' },
+      ];
+    }
+
+    if (roleAtual === 'SUPER_ADMIN') {
+      return [
+        { value: 'SUPER_ADMIN', label: 'Super Admin' },
+        { value: 'ADMIN', label: 'Rebaixar para ADMIN' },
+        { value: 'CUSTOMER', label: 'Rebaixar para Cliente' },
+      ];
+    }
+
+    return [{ value: roleAtual, label: roleAtual }];
+  }
+
+  onRoleChange(user: User, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const novaRole = select.value;
+    if (user.role === novaRole) return;
+
+    this.limparToast();
+    this.getToken().then((token) => {
+      if (!token) return;
+
+      this.http
+        .put<{ mensagem: string }>(
+          `${API_BASE_URL}/admin/users/role`,
+          { clerkId: user.clerkId, newRole: novaRole },
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        )
+        .subscribe({
+          next: (res) => {
+            this.toast.set({ texto: res.mensagem, tipo: 'sucesso' });
+            this.carregarUsuarios();
+          },
+          error: (err) => {
+            this.toast.set({
+              texto: err.error?.erro || 'Erro ao alterar cargo',
+              tipo: 'erro',
+            });
+          },
+        });
+    });
   }
 
   private carregarUsuarios(): void {
@@ -267,61 +351,14 @@ export class AdminUsersPageComponent implements OnInit {
             this.users = users;
           },
           error: () => {
-            this.erro = 'Erro ao carregar usuarios';
+            this.toast.set({ texto: 'Erro ao carregar usuarios', tipo: 'erro' });
           },
         });
     });
   }
 
-  promover(clerkId: string): void {
-    this.limparMensagens();
-    this.getToken().then((token) => {
-      if (!token) return;
-
-      this.http
-        .put<any>(
-          `${API_BASE_URL}/admin/users/promote`,
-          { clerkId },
-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
-        )
-        .subscribe({
-          next: (res) => {
-            this.mensagem = res.mensagem;
-            this.carregarUsuarios();
-          },
-          error: (err) => {
-            this.erro = err.error?.erro || 'Erro ao promover usuario';
-          },
-        });
-    });
-  }
-
-  rebaixar(clerkId: string): void {
-    this.limparMensagens();
-    this.getToken().then((token) => {
-      if (!token) return;
-
-      this.http
-        .put<any>(
-          `${API_BASE_URL}/admin/users/demote`,
-          { clerkId },
-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
-        )
-        .subscribe({
-          next: (res) => {
-            this.mensagem = res.mensagem;
-            this.carregarUsuarios();
-          },
-          error: (err) => {
-            this.erro = err.error?.erro || 'Erro ao rebaixar usuario';
-          },
-        });
-    });
-  }
-
-  private limparMensagens(): void {
-    this.mensagem = '';
-    this.erro = '';
+  private limparToast(): void {
+    this.toast.set(null);
   }
 
   private async getToken(): Promise<string | null> {

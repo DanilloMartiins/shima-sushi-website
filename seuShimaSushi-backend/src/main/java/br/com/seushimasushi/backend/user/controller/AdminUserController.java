@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -87,6 +88,35 @@ public class AdminUserController {
 
         try {
             String mensagem = userService.rebaixar(clerkId);
+            return ResponseEntity.ok(Map.of("mensagem", mensagem));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
+
+    /*
+     * Atualiza a role de um usuario arbitrariamente
+     * Ex: PUT /api/v1/admin/users/role
+     * Body: { "clerkId": "user_abc123", "newRole": "ADMIN" }
+     * So SUPER_ADMIN pode alterar roles
+     */
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @PutMapping("/users/role")
+    public ResponseEntity<Map<String, Object>> atualizarRole(@RequestBody Map<String, String> body) {
+        String clerkId = body.get("clerkId");
+        String novaRole = body.get("newRole");
+
+        if (clerkId == null || clerkId.isBlank() || novaRole == null || novaRole.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "clerkId e newRole sao obrigatorios"));
+        }
+
+        Set<String> rolesValidas = Set.of("CUSTOMER", "ADMIN", "SUPER_ADMIN");
+        if (!rolesValidas.contains(novaRole.toUpperCase())) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Role invalida: " + novaRole));
+        }
+
+        try {
+            String mensagem = userService.atualizarRole(clerkId, novaRole.toUpperCase());
             return ResponseEntity.ok(Map.of("mensagem", mensagem));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));

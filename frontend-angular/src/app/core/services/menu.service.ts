@@ -1,9 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, shareReplay, tap } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, tap } from 'rxjs';
 
 import { API_BASE_URL, USE_MOCK_PUBLIC_DATA } from '../constants/api.constants';
 import { PUBLIC_MENU_MOCK } from '../mocks/public-data.mock';
+import { sanitizarCardapio } from '../utils/menu.utils';
 import {
   CategorySummaryResponse,
   CreateProductRequest,
@@ -26,7 +27,7 @@ export class MenuService {
 
   getPublicMenu(): Observable<MenuCategoryResponse[]> {
     if (USE_MOCK_PUBLIC_DATA) {
-      return of(PUBLIC_MENU_MOCK);
+      return of(sanitizarCardapio(PUBLIC_MENU_MOCK));
     }
 
     const now = Date.now();
@@ -38,13 +39,14 @@ export class MenuService {
     this.menuCache$ = this.http
       .get<MenuCategoryResponse[]>(`${API_BASE_URL}/public/menu`)
       .pipe(
+        map(sanitizarCardapio),
         tap(() => {
           this.lastFetchTime = Date.now();
         }),
         shareReplay(1),
         catchError(() => {
           this.clearCache();
-          return of(PUBLIC_MENU_MOCK);
+          return of(sanitizarCardapio(PUBLIC_MENU_MOCK));
         }),
       );
 

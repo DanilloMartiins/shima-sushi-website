@@ -1,77 +1,112 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 
 import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
 import { CartService } from '../../core/services/cart.service';
 import { MenuService } from '../../core/services/menu.service';
+import { gerarSlug } from '../../core/utils/menu.utils';
+import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.component';
 
 @Component({
   selector: 'app-menu-page',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, MenuCarouselComponent],
   template: `
-    <section *ngIf="loading()" class="loading-state">
-      <span class="shima-loader">
-        <span class="shima-loader-icon" aria-hidden="true"></span>
-        Carregando cardapio...
-      </span>
-    </section>
-
-    <section *ngIf="errorMessage()" class="error-state">{{ errorMessage() }}</section>
-
-    <!-- Lista de Categorias e Produtos -->
-    <ng-container *ngFor="let category of menuCategories(); trackBy: trackCategory">
-      <section class="category-wrap">
-        <h3>{{ category.name }}</h3>
-
-        <div class="product-grid">
-          <article *ngFor="let item of category.products; trackBy: trackProduct"
-                   class="product-card"
-                   (click)="openProductModal(item)">
-            <img *ngIf="item.imageUrl"
-                 [src]="getImageUrl(item.imageUrl)"
-                 [alt]="item.name" loading="lazy" referrerpolicy="no-referrer" />
-
-            <div class="product-info">
-              <h4>{{ item.name }}</h4>
-              <div class="card-footer">
-                <strong>{{ item.price | currency: 'BRL' }}</strong>
-                <button type="button" (click)="$event.stopPropagation(); openProductModal(item)">Adicionar</button>
-              </div>
-            </div>
-          </article>
-        </div>
+    @if (loading()) {
+      <section class="loading-state">
+        <span class="shima-loader">
+          <span class="shima-loader-icon" aria-hidden="true"></span>
+          Carregando cardapio...
+        </span>
       </section>
-    </ng-container>
+    }
 
-    <!-- Modal do Produto -->
-    <div *ngIf="selectedProduct() as product" class="modal-overlay" (click)="closeProductModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
+    @if (errorMessage(); as msg) {
+      <section class="error-state">{{ msg }}</section>
+    }
 
-        <img *ngIf="product.imageUrl"
-             [src]="product.imageUrl.startsWith('/assets/') ? product.imageUrl : '/api/imagem?url=' + product.imageUrl"
-             [alt]="product.name" class="modal-image" />
+    @if (categoriasCarrossel().length > 0) {
+      <app-menu-carousel
+        [categorias]="categoriasCarrossel()"
+        [ativa]="categoriaAtiva()"
+        (categoriaChange)="onCategoriaChange($event)"
+      />
+    }
 
-        <div class="modal-body">
-          <h2>{{ product.name }}</h2>
-          <p *ngIf="product.description" class="modal-description">{{ product.description }}</p>
-          <strong class="modal-price">{{ product.price | currency: 'BRL' }}</strong>
+    <div class="menu-page-container">
+      @for (cat of categoriasExibidas(); track cat.slug) {
+        <section
+          class="category-wrap"
+          [id]="'categoria-' + cat.slug"
+          [attr.data-categoria]="cat.slug"
+        >
+          <h3>{{ cat.nome }}</h3>
 
-          <div class="modal-actions">
-            <div class="quantity-control">
-              <button type="button" (click)="decreaseQuantity()" [disabled]="selectedQuantity() <= 1">-</button>
-              <span class="quantity-value">{{ selectedQuantity() }}</span>
-              <button type="button" (click)="increaseQuantity()">+</button>
+          <div class="product-grid">
+            @for (item of cat.produtos; track item.id) {
+              <article class="product-card" (click)="openProductModal(item)">
+                @if (item.imageUrl) {
+                  <img
+                    [src]="getImageUrl(item.imageUrl)"
+                    [alt]="item.name"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                  />
+                }
+
+                <div class="product-info">
+                  @if (item.tag) {
+                    <span class="product-tag">{{ item.tag }}</span>
+                  }
+                  <h4>{{ item.name }}</h4>
+                  <div class="card-footer">
+                    <strong>{{ item.price | currency: 'BRL' }}</strong>
+                    <button type="button" (click)="$event.stopPropagation(); openProductModal(item)">
+                      Adicionar
+                    </button>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    @if (selectedProduct(); as product) {
+      <div class="modal-overlay" (click)="closeProductModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
+
+          @if (product.imageUrl) {
+            <img
+              [src]="product.imageUrl.startsWith('/assets/') ? product.imageUrl : '/api/imagem?url=' + product.imageUrl"
+              [alt]="product.name"
+              class="modal-image"
+            />
+          }
+
+          <div class="modal-body">
+            <h2>{{ product.name }}</h2>
+            @if (product.description) {
+              <p class="modal-description">{{ product.description }}</p>
+            }
+            <strong class="modal-price">{{ product.price | currency: 'BRL' }}</strong>
+
+            <div class="modal-actions">
+              <div class="quantity-control">
+                <button type="button" (click)="decreaseQuantity()" [disabled]="selectedQuantity() <= 1">-</button>
+                <span class="quantity-value">{{ selectedQuantity() }}</span>
+                <button type="button" (click)="increaseQuantity()">+</button>
+              </div>
+
+              <button type="button" class="btn-confirm" (click)="confirmAddToCart()">Confirmar</button>
             </div>
-
-            <button type="button" class="btn-confirm" (click)="confirmAddToCart()">Confirmar</button>
           </div>
         </div>
       </div>
-    </div>
+    }
   `,
   styles: [`
     .loading-state, .error-state {
@@ -79,20 +114,49 @@ import { MenuService } from '../../core/services/menu.service';
       background: #fff; border: 1px solid var(--brand-border); text-align: center;
     }
 
-    .category-wrap { margin: 2rem 0; }
+    .category-wrap { margin: 2rem 0; scroll-margin-top: 4.5rem; }
     .category-wrap h3 { margin: 0 0 1rem; font-size: 1.6rem; color: var(--brand-ink); }
 
     .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
-    .product-card { border: 1px solid var(--brand-border); border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: transform 0.2s; cursor: pointer; }
+    .product-card {
+      border: 1px solid var(--brand-border); border-radius: 16px; background: #fff;
+      overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+      transition: transform 0.2s; cursor: pointer;
+      display: flex; flex-direction: column;
+    }
     .product-card:hover { transform: translateY(-4px); }
     .product-card img { width: 100%; height: 150px; object-fit: cover; background: #f0f0f0; }
 
-    .product-info { padding: 0.85rem 1rem; }
-    .product-info h4 { margin: 0 0 0.5rem; font-size: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+    .product-info {
+      padding: 0.85rem 1rem;
+      display: flex; flex-direction: column; gap: 0.25rem;
+      flex: 1;
+    }
+    .product-tag {
+      display: inline-block;
+      background: rgba(234, 106, 61, 0.1);
+      color: var(--brand-orange-strong, #c85a2f);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .product-info h4 { margin: 0; font-size: 1rem; line-height: 1.35; }
 
-    .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .card-footer {
+      margin-top: auto;
+      display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+      padding-top: 0.4rem;
+    }
     .card-footer strong { font-size: 1.1rem; color: var(--brand-orange-strong); white-space: nowrap; }
-    .card-footer button { border: 0; border-radius: 8px; padding: 0.35rem 0.8rem; cursor: pointer; color: #fff; background: var(--brand-ink); font-weight: 600; font-size: 0.85rem; line-height: 1.35; }
+    .card-footer button {
+      border: 0; border-radius: 8px; padding: 0.35rem 0.8rem;
+      cursor: pointer; color: #fff; background: var(--brand-ink);
+      font-weight: 600; font-size: 0.85rem; line-height: 1.35;
+    }
 
     /* Modal */
     .modal-overlay {
@@ -154,7 +218,7 @@ import { MenuService } from '../../core/services/menu.service';
       .product-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; }
       .product-card img { height: 110px; }
       .product-info { padding: 0.65rem 0.75rem; }
-      .product-info h4 { font-size: 0.88rem; margin-bottom: 0.4rem; }
+      .product-info h4 { font-size: 0.88rem; }
       .card-footer strong { font-size: 1rem; }
       .card-footer button { padding: 0.35rem 0.8rem; font-size: 0.85rem; }
       .modal-content { max-width: 340px; }
@@ -178,14 +242,31 @@ import { MenuService } from '../../core/services/menu.service';
 export class MenuPageComponent implements OnInit {
   private readonly menuService = inject(MenuService);
   private readonly cartService = inject(CartService);
-  private readonly destroyRef = inject(DestroyRef);
+
+  @ViewChild(MenuCarouselComponent) carrossel!: MenuCarouselComponent;
 
   readonly menuCategories = signal<MenuCategoryResponse[]>([]);
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
+  readonly categoriaAtiva = signal('');
 
   readonly selectedProduct = signal<ProductResponse | null>(null);
   readonly selectedQuantity = signal(1);
+
+  readonly categoriasCarrossel = computed<CategoriaCarrossel[]>(() =>
+    this.menuCategories().map((c) => ({
+      slug: gerarSlug(c.name),
+      nome: c.name,
+    })),
+  );
+
+  readonly categoriasExibidas = computed(() =>
+    this.menuCategories().map((c) => ({
+      slug: gerarSlug(c.name),
+      nome: c.name,
+      produtos: c.products,
+    })),
+  );
 
   ngOnInit(): void {
     this.loadMenu();
@@ -216,14 +297,6 @@ export class MenuPageComponent implements OnInit {
     }
   }
 
-  trackCategory(_index: number, category: MenuCategoryResponse): number {
-    return category.id;
-  }
-
-  trackProduct(_index: number, product: ProductResponse): number {
-    return product.id;
-  }
-
   getImageUrl(imageUrl: string | null): string {
     if (!imageUrl || imageUrl.startsWith('/assets/')) {
       return imageUrl ?? '';
@@ -231,11 +304,20 @@ export class MenuPageComponent implements OnInit {
     return `${API_BASE_RAW}/api/imagem?url=${imageUrl}`;
   }
 
+  onCategoriaChange(slug: string): void {
+    this.categoriaAtiva.set(slug);
+  }
+
   private loadMenu(): void {
     this.menuService.getPublicMenu().subscribe({
       next: (categories) => {
         this.menuCategories.set(categories);
         this.loading.set(false);
+
+        // Agora que o DOM foi atualizado com as categorias, conecta o scroll spy
+        setTimeout(() => {
+          this.carrossel?.conectarScrollSpy();
+        });
       },
       error: () => {
         this.errorMessage.set('Nao foi possivel carregar o cardapio agora.');

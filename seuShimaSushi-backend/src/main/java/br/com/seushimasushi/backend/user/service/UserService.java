@@ -60,6 +60,26 @@ public class UserService {
         return "Usuario rebaixado para customer com sucesso";
     }
 
+    @Transactional
+    public String atualizarRole(String clerkId, String novaRole) {
+        if (!List.of("CUSTOMER", "ADMIN", "SUPER_ADMIN").contains(novaRole)) {
+            throw new IllegalArgumentException("Role invalida: " + novaRole);
+        }
+
+        User user = userRepository.findByClerkId(clerkId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario nao encontrado"));
+
+        String roleAtual = user.getRole();
+
+        if (roleAtual.equals(novaRole)) {
+            throw new IllegalArgumentException("Usuario ja possui a role " + novaRole);
+        }
+
+        user.setRole(novaRole);
+        userRepository.save(user);
+        return "Role alterada de " + roleAtual + " para " + novaRole + " com sucesso";
+    }
+
     private UserResponse toResponse(User user) {
         return new UserResponse(
                 user.getId(),
