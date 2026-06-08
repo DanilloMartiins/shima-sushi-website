@@ -298,8 +298,14 @@ export class MenuPageComponent implements OnInit {
   }
 
   getImageUrl(imageUrl: string | null | undefined): string {
-    if (!imageUrl || imageUrl.startsWith('/assets/') || imageUrl.startsWith('/images/')) {
-      return imageUrl ?? '';
+    if (!imageUrl) {
+      return '';
+    }
+    if (imageUrl.startsWith('/assets/')) {
+      return imageUrl;
+    }
+    if (imageUrl.startsWith('/images/')) {
+      return `${API_BASE_RAW}${imageUrl}`;
     }
     return `${API_BASE_RAW}/api/imagem?url=${encodeURIComponent(imageUrl)}`;
   }
