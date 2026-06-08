@@ -39,7 +39,11 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
 
       <div class="featured-layout">
         <!-- Coluna 1: Slideshow -->
-        <div class="featured-slideshow" (click)="abrirModalProduto(featuredProducts()[slideIndex()])">
+        <div class="featured-slideshow"
+             (click)="abrirModalProduto(featuredProducts()[slideIndex()])"
+             (touchstart)="onTouchStart($event)"
+             (touchmove)="onTouchMove($event)"
+             (touchend)="onTouchEnd($event)">
           <div class="slideshow-track">
             <img
               [src]="getImageUrl(featuredProducts()[slideIndex()].imageUrl)"
@@ -661,6 +665,9 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         .featured-slideshow {
           aspect-ratio: 16 / 9;
         }
+        .featured-promo-placeholder {
+          display: none;
+        }
         .featured-cards {
           flex-direction: row;
           overflow-x: auto;
@@ -750,6 +757,33 @@ export class HomePageComponent implements OnInit {
       return imageUrl ?? '/assets/images/product_placeholder.png';
     }
     return `${API_BASE_RAW}/api/imagem?url=${encodeURIComponent(imageUrl)}`;
+  }
+
+  // Touch/Swipe
+  private touchStartX = 0;
+  private touchEndX = 0;
+
+  onTouchStart(e: TouchEvent): void {
+    this.touchStartX = e.changedTouches[0].screenX;
+  }
+
+  onTouchMove(e: TouchEvent): void {
+    this.touchEndX = e.changedTouches[0].screenX;
+  }
+
+  onTouchEnd(_e: TouchEvent): void {
+    const diff = this.touchStartX - this.touchEndX;
+    const total = this.featuredProducts().length;
+
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        // Swipe pra esquerda → próximo
+        this.slideIndex.update(i => (i + 1) % total);
+      } else {
+        // Swipe pra direita → anterior
+        this.slideIndex.update(i => (i - 1 + total) % total);
+      }
+    }
   }
 
   onSlideError(): void {

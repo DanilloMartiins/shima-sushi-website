@@ -122,6 +122,7 @@ export class ClerkService {
 
     if (this.loaded()) {
       this.clerk.mountSignIn(el, {
+        signUpUrl: '/register',
         forceRedirectUrl: '/',
         fallbackRedirectUrl: '/'
       });
@@ -136,6 +137,7 @@ export class ClerkService {
 
     if (this.loaded()) {
       this.clerk.mountSignUp(el, {
+        signInUrl: '/login',
         forceRedirectUrl: '/',
         fallbackRedirectUrl: '/'
       });
