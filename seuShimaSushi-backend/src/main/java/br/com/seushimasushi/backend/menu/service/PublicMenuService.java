@@ -1,7 +1,13 @@
 package br.com.seushimasushi.backend.menu.service;
 
+import br.com.seushimasushi.backend.menu.dto.publicview.PublicCustomizationGroupResponse;
+import br.com.seushimasushi.backend.menu.dto.publicview.PublicCustomizationOptionResponse;
 import br.com.seushimasushi.backend.menu.dto.publicview.PublicMenuCategoryResponse;
 import br.com.seushimasushi.backend.menu.dto.publicview.PublicMenuProductResponse;
+import br.com.seushimasushi.backend.menu.model.CustomizationGroup;
+import br.com.seushimasushi.backend.menu.model.CustomizationOption;
+import br.com.seushimasushi.backend.menu.model.Product;
+import br.com.seushimasushi.backend.menu.repository.ProductRepository;
 import br.com.seushimasushi.backend.scraper.model.Produto;
 import br.com.seushimasushi.backend.scraper.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +24,7 @@ import java.util.stream.Collectors;
 public class PublicMenuService {
 
     private final ProdutoRepository produtoRepository;
+    private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
     public List<PublicMenuCategoryResponse> getPublicMenu() {
@@ -45,7 +52,9 @@ public class PublicMenuService {
                         p.getNome(),
                         descricao,
                         p.getPreco(),
-                        p.getUrlImagem()
+                        p.getUrlImagem(),
+                        false,
+                        List.of()
                 ));
             }
 
@@ -63,9 +72,46 @@ public class PublicMenuService {
             List<PublicMenuProductResponse> extraResponses = new ArrayList<>();
             for (Produto p : semCategoria) {
                 String descricao = gerarDescricao(p.getNome(), "Geral");
-                extraResponses.add(new PublicMenuProductResponse(p.getId(), p.getNome(), descricao, p.getPreco(), p.getUrlImagem()));
+                extraResponses.add(new PublicMenuProductResponse(p.getId(), p.getNome(), descricao, p.getPreco(), p.getUrlImagem(), false, List.of()));
             }
             categorias.add(new PublicMenuCategoryResponse(999L, "Geral", "Outros produtos", extraResponses));
+        }
+
+        // Adiciona produtos do admin (com suporte a customizacao) como categoria extra
+        List<Product> adminProducts = productRepository.findByAvailableTrueAndCategoryActiveTrueOrderByCategoryNameAscNameAsc();
+        if (!adminProducts.isEmpty()) {
+            Map<String, List<Product>> adminPorCategoria = adminProducts.stream()
+                    .collect(Collectors.groupingBy(p -> p.getCategory().getName()));
+
+            for (Map.Entry<String, List<Product>> entry : adminPorCategoria.entrySet()) {
+                List<PublicMenuProductResponse> productResponses = new ArrayList<>();
+                for (Product p : entry.getValue()) {
+                    List<PublicCustomizationGroupResponse> groups = new ArrayList<>();
+                    if (Boolean.TRUE.equals(p.getIsCustomizable()) && p.getCustomizationGroups() != null) {
+                        for (CustomizationGroup g : p.getCustomizationGroups()) {
+                            List<PublicCustomizationOptionResponse> opts = new ArrayList<>();
+                            if (g.getOptions() != null) {
+                                for (CustomizationOption o : g.getOptions()) {
+                                    opts.add(new PublicCustomizationOptionResponse(
+                                            o.getId(), o.getName(), o.getPriceAddition(), o.getDisplayOrder()
+                                    ));
+                                }
+                            }
+                            groups.add(new PublicCustomizationGroupResponse(
+                                    g.getId(), g.getName(), g.getMinSelected(), g.getMaxSelected(),
+                                    g.getDisplayOrder(), opts
+                            ));
+                        }
+                    }
+                    productResponses.add(new PublicMenuProductResponse(
+                            p.getId(), p.getName(), p.getDescription(), p.getPrice(),
+                            p.getImageUrl(), p.getIsCustomizable(), groups
+                    ));
+                }
+                categorias.add(new PublicMenuCategoryResponse(
+                        idCounter++ + 1000, entry.getKey(), "Produtos do cardapio", productResponses
+                ));
+            }
         }
 
         return categorias;

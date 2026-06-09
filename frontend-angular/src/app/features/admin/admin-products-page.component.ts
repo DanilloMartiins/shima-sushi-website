@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MenuService } from '../../core/services/menu.service';
-import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '../../core/models/menu.models';
+import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupRequest, ProductResponse } from '../../core/models/menu.models';
 
 @Component({
   selector: 'app-admin-products-page',
@@ -160,6 +160,55 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
               <button class="remove-image" (click)="removerImagem()">&times;</button>
             </div>
           </label>
+
+          <label class="form-group checkbox-group">
+            <input type="checkbox" [(ngModel)]="formData.isCustomizable" />
+            <span>Produto Customizável (ex: Monte seu Prato)</span>
+          </label>
+
+          <div class="customize-section" *ngIf="formData.isCustomizable">
+            <h3>Grupos de Opções</h3>
+            <p class="customize-hint">Defina grupos como "Escolha a Proteína", "Adicionais", etc.</p>
+
+            <div class="group-card" *ngFor="let group of formData.customizationGroups; let gi = index">
+              <div class="group-header">
+                <strong>{{ group.name || 'Novo Grupo' }}</strong>
+                <button class="btn-remove-group" (click)="removerGrupo(gi)" type="button">&times;</button>
+              </div>
+              <div class="group-body">
+                <div class="form-row">
+                  <label class="form-group">
+                    <span>Nome do grupo</span>
+                    <input type="text" [(ngModel)]="group.name" placeholder="Ex: Escolha a Proteína" />
+                  </label>
+                </div>
+                <div class="form-row group-limits">
+                  <label class="form-group">
+                    <span>Mínimo</span>
+                    <input type="number" [(ngModel)]="group.minSelected" min="0" />
+                  </label>
+                  <label class="form-group">
+                    <span>Máximo</span>
+                    <input type="number" [(ngModel)]="group.maxSelected" min="1" />
+                  </label>
+                  <span class="group-badge obrigatorio" *ngIf="group.minSelected >= 1">OBRIGATÓRIO</span>
+                  <span class="group-badge" *ngIf="group.maxSelected === 1 && group.minSelected === 0">OPCIONAL</span>
+                </div>
+
+                <div class="options-section">
+                  <span class="options-label">Opções</span>
+                  <div class="option-row" *ngFor="let opt of group.options; let oi = index">
+                    <input type="text" [(ngModel)]="opt.name" placeholder="Ex: Frango Empanado" />
+                    <input type="number" [(ngModel)]="opt.priceAddition" step="0.01" min="0" placeholder="R$ 0,00" class="opt-price" />
+                    <button class="btn-remove-option" (click)="removerOpcao(gi, oi)" type="button">&times;</button>
+                  </div>
+                  <button class="btn-add-option" (click)="adicionarOpcao(gi)" type="button">+ Adicionar opção</button>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-add-group" (click)="adicionarGrupo()" type="button">+ Adicionar grupo</button>
+          </div>
 
         </div>
 
@@ -678,6 +727,140 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
         opacity: 0.6;
         cursor: not-allowed;
       }
+
+      .customize-section {
+        border-top: 1px solid #eee;
+        padding-top: 16px;
+      }
+      .customize-section h3 {
+        font-size: 16px;
+        margin: 0 0 4px;
+        color: #333;
+      }
+      .customize-hint {
+        font-size: 13px;
+        color: #888;
+        margin: 0 0 16px;
+      }
+      .group-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        background: #fafafa;
+      }
+      .group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background: #f0f0f0;
+        border-bottom: 1px solid #ddd;
+      }
+      .group-header strong {
+        font-size: 14px;
+        color: #444;
+      }
+      .btn-remove-group {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #e74c3c;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+      .group-body {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .group-limits {
+        align-items: center;
+      }
+      .group-limits .form-group input {
+        width: 70px;
+      }
+      .group-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: #ecf0f1;
+        color: #7f8c8d;
+        text-transform: uppercase;
+      }
+      .group-badge.obrigatorio {
+        background: #ffeaa7;
+        color: #d68910;
+      }
+      .options-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .options-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #777;
+        text-transform: uppercase;
+      }
+      .option-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .option-row input[type="text"] {
+        flex: 1;
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .opt-price {
+        width: 100px;
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .btn-remove-option {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #e74c3c;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+      .btn-add-option {
+        background: none;
+        border: 1px dashed #bbb;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: #555;
+        cursor: pointer;
+        align-self: flex-start;
+      }
+      .btn-add-option:hover {
+        background: #f5f5f5;
+        border-color: #999;
+      }
+      .btn-add-group {
+        background: none;
+        border: 1px dashed #27ae60;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 14px;
+        color: #27ae60;
+        cursor: pointer;
+        width: 100%;
+        font-weight: 600;
+      }
+      .btn-add-group:hover {
+        background: #f0fdf4;
+      }
     `,
   ],
 })
@@ -703,6 +886,8 @@ export class AdminProductsPageComponent implements OnInit {
     price: null as number | null,
     categoryId: null as number | null,
     available: true,
+    isCustomizable: false,
+    customizationGroups: [] as CustomizationGroupRequest[],
   };
 
   modoSelecao = false;
@@ -754,6 +939,20 @@ export class AdminProductsPageComponent implements OnInit {
   }
 
   toggleDisponivel(produto: ProductResponse) {
+    const groups: CustomizationGroupRequest[] = (produto.customizationGroups ?? []).map((g: any, gi: number) => ({
+      id: g.id,
+      name: g.name,
+      minSelected: g.minSelected,
+      maxSelected: g.maxSelected,
+      displayOrder: gi,
+      options: g.options.map((o: any, oi: number) => ({
+        id: o.id,
+        name: o.name,
+        priceAddition: o.priceAddition,
+        displayOrder: oi,
+      })),
+    }));
+
     const payload: CreateProductRequest = {
       name: produto.name,
       description: produto.description,
@@ -761,6 +960,8 @@ export class AdminProductsPageComponent implements OnInit {
       imageUrl: produto.imageUrl ?? '/assets/images/product_placeholder.png',
       available: !produto.available,
       categoryId: produto.category!.id,
+      isCustomizable: produto.isCustomizable ?? false,
+      customizationGroups: groups,
     };
 
     this.menuService.updateAdminProduct(produto.id, payload).subscribe({
@@ -822,6 +1023,20 @@ export class AdminProductsPageComponent implements OnInit {
       price: produto.price,
       categoryId: produto.category?.id ?? null,
       available: produto.available ?? true,
+      isCustomizable: produto.isCustomizable ?? false,
+      customizationGroups: (produto.customizationGroups ?? []).map(g => ({
+        id: g.id,
+        name: g.name,
+        minSelected: g.minSelected,
+        maxSelected: g.maxSelected,
+        displayOrder: g.displayOrder,
+        options: g.options.map(o => ({
+          id: o.id,
+          name: o.name,
+          priceAddition: o.priceAddition,
+          displayOrder: o.displayOrder,
+        })),
+      })),
     };
     this.arquivoImagem = null;
     this.imagemPreview = null;
@@ -835,10 +1050,36 @@ export class AdminProductsPageComponent implements OnInit {
   }
 
   resetarFormulario() {
-    this.formData = { name: '', description: '', price: null, categoryId: null, available: true };
+    this.formData = { name: '', description: '', price: null, categoryId: null, available: true, isCustomizable: false, customizationGroups: [] };
     this.arquivoImagem = null;
     this.imagemPreview = null;
     this.formError = null;
+  }
+
+  adicionarGrupo() {
+    this.formData.customizationGroups.push({
+      name: '',
+      minSelected: 0,
+      maxSelected: 1,
+      displayOrder: this.formData.customizationGroups.length,
+      options: [],
+    });
+  }
+
+  removerGrupo(index: number) {
+    this.formData.customizationGroups.splice(index, 1);
+  }
+
+  adicionarOpcao(groupIndex: number) {
+    this.formData.customizationGroups[groupIndex].options.push({
+      name: '',
+      priceAddition: 0,
+      displayOrder: this.formData.customizationGroups[groupIndex].options.length,
+    });
+  }
+
+  removerOpcao(groupIndex: number, optionIndex: number) {
+    this.formData.customizationGroups[groupIndex].options.splice(optionIndex, 1);
   }
 
   onFileSelected(event: Event) {
@@ -878,6 +1119,20 @@ export class AdminProductsPageComponent implements OnInit {
 
     this.salvando = true;
 
+    const groups: CustomizationGroupRequest[] = this.formData.customizationGroups.map((g: any, gi: number) => ({
+      id: g.id,
+      name: g.name,
+      minSelected: g.minSelected,
+      maxSelected: g.maxSelected,
+      displayOrder: gi,
+      options: g.options.map((o: any, oi: number) => ({
+        id: o.id,
+        name: o.name,
+        priceAddition: o.priceAddition ?? 0,
+        displayOrder: oi,
+      })),
+    }));
+
     const payload: CreateProductRequest = {
       name: this.formData.name.trim(),
       description: this.formData.description.trim(),
@@ -885,6 +1140,8 @@ export class AdminProductsPageComponent implements OnInit {
       imageUrl: this.produtoEditando?.imageUrl ?? '/assets/images/product_placeholder.png',
       available: this.formData.available,
       categoryId: this.formData.categoryId!,
+      isCustomizable: this.formData.isCustomizable,
+      customizationGroups: groups,
     };
 
     const request$ =

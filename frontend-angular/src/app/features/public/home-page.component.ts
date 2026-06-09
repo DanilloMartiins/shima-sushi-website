@@ -811,6 +811,12 @@ export class HomePageComponent implements OnInit {
       return;
     }
 
+    // Se for customizavel, redireciona pro cardapio onde tem o modal completo
+    if (product.isCustomizable) {
+      void this.router.navigate(['/']);
+      return;
+    }
+
     // Converte FeaturedProductResponse pra ProductResponse pro modal
     const productResponse: ProductResponse = {
       id: product.id,

@@ -2,7 +2,8 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { API_BASE_RAW } from '../../core/constants/api.constants';
-import { MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
+import { CustomizationGroupResponse, CustomizationOptionResponse, MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
+import { SelectedOption } from '../../core/models/cart.models';
 import { CartService } from '../../core/services/cart.service';
 import { MenuService } from '../../core/services/menu.service';
 import { gerarSlug } from '../../core/utils/menu.utils';
@@ -71,37 +72,113 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
     </div>
 
     @if (selectedProduct(); as product) {
-      <div class="modal-overlay" (click)="closeProductModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
+      @if (product.isCustomizable && product.customizationGroups?.length) {
+        <div class="modal-overlay" (click)="closeProductModal()">
+          <div class="modal-content modal-customize" (click)="$event.stopPropagation()">
+            <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
 
-          @if (product.imageUrl) {
-            <img
-              [src]="getImageUrl(product.imageUrl)"
-              [alt]="product.name"
-              class="modal-image"
-            />
-          }
-
-          <div class="modal-body">
-            <h2>{{ product.name }}</h2>
-            @if (product.description) {
-              <p class="modal-description">{{ product.description }}</p>
+            @if (product.imageUrl) {
+              <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image" />
             }
-            <strong class="modal-price">{{ product.price | currency: 'BRL' }}</strong>
 
-            <div class="modal-actions">
-              <div class="quantity-control">
-                <button type="button" (click)="decreaseQuantity()" [disabled]="selectedQuantity() <= 1">-</button>
-                <span class="quantity-value">{{ selectedQuantity() }}</span>
-                <button type="button" (click)="increaseQuantity()">+</button>
+            <div class="modal-body customize-body">
+              <h2>{{ product.name }}</h2>
+              @if (product.description) {
+                <p class="modal-description">{{ product.description }}</p>
+              }
+
+              <div class="customize-groups">
+                @for (group of product.customizationGroups; track group.id) {
+                  <fieldset class="customize-group">
+                    <legend class="customize-legend">
+                      {{ group.name }}
+                      @if (group.minSelected >= 1) {
+                        <span class="req-badge">OBRIGATÓRIO</span>
+                      }
+                      @if (group.maxSelected > 1) {
+                        <span class="max-hint">(até {{ group.maxSelected }} opções)</span>
+                      }
+                    </legend>
+
+                    @if (group.maxSelected === 1) {
+                      @for (opt of group.options; track opt.id) {
+                        <label class="customize-radio">
+                          <input type="radio" [name]="'group-' + group.id" [value]="opt.id"
+                            (change)="toggleOption(group, opt, true)"
+                            [checked]="isOptionSelected(group.id, opt.id)" />
+                          <span class="customize-label">{{ opt.name }}</span>
+                          @if (opt.priceAddition) {
+                            <span class="customize-price">+{{ opt.priceAddition | currency: 'BRL' }}</span>
+                          }
+                        </label>
+                      }
+                    } @else {
+                      @for (opt of group.options; track opt.id) {
+                        <label class="customize-checkbox">
+                          <input type="checkbox" [value]="opt.id"
+                            (change)="toggleOption(group, opt, $event.target.checked)"
+                            [checked]="isOptionSelected(group.id, opt.id)"
+                            [disabled]="!isOptionSelected(group.id, opt.id) && countSelectedInGroup(group.id) >= group.maxSelected" />
+                          <span class="customize-label">{{ opt.name }}</span>
+                          @if (opt.priceAddition) {
+                            <span class="customize-price">+{{ opt.priceAddition | currency: 'BRL' }}</span>
+                          }
+                        </label>
+                      }
+                    }
+                  </fieldset>
+                }
               </div>
 
-              <button type="button" class="btn-confirm" (click)="confirmAddToCart()">Confirmar</button>
+              <div class="modal-total">
+                <span>Valor total</span>
+                <strong>{{ customizationPrice() | currency: 'BRL' }}</strong>
+              </div>
+
+              <div class="modal-actions">
+                <div class="quantity-control">
+                  <button type="button" (click)="decreaseQuantity()" [disabled]="selectedQuantity() <= 1">-</button>
+                  <span class="quantity-value">{{ selectedQuantity() }}</span>
+                  <button type="button" (click)="increaseQuantity()">+</button>
+                </div>
+
+                <button type="button" class="btn-confirm" (click)="confirmAddToCart()"
+                  [disabled]="!canAddToCart()">
+                  {{ canAddToCart() ? 'Adicionar' : 'Preencha os obrigatórios' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      } @else {
+        <div class="modal-overlay" (click)="closeProductModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
+
+            @if (product.imageUrl) {
+              <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image" />
+            }
+
+            <div class="modal-body">
+              <h2>{{ product.name }}</h2>
+              @if (product.description) {
+                <p class="modal-description">{{ product.description }}</p>
+              }
+              <strong class="modal-price">{{ product.price | currency: 'BRL' }}</strong>
+
+              <div class="modal-actions">
+                <div class="quantity-control">
+                  <button type="button" (click)="decreaseQuantity()" [disabled]="selectedQuantity() <= 1">-</button>
+                  <span class="quantity-value">{{ selectedQuantity() }}</span>
+                  <button type="button" (click)="increaseQuantity()">+</button>
+                </div>
+
+                <button type="button" class="btn-confirm" (click)="confirmAddToCart()">Confirmar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     }
   `,
   styles: [`
@@ -233,6 +310,41 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
       .modal-overlay { padding: 0; align-items: flex-end; }
       .modal-content { border-radius: 14px 14px 0 0; max-height: 90dvh; -webkit-overflow-scrolling: touch; overflow-y: auto; }
     }
+
+    .modal-customize { max-width: 420px; }
+    .customize-body { max-height: 70vh; overflow-y: auto; }
+    .customize-groups { display: flex; flex-direction: column; gap: 1rem; margin: 0.75rem 0; }
+    .customize-group {
+      border: 1px solid var(--brand-border); border-radius: 10px;
+      padding: 0.75rem 1rem; border-left: 3px solid var(--brand-orange);
+    }
+    .customize-legend {
+      font-weight: 700; font-size: 0.9rem; color: var(--brand-ink);
+      margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .req-badge {
+      font-size: 0.65rem; background: #ffeaa7; color: #d68910;
+      padding: 1px 6px; border-radius: 4px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .max-hint { font-size: 0.75rem; color: var(--brand-muted); font-weight: 400; }
+    .customize-radio, .customize-checkbox {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 0; cursor: pointer; font-size: 0.9rem;
+    }
+    .customize-radio input, .customize-checkbox input {
+      width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;
+    }
+    .customize-label { flex: 1; color: #444; }
+    .customize-price { font-size: 0.85rem; color: var(--brand-orange-strong); font-weight: 600; white-space: nowrap; }
+    .modal-total {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.75rem 0; border-top: 1px solid var(--brand-border);
+      margin-top: 0.5rem;
+    }
+    .modal-total span { font-size: 0.95rem; color: #555; font-weight: 500; }
+    .modal-total strong { font-size: 1.3rem; color: var(--brand-orange-strong); }
+    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
   `],
 })
 export class MenuPageComponent implements OnInit {
@@ -246,6 +358,30 @@ export class MenuPageComponent implements OnInit {
 
   readonly selectedProduct = signal<ProductResponse | null>(null);
   readonly selectedQuantity = signal(1);
+
+  // Mapa de opcoes selecionadas: groupId -> SelectedOption[]
+  private readonly selectedOptionsMap = signal<Map<number, SelectedOption[]>>(new Map());
+
+  readonly customizationPrice = computed(() => {
+    const product = this.selectedProduct();
+    if (!product) return 0;
+    let total = product.price;
+    this.selectedOptionsMap().forEach((opts) => {
+      opts.forEach(o => { total += o.priceAddition; });
+    });
+    return total;
+  });
+
+  readonly canAddToCart = computed(() => {
+    const product = this.selectedProduct();
+    if (!product || !product.customizationGroups) return true;
+    const selection = this.selectedOptionsMap();
+    for (const group of product.customizationGroups) {
+      const selected = selection.get(group.id) ?? [];
+      if (selected.length < group.minSelected) return false;
+    }
+    return true;
+  });
 
   readonly categoriasCarrossel = computed<CategoriaCarrossel[]>(() => {
     const cats = this.menuCategories().map((c) => ({
@@ -274,10 +410,12 @@ export class MenuPageComponent implements OnInit {
   openProductModal(product: ProductResponse): void {
     this.selectedProduct.set(product);
     this.selectedQuantity.set(1);
+    this.selectedOptionsMap.set(new Map());
   }
 
   closeProductModal(): void {
     this.selectedProduct.set(null);
+    this.selectedOptionsMap.set(new Map());
   }
 
   increaseQuantity(): void {
@@ -288,12 +426,61 @@ export class MenuPageComponent implements OnInit {
     this.selectedQuantity.update(q => Math.max(1, q - 1));
   }
 
+  toggleOption(group: CustomizationGroupResponse, option: CustomizationOptionResponse, checked: boolean): void {
+    const current = new Map(this.selectedOptionsMap());
+    const currentOpts = [...(current.get(group.id) ?? [])];
+
+    if (group.maxSelected === 1) {
+      if (checked) {
+        current.set(group.id, [{
+          groupId: group.id,
+          groupName: group.name,
+          optionId: option.id,
+          optionName: option.name,
+          priceAddition: option.priceAddition,
+        }]);
+      } else {
+        current.set(group.id, []);
+      }
+    } else {
+      if (checked) {
+        if (currentOpts.length >= group.maxSelected) return;
+        currentOpts.push({
+          groupId: group.id,
+          groupName: group.name,
+          optionId: option.id,
+          optionName: option.name,
+          priceAddition: option.priceAddition,
+        });
+      } else {
+        const idx = currentOpts.findIndex(o => o.optionId === option.id);
+        if (idx >= 0) currentOpts.splice(idx, 1);
+      }
+      current.set(group.id, currentOpts);
+    }
+
+    this.selectedOptionsMap.set(current);
+  }
+
+  isOptionSelected(groupId: number, optionId: number): boolean {
+    return (this.selectedOptionsMap().get(groupId) ?? []).some(o => o.optionId === optionId);
+  }
+
+  countSelectedInGroup(groupId: number): number {
+    return (this.selectedOptionsMap().get(groupId) ?? []).length;
+  }
+
   confirmAddToCart(): void {
     const product = this.selectedProduct();
-    if (product) {
-      this.cartService.addProduct(product, this.selectedQuantity());
-      this.closeProductModal();
-    }
+    if (!product) return;
+
+    const allSelected: SelectedOption[] = [];
+    this.selectedOptionsMap().forEach((opts) => {
+      opts.forEach(o => allSelected.push(o));
+    });
+
+    this.cartService.addProduct(product, this.selectedQuantity(), allSelected.length > 0 ? allSelected : undefined);
+    this.closeProductModal();
   }
 
   getImageUrl(imageUrl: string | null | undefined): string {

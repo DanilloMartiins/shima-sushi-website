@@ -52,7 +52,9 @@ public class OrderItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 
-    // Construtor completo para vincular o produto ao item do pedido
+    @Column(length = 2000)
+    private String customizations;
+
     public OrderItem(Order order, Product product, String productName, Long scrapedProductId, Integer quantity, BigDecimal unitPrice, BigDecimal subtotal) {
         this.order = order;
         this.product = product;

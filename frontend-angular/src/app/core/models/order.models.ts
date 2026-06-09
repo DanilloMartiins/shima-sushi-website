@@ -9,9 +9,18 @@ export type OrderStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
+export interface ItemCustomization {
+  groupId: number;
+  groupName: string;
+  optionId: number;
+  optionName: string;
+  priceAddition: number;
+}
+
 export interface CreateOrderItemRequest {
   productId: number;
   quantity: number;
+  customizations?: ItemCustomization[];
 }
 
 export interface CreateOrderRequest {
@@ -22,12 +31,21 @@ export interface CreateOrderRequest {
   items: CreateOrderItemRequest[];
 }
 
+export interface OrderItemCustomizationResponse {
+  groupId: number;
+  groupName: string;
+  optionId: number;
+  optionName: string;
+  priceAddition: number;
+}
+
 export interface OrderItemResponse {
   productId: number;
   productName: string;
   unitPrice: number;
   quantity: number;
   subtotal: number;
+  customizations?: OrderItemCustomizationResponse[];
 }
 
 export interface PagedResponse<T> {

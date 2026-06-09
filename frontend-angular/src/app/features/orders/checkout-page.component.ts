@@ -140,6 +140,11 @@ import { AddressResponse } from '../../core/models/address.models';
           <ul>
             <li *ngFor="let item of cartItems()">
               <span>{{ item.quantity }}x {{ item.name }}</span>
+              <div class="item-customizations" *ngIf="item.selectedOptions?.length">
+                <span *ngFor="let opt of item.selectedOptions" class="item-custom-tag">
+                  {{ opt.groupName }}: {{ opt.optionName }}{{ opt.priceAddition ? ' (+R$ ' + opt.priceAddition.toFixed(2) + ')' : '' }}
+                </span>
+              </div>
               <strong>{{ item.quantity * item.price | currency: 'BRL' }}</strong>
             </li>
           </ul>
@@ -329,6 +334,10 @@ import { AddressResponse } from '../../core/models/address.models';
     .cart-summary ul { list-style: none; padding: 0; margin: 1.5rem 0; display: grid; gap: 1rem; }
     .cart-summary li { display: flex; justify-content: space-between; font-size: 1rem; align-items: center; }
     .cart-summary li span { color: #555; }
+    .cart-summary li { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+    .cart-summary li > strong { align-self: flex-end; }
+    .item-customizations { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+    .item-custom-tag { font-size: 0.8rem; color: #888; font-weight: 400; }
     .cart-summary li strong { color: var(--brand-ink); font-weight: 600; }
     
     .totals { border-top: 2px dashed #eee; padding-top: 1.5rem; margin-top: 1.5rem; }
@@ -474,7 +483,14 @@ export class CheckoutPageComponent implements OnInit {
       notes: formValue.notes,
       items: this.cartItems().map(item => ({
         productId: item.productId,
-        quantity: item.quantity
+        quantity: item.quantity,
+        customizations: item.selectedOptions?.map(opt => ({
+          groupId: opt.groupId,
+          groupName: opt.groupName,
+          optionId: opt.optionId,
+          optionName: opt.optionName,
+          priceAddition: opt.priceAddition,
+        }))
       }))
     };
 
@@ -513,6 +529,11 @@ export class CheckoutPageComponent implements OnInit {
 
     this.cartItems().forEach(item => {
       msg += `*${item.name.toUpperCase()}*\n`;
+      if (item.selectedOptions?.length) {
+        item.selectedOptions.forEach(opt => {
+          msg += `   - ${opt.groupName}: ${opt.optionName}${opt.priceAddition ? ' (+R$ ' + opt.priceAddition.toFixed(2).replace('.', ',') + ')' : ''}\n`;
+        });
+      }
       msg += `   ${item.quantity} UN x R$ ${item.price.toFixed(2).replace('.', ',')} = R$ ${(item.quantity * item.price).toFixed(2).replace('.', ',')}\n`;
     });
 

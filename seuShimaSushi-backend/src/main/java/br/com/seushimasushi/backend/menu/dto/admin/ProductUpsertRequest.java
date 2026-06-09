@@ -1,11 +1,13 @@
 package br.com.seushimasushi.backend.menu.dto.admin;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record ProductUpsertRequest(
         @NotBlank(message = "Nome e obrigatorio")
@@ -28,6 +30,12 @@ public record ProductUpsertRequest(
         Boolean available,
 
         @NotNull(message = "Categoria e obrigatoria")
-        Long categoryId
+        Long categoryId,
+
+        @NotNull(message = "Indicador de customizavel e obrigatorio")
+        Boolean isCustomizable,
+
+        @Valid
+        List<CustomizationGroupRequest> customizationGroups
 ) {
 }

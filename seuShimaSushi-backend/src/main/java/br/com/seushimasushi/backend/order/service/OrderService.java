@@ -7,8 +7,10 @@ import br.com.seushimasushi.backend.menu.repository.ProductRepository;
 import br.com.seushimasushi.backend.menu.dto.common.PagedResponse;
 import br.com.seushimasushi.backend.order.dto.request.CreateOrderItemRequest;
 import br.com.seushimasushi.backend.order.dto.request.CreateOrderRequest;
+import br.com.seushimasushi.backend.order.dto.request.ItemCustomization;
 import br.com.seushimasushi.backend.order.dto.request.UpdateOrderStatusRequest;
 import br.com.seushimasushi.backend.order.dto.response.CustomerSummaryResponse;
+import br.com.seushimasushi.backend.order.dto.response.OrderItemCustomizationResponse;
 import br.com.seushimasushi.backend.order.dto.response.OrderItemResponse;
 import br.com.seushimasushi.backend.order.dto.response.OrderResponse;
 import br.com.seushimasushi.backend.order.model.DeliveryType;
@@ -17,6 +19,9 @@ import br.com.seushimasushi.backend.order.model.OrderItem;
 import br.com.seushimasushi.backend.order.model.OrderStatus;
 import br.com.seushimasushi.backend.order.model.PaymentMethod;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,14 +43,17 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public OrderService(OrderRepository orderRepository, 
                         ProductRepository productRepository,
-                        br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository) {
+                        br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository,
+                        ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.produtoRepository = produtoRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -75,9 +83,9 @@ public class OrderService {
                 throw new BadRequestException("Pedido nao pode ter item duplicado para o mesmo produto");
             }
 
-            // Tentamos buscar primeiro na tabela de produtos manuais (Admin)
             String productName;
             BigDecimal unitPrice;
+            BigDecimal customAdditions = BigDecimal.ZERO;
 
             var productOpt = productRepository.findById(itemRequest.productId());
             if (productOpt.isPresent()) {
@@ -97,7 +105,21 @@ public class OrderService {
                 unitPrice = sp.getPreco();
             }
 
-            BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
+            // Calcula o adicional das customizacoes
+            String customizationsJson = null;
+            if (itemRequest.customizations() != null && !itemRequest.customizations().isEmpty()) {
+                for (ItemCustomization c : itemRequest.customizations()) {
+                    customAdditions = customAdditions.add(c.priceAddition());
+                }
+                try {
+                    customizationsJson = objectMapper.writeValueAsString(itemRequest.customizations());
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Erro ao serializar customizacoes", e);
+                }
+            }
+
+            BigDecimal itemUnitPrice = unitPrice.add(customAdditions);
+            BigDecimal subtotal = itemUnitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
@@ -105,8 +127,9 @@ public class OrderService {
             orderItem.setProductName(productName);
             orderItem.setScrapedProductId(productOpt.isEmpty() ? itemRequest.productId() : null);
             orderItem.setQuantity(itemRequest.quantity());
-            orderItem.setUnitPrice(unitPrice);
+            orderItem.setUnitPrice(itemUnitPrice);
             orderItem.setSubtotal(subtotal);
+            orderItem.setCustomizations(customizationsJson);
 
             order.getItems().add(orderItem);
             total = total.add(subtotal);
@@ -147,8 +170,8 @@ public class OrderService {
                 "Pagamento via Pix pendente", BigDecimal.valueOf(85), BigDecimal.valueOf(85), 2,
                 "Pedro Almeida", now.minusSeconds(120), now.minusSeconds(120), customer,
                 List.of(
-                    new OrderItemResponse(1L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65)),
-                    new OrderItemResponse(2L, "Temaki Hot", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20))
+                    new OrderItemResponse(1L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65), List.of()),
+                    new OrderItemResponse(2L, "Temaki Hot", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20), List.of())
                 )
             ),
             // 2. Confirmado
@@ -158,9 +181,9 @@ public class OrderService {
                 "Sem cebola", BigDecimal.valueOf(62.5), BigDecimal.valueOf(62.5), 3,
                 "Cliente Teste", now.minusSeconds(36000), now.minusSeconds(35800), customer,
                 List.of(
-                    new OrderItemResponse(1L, "Combinado Salmão (20 peças)", 1, BigDecimal.valueOf(38), BigDecimal.valueOf(38)),
-                    new OrderItemResponse(2L, "Hot Roll Filadélfia (8 peças)", 1, BigDecimal.valueOf(18), BigDecimal.valueOf(18)),
-                    new OrderItemResponse(3L, "H2O Limão 500ml", 1, BigDecimal.valueOf(6.5), BigDecimal.valueOf(6.5))
+                    new OrderItemResponse(1L, "Combinado Salmão (20 peças)", 1, BigDecimal.valueOf(38), BigDecimal.valueOf(38), List.of()),
+                    new OrderItemResponse(2L, "Hot Roll Filadélfia (8 peças)", 1, BigDecimal.valueOf(18), BigDecimal.valueOf(18), List.of()),
+                    new OrderItemResponse(3L, "H2O Limão 500ml", 1, BigDecimal.valueOf(6.5), BigDecimal.valueOf(6.5), List.of())
                 )
             ),
             // 2. Em preparação
@@ -169,9 +192,9 @@ public class OrderService {
                 null, null, BigDecimal.valueOf(45), BigDecimal.valueOf(45), 3,
                 "Cliente Teste", now.minusSeconds(1800), now.minusSeconds(1200), customer,
                 List.of(
-                    new OrderItemResponse(4L, "Temaki de Salmão Completo", 1, BigDecimal.valueOf(25), BigDecimal.valueOf(25)),
-                    new OrderItemResponse(5L, "Sunomono", 1, BigDecimal.valueOf(12), BigDecimal.valueOf(12)),
-                    new OrderItemResponse(6L, "Jōgo de Chá", 1, BigDecimal.valueOf(8), BigDecimal.valueOf(8))
+                    new OrderItemResponse(4L, "Temaki de Salmão Completo", 1, BigDecimal.valueOf(25), BigDecimal.valueOf(25), List.of()),
+                    new OrderItemResponse(5L, "Sunomono", 1, BigDecimal.valueOf(12), BigDecimal.valueOf(12), List.of()),
+                    new OrderItemResponse(6L, "Jōgo de Chá", 1, BigDecimal.valueOf(8), BigDecimal.valueOf(8), List.of())
                 )
             ),
             // 3. Saiu para entrega
@@ -181,9 +204,9 @@ public class OrderService {
                 "Tocar interfone 2x", BigDecimal.valueOf(97.5), BigDecimal.valueOf(97.5), 4,
                 "Cliente Teste", now.minusSeconds(5400), now.minusSeconds(2400), customer,
                 List.of(
-                    new OrderItemResponse(7L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65)),
-                    new OrderItemResponse(8L, "Temaki Hot", 1, BigDecimal.valueOf(28), BigDecimal.valueOf(28)),
-                    new OrderItemResponse(9L, "Refrigerante lata", 2, BigDecimal.valueOf(6), BigDecimal.valueOf(12))
+                    new OrderItemResponse(7L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65), List.of()),
+                    new OrderItemResponse(8L, "Temaki Hot", 1, BigDecimal.valueOf(28), BigDecimal.valueOf(28), List.of()),
+                    new OrderItemResponse(9L, "Refrigerante lata", 2, BigDecimal.valueOf(6), BigDecimal.valueOf(12), List.of())
                 )
             ),
             // 4. Cancelado
@@ -193,7 +216,7 @@ public class OrderService {
                 "Cliente desistiu", BigDecimal.valueOf(32), BigDecimal.valueOf(32), 1,
                 "Cliente Teste", now.minusSeconds(172800), now.minusSeconds(171900), customer,
                 List.of(
-                    new OrderItemResponse(10L, "Uramaki Filadélfia (12 peças)", 1, BigDecimal.valueOf(32), BigDecimal.valueOf(32))
+                    new OrderItemResponse(10L, "Uramaki Filadélfia (12 peças)", 1, BigDecimal.valueOf(32), BigDecimal.valueOf(32), List.of())
                 )
             ),
             // 5. Completo
@@ -202,9 +225,9 @@ public class OrderService {
                 null, "Quero wasabi extra", BigDecimal.valueOf(28), BigDecimal.valueOf(28), 3,
                 "Cliente Teste", now.minusSeconds(86400), now.minusSeconds(85800), customer,
                 List.of(
-                    new OrderItemResponse(11L, "Temaki Skin", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20)),
-                    new OrderItemResponse(12L, "Água Mineral", 1, BigDecimal.valueOf(3), BigDecimal.valueOf(3)),
-                    new OrderItemResponse(13L, "Chá Gelado (Copo)", 1, BigDecimal.valueOf(5), BigDecimal.valueOf(5))
+                    new OrderItemResponse(11L, "Temaki Skin", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20), List.of()),
+                    new OrderItemResponse(12L, "Água Mineral", 1, BigDecimal.valueOf(3), BigDecimal.valueOf(3), List.of()),
+                    new OrderItemResponse(13L, "Chá Gelado (Copo)", 1, BigDecimal.valueOf(5), BigDecimal.valueOf(5), List.of())
                 )
             )
         );
@@ -279,7 +302,6 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Order order, boolean includeItems) {
-        // DTO de resposta agora contém apenas o ID do Clerk para o cliente
         CustomerSummaryResponse customer = new CustomerSummaryResponse(order.getCustomerClerkId());
 
         List<OrderItemResponse> itemResponses = new ArrayList<>();
@@ -287,16 +309,28 @@ public class OrderService {
         
         if (includeItems && order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
-                // Usamos o nome que foi salvo no snapshot do item
                 String name = item.getProductName();
                 Long pId = (item.getProduct() != null) ? item.getProduct().getId() : item.getScrapedProductId();
+
+                List<OrderItemCustomizationResponse> customizations = new ArrayList<>();
+                if (item.getCustomizations() != null && !item.getCustomizations().isBlank()) {
+                    try {
+                        customizations = objectMapper.readValue(
+                                item.getCustomizations(),
+                                new TypeReference<List<OrderItemCustomizationResponse>>() {}
+                        );
+                    } catch (JsonProcessingException e) {
+                        log.warn("Erro ao desserializar customizacoes do item {}: {}", pId, e.getMessage());
+                    }
+                }
 
                 OrderItemResponse itemDto = new OrderItemResponse(
                         pId,
                         name,
                         item.getQuantity(),
                         item.getUnitPrice(),
-                        item.getSubtotal()
+                        item.getSubtotal(),
+                        customizations
                 );
                 itemResponses.add(itemDto);
                 totalItemsCount += item.getQuantity();
@@ -311,7 +345,7 @@ public class OrderService {
                 order.getDeliveryAddress(),
                 order.getNotes(),
                 order.getTotalAmount(),
-                order.getTotalAmount(), // totalPrice = totalAmount
+                order.getTotalAmount(),
                 totalItemsCount,
                 "Cliente #" + order.getCustomerClerkId().substring(Math.max(0, order.getCustomerClerkId().length() - 4)),
                 order.getCreatedAt(),

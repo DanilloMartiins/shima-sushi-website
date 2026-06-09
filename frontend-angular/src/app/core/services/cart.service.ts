@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 
 import { CART_STORAGE_KEY } from '../constants/api.constants';
-import { CartItem } from '../models/cart.models';
+import { CartItem, SelectedOption } from '../models/cart.models';
 import { ProductResponse } from '../models/menu.models';
 
 @Injectable({ providedIn: 'root' })
@@ -16,10 +16,16 @@ export class CartService {
     this.itemsSignal().reduce((accumulator, item) => accumulator + item.quantity * item.price, 0),
   );
 
-  addProduct(product: ProductResponse, quantity = 1): void {
+  addProduct(product: ProductResponse, quantity = 1, selectedOptions?: SelectedOption[]): void {
     const normalizedQuantity = quantity > 0 ? quantity : 1;
+    const optionPriceAdd = (selectedOptions ?? []).reduce((acc, o) => acc + o.priceAddition, 0);
+    const effectivePrice = product.price + optionPriceAdd;
+    const customKey = selectedOptions?.length
+      ? `${product.id}-${selectedOptions.map(o => o.optionId).sort().join(',')}`
+      : `${product.id}`;
+
     const updatedCart = [...this.itemsSignal()];
-    const existingItem = updatedCart.find((item) => item.productId === product.id);
+    const existingItem = updatedCart.find((item) => item.customKey === customKey);
 
     if (existingItem) {
       existingItem.quantity += normalizedQuantity;
@@ -27,19 +33,21 @@ export class CartService {
       updatedCart.push({
         productId: product.id,
         name: product.name,
-        price: product.price,
+        price: effectivePrice,
         imageUrl: product.imageUrl,
         quantity: normalizedQuantity,
+        selectedOptions,
+        customKey,
       });
     }
 
     this.persist(updatedCart);
   }
 
-  removeSingle(productId: number): void {
+  removeSingle(customKey: string): void {
     const updatedCart = this.itemsSignal()
       .map((item) =>
-        item.productId === productId ? { ...item, quantity: item.quantity - 1 } : item,
+        item.customKey === customKey ? { ...item, quantity: item.quantity - 1 } : item,
       )
       .filter((item) => item.quantity > 0);
 

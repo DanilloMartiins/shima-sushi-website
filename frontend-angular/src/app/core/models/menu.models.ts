@@ -3,6 +3,22 @@ export interface CategorySummaryResponse {
   name: string;
 }
 
+export interface CustomizationOptionResponse {
+  id: number;
+  name: string;
+  priceAddition: number;
+  displayOrder: number;
+}
+
+export interface CustomizationGroupResponse {
+  id: number;
+  name: string;
+  minSelected: number;
+  maxSelected: number;
+  displayOrder: number;
+  options: CustomizationOptionResponse[];
+}
+
 export interface ProductResponse {
   id: number;
   name: string;
@@ -11,8 +27,9 @@ export interface ProductResponse {
   imageUrl?: string | null;
   available?: boolean;
   isFeatured?: boolean;
+  isCustomizable?: boolean;
+  customizationGroups?: CustomizationGroupResponse[];
   category?: CategorySummaryResponse;
-  // Campos opcionais usados em outras partes do front
   tag?: string;
   pitch?: string;
   dataAtualizacao?: string;
@@ -24,6 +41,8 @@ export interface FeaturedProductResponse {
   description: string;
   price: number;
   imageUrl: string;
+  isCustomizable?: boolean;
+  customizationGroups?: CustomizationGroupResponse[];
 }
 
 export interface MenuCategoryResponse {
@@ -42,6 +61,22 @@ export interface PagedResponse<T> {
   last: boolean;
 }
 
+export interface CustomizationOptionRequest {
+  id?: number;
+  name: string;
+  priceAddition: number;
+  displayOrder: number;
+}
+
+export interface CustomizationGroupRequest {
+  id?: number;
+  name: string;
+  minSelected: number;
+  maxSelected: number;
+  displayOrder: number;
+  options: CustomizationOptionRequest[];
+}
+
 export interface CreateProductRequest {
   name: string;
   description: string;
@@ -49,6 +84,8 @@ export interface CreateProductRequest {
   imageUrl: string;
   available: boolean;
   categoryId: number;
+  isCustomizable: boolean;
+  customizationGroups: CustomizationGroupRequest[];
 }
 
 export type UpdateProductRequest = CreateProductRequest;
