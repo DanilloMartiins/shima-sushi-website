@@ -198,8 +198,14 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
                 <div class="options-section">
                   <span class="options-label">Opções</span>
                   <div class="option-row" *ngFor="let opt of group.options; let oi = index">
-                    <input type="text" [(ngModel)]="opt.name" placeholder="Ex: Frango Empanado" />
-                    <input type="number" [(ngModel)]="opt.priceAddition" step="0.01" min="0" placeholder="R$ 0,00" class="opt-price" />
+                    <label class="form-group opt-field-name">
+                      <span>Nome</span>
+                      <input type="text" [(ngModel)]="opt.name" placeholder="Ex: Frango Empanado" />
+                    </label>
+                    <label class="form-group opt-field-price">
+                      <span>Valor</span>
+                      <input type="number" [(ngModel)]="opt.priceAddition" step="0.01" min="0" placeholder="R$ 0,00" />
+                    </label>
                     <button class="btn-remove-option" (click)="removerOpcao(gi, oi)" type="button">&times;</button>
                   </div>
                   <button class="btn-add-option" (click)="adicionarOpcao(gi)" type="button">+ Adicionar opção</button>
@@ -671,6 +677,8 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
         width: 18px;
         height: 18px;
         cursor: pointer;
+        accent-color: var(--brand-orange-strong, #e67e22);
+        appearance: auto;
       }
 
       .checkbox-group span {
@@ -809,21 +817,30 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
       .option-row {
         display: flex;
         gap: 8px;
-        align-items: center;
+        align-items: flex-start;
       }
-      .option-row input[type="text"] {
+      .option-row .opt-field-name {
         flex: 1;
+      }
+      .option-row .opt-field-price {
+        flex: none;
+        width: 120px;
+      }
+      .option-row .opt-field-name span,
+      .option-row .opt-field-price span {
+        font-size: 12px;
+        font-weight: 600;
+        color: #777;
+      }
+      .option-row .opt-field-name input,
+      .option-row .opt-field-price input {
         padding: 8px 10px;
         border: 1px solid #ddd;
         border-radius: 6px;
         font-size: 13px;
       }
-      .opt-price {
-        width: 100px;
-        padding: 8px 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 13px;
+      .option-row .opt-field-price input {
+        width: 100%;
       }
       .btn-remove-option {
         background: none;
