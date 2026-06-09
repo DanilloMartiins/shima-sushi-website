@@ -80,6 +80,38 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
         tag: 'Cremoso',
         pitch: 'Cremosidade intensa com toque frutado.',
       },
+      {
+        id: 106,
+        category: { id: 1, name: 'Experiência do Chef' },
+        name: 'Seja Chef',
+        description: 'Monte seu combinado personalizado do seu jeito.',
+        price: 49,
+        imageUrl: '/assets/images/combinado_premium.png',
+        tag: 'Monte o seu',
+        pitch: 'Voce escolhe as pecas que quiser.',
+        isCustomizable: true,
+        customizationGroups: [
+          {
+            id: 5, name: 'Escolha os Sushis', minSelected: 2, maxSelected: 5, displayOrder: 0,
+            options: [
+              { id: 51, name: 'Niguiri Salmão (2 un)', priceAddition: 6, displayOrder: 0 },
+              { id: 52, name: 'Uramaki Salmão (4 un)', priceAddition: 8, displayOrder: 1 },
+              { id: 53, name: 'Hot Filadélfia (4 un)', priceAddition: 10, displayOrder: 2 },
+              { id: 54, name: 'Sashimi Salmão (4 fatias)', priceAddition: 12, displayOrder: 3 },
+              { id: 55, name: 'Gunka Salmão (2 un)', priceAddition: 7, displayOrder: 4 },
+              { id: 56, name: 'Temaki Salmão (1 un)', priceAddition: 9, displayOrder: 5 },
+            ],
+          },
+          {
+            id: 6, name: 'Adicionais', minSelected: 0, maxSelected: 2, displayOrder: 1,
+            options: [
+              { id: 61, name: 'Cream Cheese Extra', priceAddition: 3, displayOrder: 0 },
+              { id: 62, name: 'Molho Tare', priceAddition: 2, displayOrder: 1 },
+              { id: 63, name: 'Gergelim por cima', priceAddition: 1, displayOrder: 2 },
+            ],
+          },
+        ],
+      },
     ],
   },
   {
@@ -262,12 +294,50 @@ export const PUBLIC_MENU_MOCK: MenuCategoryResponse[] = [
       {
         id: 901,
         category: { id: 5, name: 'Monte seu Poke' },
-        name: 'Poke Salmao Completo',
-        description: 'Base de arroz, salmao fresco, cream cheese, edamame e cebolinha.',
-        price: 34,
+        name: 'Monte seu Poke',
+        description: 'Escolha sua base, proteina e os adicionais que quiser.',
+        price: 28,
         imageUrl: '/assets/images/poke_salmao.png',
-        tag: 'Completo',
-        pitch: 'Poke classico e bem servido.',
+        tag: 'Personalize',
+        pitch: 'Do seu jeito, do tamanho que quiser.',
+        isCustomizable: true,
+        customizationGroups: [
+          {
+            id: 1, name: 'Escolha a Base', minSelected: 1, maxSelected: 1, displayOrder: 0,
+            options: [
+              { id: 11, name: 'Arroz de Sushi', priceAddition: 0, displayOrder: 0 },
+              { id: 12, name: 'Mix de Folhas', priceAddition: 0, displayOrder: 1 },
+              { id: 13, name: 'Arroz + Folhas', priceAddition: 2, displayOrder: 2 },
+            ],
+          },
+          {
+            id: 2, name: 'Escolha a Proteína', minSelected: 1, maxSelected: 1, displayOrder: 1,
+            options: [
+              { id: 21, name: 'Salmão Fresco', priceAddition: 8, displayOrder: 0 },
+              { id: 22, name: 'Frango Grelhado', priceAddition: 0, displayOrder: 1 },
+              { id: 23, name: 'Tofu', priceAddition: 0, displayOrder: 2 },
+              { id: 24, name: 'Camarão Empanado', priceAddition: 12, displayOrder: 3 },
+            ],
+          },
+          {
+            id: 3, name: 'Adicionais (opcional)', minSelected: 0, maxSelected: 3, displayOrder: 2,
+            options: [
+              { id: 31, name: 'Cream Cheese', priceAddition: 3, displayOrder: 0 },
+              { id: 32, name: 'Edamame', priceAddition: 4, displayOrder: 1 },
+              { id: 33, name: 'Manga', priceAddition: 3, displayOrder: 2 },
+              { id: 34, name: 'Crispy de Cebola', priceAddition: 2, displayOrder: 3 },
+              { id: 35, name: 'Gergelim', priceAddition: 1, displayOrder: 4 },
+            ],
+          },
+          {
+            id: 4, name: 'Finalização', minSelected: 1, maxSelected: 1, displayOrder: 3,
+            options: [
+              { id: 41, name: 'Shoyu Tradicional', priceAddition: 0, displayOrder: 0 },
+              { id: 42, name: 'Molho Tare', priceAddition: 2, displayOrder: 1 },
+              { id: 43, name: 'Maionese Picante', priceAddition: 2, displayOrder: 2 },
+            ],
+          },
+        ],
       },
       {
         id: 902,

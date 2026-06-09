@@ -68,7 +68,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve criar pedido com dados válidos - retirada")
         void deveCriarPedidoRetirada() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 2);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 2, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -88,7 +88,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve criar pedido com entrega válida")
         void deveCriarPedidoComEntrega() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.CARTAO_CREDITO,
                     DeliveryType.ENTREGA,
@@ -106,8 +106,8 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve calcular total correto com múltiplos itens")
         void deveCalcularTotalCorreto() {
-            var item1 = new CreateOrderItemRequest(produtoTeste.getId(), 2);
-            var item2 = new CreateOrderItemRequest(produtoTeste2.getId(), 3);
+            var item1 = new CreateOrderItemRequest(produtoTeste.getId(), 2, null);
+            var item2 = new CreateOrderItemRequest(produtoTeste2.getId(), 3, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -127,7 +127,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve criar pedido com múltiplas formas de pagamento")
         void deveCriarPedidoComDiferentesPagamentos() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
 
             // Test PIX
             var requestPix = new CreateOrderRequest(PaymentMethod.PIX, DeliveryType.RETIRADA, null, null, List.of(item));
@@ -156,7 +156,7 @@ class OrderServiceTest {
             produtoTeste.setAvailable(false);
             productRepository.save(produtoTeste);
 
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -172,7 +172,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve rejeitar entrega sem endereço")
         void deveRejetarEntregaSemEndereco() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.ENTREGA,
@@ -188,8 +188,8 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve rejeitar mesmo produto duplicado em um pedido")
         void deveRejetarProdutoDuplicado() {
-            var item1 = new CreateOrderItemRequest(produtoTeste.getId(), 1);
-            var item2 = new CreateOrderItemRequest(produtoTeste.getId(), 2);
+            var item1 = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
+            var item2 = new CreateOrderItemRequest(produtoTeste.getId(), 2, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -205,7 +205,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve rejeitar pedido com quantidade zero")
         void deveRejetarQuantidadeZero() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 0);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 0, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -221,7 +221,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve rejeitar pedido com quantidade negativa")
         void deveRejetarQuantidadeNegativa() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), -5);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), -5, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -252,7 +252,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve rejeitar produto inexistente no pedido")
         void deveRejetarProdutoInexistente() {
-            var item = new CreateOrderItemRequest(9999L, 1);  // ID que não existe
+            var item = new CreateOrderItemRequest(9999L, 1, null);  // ID que não existe
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
@@ -273,7 +273,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("Deve aceitar endereço com complemento vazio")
         void deveAceitarComplementoVazio() {
-            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1);
+            var item = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.ENTREGA,
