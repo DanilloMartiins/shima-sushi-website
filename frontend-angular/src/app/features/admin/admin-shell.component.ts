@@ -59,7 +59,7 @@ import { ClerkService } from '../../core/services/clerk.service';
     `
       :host {
         display: block;
-        height: 100vh;
+        height: 100dvh;
         background-color: #f4f7fa;
       }
 
@@ -149,6 +149,7 @@ import { ClerkService } from '../../core/services/clerk.service';
       .admin-main-content {
         flex: 1;
         padding: 32px;
+        -webkit-overflow-scrolling: touch;
         overflow-y: auto;
       }
     `,

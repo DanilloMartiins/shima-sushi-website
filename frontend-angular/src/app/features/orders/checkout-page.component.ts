@@ -161,7 +161,7 @@ import { AddressResponse } from '../../core/models/address.models';
     :host {
       display: block;
       background-color: #fcfcfc;
-      min-height: 100vh;
+      min-height: 100dvh;
       padding-bottom: 4rem;
     }
 

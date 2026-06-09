@@ -71,7 +71,7 @@ import { APP_VERSION } from '../../environments/version';
   `,
   styles: [
     `
-    .page-shell { min-height: 100vh; display: flex; flex-direction: column; }
+    .page-shell { min-height: 100dvh; display: flex; flex-direction: column; }
 
     .topbar {
       position: sticky;
@@ -84,6 +84,7 @@ import { APP_VERSION } from '../../environments/version';
       gap: 1rem;
       padding: 0.8rem 1.25rem;
       background: rgba(255, 255, 255, 0.88);
+      -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--brand-border);
     }

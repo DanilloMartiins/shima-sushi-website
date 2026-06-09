@@ -670,6 +670,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
         }
         .featured-cards {
           flex-direction: row;
+          -webkit-overflow-scrolling: touch;
           overflow-x: auto;
           gap: 0.5rem;
           padding-bottom: 0.5rem;
@@ -695,7 +696,7 @@ import { buildStoreStatus } from '../../core/utils/store-status.util';
       @media (max-width: 380px) {
         .modal-content { max-width: 100%; margin: 0; border-radius: 0; }
         .modal-overlay { padding: 0; align-items: flex-end; }
-        .modal-content { border-radius: 14px 14px 0 0; max-height: 90vh; overflow-y: auto; }
+        .modal-content { border-radius: 14px 14px 0 0; max-height: 90dvh; -webkit-overflow-scrolling: touch; overflow-y: auto; }
       }
     `,
   ],

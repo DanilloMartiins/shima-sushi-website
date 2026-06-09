@@ -231,7 +231,7 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
       .product-card img { height: 140px; }
       .modal-content { max-width: 100%; margin: 0; border-radius: 0; }
       .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal-content { border-radius: 14px 14px 0 0; max-height: 90vh; overflow-y: auto; }
+      .modal-content { border-radius: 14px 14px 0 0; max-height: 90dvh; -webkit-overflow-scrolling: touch; overflow-y: auto; }
     }
   `],
 })

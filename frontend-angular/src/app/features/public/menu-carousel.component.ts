@@ -59,6 +59,7 @@ export interface CategoriaCarrossel {
     .carousel-track {
       display: flex;
       gap: 0.4rem;
+      -webkit-overflow-scrolling: touch;
       overflow-x: auto;
       scroll-behavior: smooth;
       scrollbar-width: none;

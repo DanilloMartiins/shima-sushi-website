@@ -192,6 +192,7 @@ const UNIDADES = ['un', 'kg', 'g', 'l', 'ml', 'cx', 'pac', 'duzia'] as const;
 
     .table-wrapper {
       background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      -webkit-overflow-scrolling: touch;
       overflow-x: auto;
     }
 

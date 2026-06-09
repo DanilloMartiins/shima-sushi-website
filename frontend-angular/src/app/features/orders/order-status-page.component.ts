@@ -123,7 +123,7 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
     :host {
       display: block;
       background: #fcfcfc;
-      min-height: 100vh;
+      min-height: 100dvh;
       padding: 3rem 1rem;
     }
 

@@ -177,7 +177,7 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
     `
       :host {
         display: block;
-        height: 100vh;
+        height: 100dvh;
         background-color: #f4f7fa;
       }
 
@@ -496,7 +496,8 @@ import { CategorySummaryResponse, CreateProductRequest, ProductResponse } from '
         border-radius: 12px;
         width: 520px;
         max-width: 90vw;
-        max-height: 90vh;
+        max-height: 90dvh;
+        -webkit-overflow-scrolling: touch;
         overflow-y: auto;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       }
