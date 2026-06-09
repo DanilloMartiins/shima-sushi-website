@@ -534,6 +534,9 @@ export class CheckoutPageComponent implements OnInit {
 
     const encodedMsg = encodeURIComponent(msg);
     const whatsappUrl = `https://wa.me/5527996518265?text=${encodedMsg}`;
-    window.open(whatsappUrl, '_blank');
+    const win = window.open(whatsappUrl, '_blank');
+    if (!win || win.closed) {
+      window.location.href = whatsappUrl;
+    }
   }
 }
