@@ -97,6 +97,13 @@ export const routes: Routes = [
             (m) => m.AdminUsersPageComponent,
           ),
       },
+      {
+        path: 'inventory',
+        loadComponent: () =>
+          import('./features/admin/admin-inventory-page.component').then(
+            (m) => m.AdminInventoryPageComponent,
+          ),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'products' },
     ],
   },

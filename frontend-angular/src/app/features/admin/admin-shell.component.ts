@@ -33,6 +33,12 @@ import { ClerkService } from '../../core/services/clerk.service';
             >Usuários</a
           >
           <a
+            routerLink="/admin/inventory"
+            routerLinkActive="active"
+            class="nav-link"
+            >Almoxarifado</a
+          >
+          <a
             routerLink="/admin/settings"
             routerLinkActive="active"
             class="nav-link"
