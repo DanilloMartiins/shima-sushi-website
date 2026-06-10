@@ -156,7 +156,7 @@ button, a, input, select {
   left: -1px;
   width: 30px;
   height: 13px;
-  background: #ffffff;
+  background: var(--brand-orange);
   clip-path: polygon(9% 100%, 46% 0%, 99% 72%);
   border-radius: 7px;
   transform: rotate(1deg);
