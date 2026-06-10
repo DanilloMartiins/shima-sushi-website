@@ -96,6 +96,22 @@ export class ClerkService {
     });
   }
 
+  private salvarTimestampSessao(): void {
+    localStorage.setItem(this.SESSION_TIMESTAMP_KEY, Date.now().toString());
+  }
+
+  private marcarSessaoAtiva(): void {
+    sessionStorage.setItem(this.SESSION_SESSION_KEY, '1');
+  }
+
+  private temSessaoAtiva(): boolean {
+    return sessionStorage.getItem(this.SESSION_SESSION_KEY) === '1';
+  }
+
+  private limparSessaoAtiva(): void {
+    sessionStorage.removeItem(this.SESSION_SESSION_KEY);
+  }
+
   private setupInactivityListener(): void {
     this.resetInactivityTimeout();
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
