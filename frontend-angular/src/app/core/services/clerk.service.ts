@@ -51,17 +51,17 @@ export class ClerkService {
           this.loaded.set(true);
 
           if (this.clerk.user) {
-            // Se tem sessao no Clerk mas nao tem flag no sessionStorage,
-            // significa que o navegador foi fechado e reaberto
-            if (!this.temSessaoAtiva()) {
-              console.log('Navegador foi fechado. Encerrando sessao.');
-              await this.signOut();
-              resolve();
-              return;
+            // So verifica se o navegador foi fechado se ja existe um
+            // timestamp salvo (beforeunload ja rodou alguma vez)
+            if (localStorage.getItem(this.SESSION_TIMESTAMP_KEY)) {
+              if (!this.temSessaoAtiva()) {
+                console.log('Navegador foi fechado. Encerrando sessao.');
+                await this.signOut();
+                resolve();
+                return;
+              }
+              this.verificarSessaoExpirada();
             }
-
-            // Verifica se o navegador ficou fechado por mais de 5 minutos
-            this.verificarSessaoExpirada();
 
             if (this.user()) {
               this.setupInactivityListener();

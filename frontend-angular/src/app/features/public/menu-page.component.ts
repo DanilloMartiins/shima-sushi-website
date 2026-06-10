@@ -95,36 +95,30 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
                       @if (group.minSelected >= 1) {
                         <span class="req-badge">OBRIGATÓRIO</span>
                       }
-                      @if (group.maxSelected > 1) {
-                        <span class="max-hint">(até {{ group.maxSelected }} opções)</span>
+                      @if (group.maxSelected > 0) {
+                        <span class="max-hint">(até {{ group.maxSelected }} itens)</span>
                       }
                     </legend>
 
-                    @if (group.maxSelected === 1) {
-                      @for (opt of group.options; track opt.id) {
-                        <label class="customize-radio">
-                          <input type="radio" [name]="'group-' + group.id" [value]="opt.id"
-                            (change)="toggleOption(group, opt, true)"
-                            [checked]="isOptionSelected(group.id, opt.id)" />
+                    @for (opt of group.options; track opt.id) {
+                      @let qty = getOptionQuantity(group.id, opt.id);
+                      <div class="customize-option">
+                        <div class="customize-option-info">
                           <span class="customize-label">{{ opt.name }}</span>
                           @if (opt.priceAddition) {
                             <span class="customize-price">+{{ opt.priceAddition | currency: 'BRL' }}</span>
                           }
-                        </label>
-                      }
-                    } @else {
-                      @for (opt of group.options; track opt.id) {
-                        <label class="customize-checkbox">
-                          <input type="checkbox" [value]="opt.id"
-                            (change)="toggleOption(group, opt, $event.target.checked)"
-                            [checked]="isOptionSelected(group.id, opt.id)"
-                            [disabled]="!isOptionSelected(group.id, opt.id) && countSelectedInGroup(group.id) >= group.maxSelected" />
-                          <span class="customize-label">{{ opt.name }}</span>
-                          @if (opt.priceAddition) {
-                            <span class="customize-price">+{{ opt.priceAddition | currency: 'BRL' }}</span>
-                          }
-                        </label>
-                      }
+                        </div>
+                        <div class="qty-control">
+                          <button type="button" class="qty-btn"
+                            (click)="decreaseOption(group, opt)"
+                            [disabled]="qty <= 0">-</button>
+                          <span class="qty-value">{{ qty }}</span>
+                          <button type="button" class="qty-btn"
+                            (click)="increaseOption(group, opt)"
+                            [disabled]="!canIncreaseOption(group)">+</button>
+                        </div>
+                      </div>
                     }
                   </fieldset>
                 }
@@ -328,15 +322,32 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
       text-transform: uppercase; letter-spacing: 0.3px;
     }
     .max-hint { font-size: 0.75rem; color: var(--brand-muted); font-weight: 400; }
-    .customize-radio, .customize-checkbox {
-      display: flex; align-items: center; gap: 0.5rem;
-      padding: 0.4rem 0; cursor: pointer; font-size: 0.9rem;
+    .customize-option {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0; gap: 0.5rem;
+      border-bottom: 1px solid #f3f3f3;
     }
-    .customize-radio input, .customize-checkbox input {
-      width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;
+    .customize-option:last-child { border-bottom: none; }
+    .customize-option-info { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+    .customize-label { font-size: 0.9rem; color: #444; }
+    .customize-price { font-size: 0.8rem; color: var(--brand-orange-strong); font-weight: 600; }
+    .qty-control {
+      display: flex; align-items: center; gap: 0;
+      border: 1px solid var(--brand-border); border-radius: 8px; overflow: hidden;
+      flex-shrink: 0;
     }
-    .customize-label { flex: 1; color: #444; }
-    .customize-price { font-size: 0.85rem; color: var(--brand-orange-strong); font-weight: 600; white-space: nowrap; }
+    .qty-btn {
+      border: none; background: transparent;
+      width: 30px; height: 32px; font-size: 1rem;
+      cursor: pointer; color: var(--brand-orange-strong);
+      font-weight: 700; transition: background 0.15s;
+    }
+    .qty-btn:hover { background: rgba(234, 106, 61, 0.08); }
+    .qty-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .qty-value {
+      min-width: 26px; text-align: center; font-weight: 700; font-size: 0.9rem;
+      color: var(--brand-ink);
+    }
     .modal-total {
       display: flex; justify-content: space-between; align-items: center;
       padding: 0.75rem 0; border-top: 1px solid var(--brand-border);
@@ -367,7 +378,7 @@ export class MenuPageComponent implements OnInit {
     if (!product) return 0;
     let total = product.price;
     this.selectedOptionsMap().forEach((opts) => {
-      opts.forEach(o => { total += o.priceAddition; });
+      opts.forEach(o => { total += o.priceAddition * o.quantity; });
     });
     return total;
   });
@@ -377,8 +388,8 @@ export class MenuPageComponent implements OnInit {
     if (!product || !product.customizationGroups) return true;
     const selection = this.selectedOptionsMap();
     for (const group of product.customizationGroups) {
-      const selected = selection.get(group.id) ?? [];
-      if (selected.length < group.minSelected) return false;
+      const totalQty = this.getGroupTotalQuantity(group.id);
+      if (totalQty < group.minSelected) return false;
     }
     return true;
   });
@@ -426,48 +437,56 @@ export class MenuPageComponent implements OnInit {
     this.selectedQuantity.update(q => Math.max(1, q - 1));
   }
 
-  toggleOption(group: CustomizationGroupResponse, option: CustomizationOptionResponse, checked: boolean): void {
+  increaseOption(group: CustomizationGroupResponse, option: CustomizationOptionResponse): void {
     const current = new Map(this.selectedOptionsMap());
     const currentOpts = [...(current.get(group.id) ?? [])];
+    const existente = currentOpts.find(o => o.optionId === option.id);
 
-    if (group.maxSelected === 1) {
-      if (checked) {
-        current.set(group.id, [{
-          groupId: group.id,
-          groupName: group.name,
-          optionId: option.id,
-          optionName: option.name,
-          priceAddition: option.priceAddition,
-        }]);
-      } else {
-        current.set(group.id, []);
-      }
+    if (existente) {
+      existente.quantity += 1;
     } else {
-      if (checked) {
-        if (currentOpts.length >= group.maxSelected) return;
-        currentOpts.push({
-          groupId: group.id,
-          groupName: group.name,
-          optionId: option.id,
-          optionName: option.name,
-          priceAddition: option.priceAddition,
-        });
-      } else {
-        const idx = currentOpts.findIndex(o => o.optionId === option.id);
-        if (idx >= 0) currentOpts.splice(idx, 1);
-      }
-      current.set(group.id, currentOpts);
+      currentOpts.push({
+        groupId: group.id,
+        groupName: group.name,
+        optionId: option.id,
+        optionName: option.name,
+        priceAddition: option.priceAddition,
+        quantity: 1,
+      });
     }
 
+    current.set(group.id, currentOpts);
     this.selectedOptionsMap.set(current);
   }
 
-  isOptionSelected(groupId: number, optionId: number): boolean {
-    return (this.selectedOptionsMap().get(groupId) ?? []).some(o => o.optionId === optionId);
+  decreaseOption(group: CustomizationGroupResponse, option: CustomizationOptionResponse): void {
+    const current = new Map(this.selectedOptionsMap());
+    const currentOpts = [...(current.get(group.id) ?? [])];
+    const existente = currentOpts.find(o => o.optionId === option.id);
+    if (!existente) return;
+
+    existente.quantity -= 1;
+    if (existente.quantity <= 0) {
+      const idx = currentOpts.findIndex(o => o.optionId === option.id);
+      if (idx >= 0) currentOpts.splice(idx, 1);
+    }
+
+    current.set(group.id, currentOpts);
+    this.selectedOptionsMap.set(current);
   }
 
-  countSelectedInGroup(groupId: number): number {
-    return (this.selectedOptionsMap().get(groupId) ?? []).length;
+  canIncreaseOption(group: CustomizationGroupResponse): boolean {
+    if (group.maxSelected <= 0) return true;
+    return this.getGroupTotalQuantity(group.id) < group.maxSelected;
+  }
+
+  getOptionQuantity(groupId: number, optionId: number): number {
+    const opt = (this.selectedOptionsMap().get(groupId) ?? []).find(o => o.optionId === optionId);
+    return opt ? opt.quantity : 0;
+  }
+
+  getGroupTotalQuantity(groupId: number): number {
+    return (this.selectedOptionsMap().get(groupId) ?? []).reduce((sum, o) => sum + o.quantity, 0);
   }
 
   confirmAddToCart(): void {
@@ -476,7 +495,12 @@ export class MenuPageComponent implements OnInit {
 
     const allSelected: SelectedOption[] = [];
     this.selectedOptionsMap().forEach((opts) => {
-      opts.forEach(o => allSelected.push(o));
+      opts.forEach(o => {
+        // Expande a quantidade: se tem 3 de frango, envia 3 entries
+        for (let i = 0; i < o.quantity; i++) {
+          allSelected.push({ ...o, quantity: 1 });
+        }
+      });
     });
 
     this.cartService.addProduct(product, this.selectedQuantity(), allSelected.length > 0 ? allSelected : undefined);
