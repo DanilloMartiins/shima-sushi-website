@@ -11,6 +11,7 @@ export class ClerkService {
   private readonly instanceUrl = 'informed-haddock-50.clerk.accounts.dev';
 
   private readonly SESSION_TIMESTAMP_KEY = 'seu-shima-sushi-session-ts';
+  private readonly SESSION_SESSION_KEY = 'seu-shima-sushi-session-active';
   private readonly SESSION_MAX_GAP = 5 * 60 * 1000; // 5 minutos
 
   private clerk: any = null;
@@ -28,6 +29,11 @@ export class ClerkService {
       return;
     }
 
+    // Salva o timestamp quando o navegador for fechado/PC desligar
+    window.addEventListener('beforeunload', () => {
+      this.salvarTimestampSessao();
+    });
+
     return new Promise((resolve) => {
       const script = document.createElement('script');
       script.setAttribute('data-clerk-publishable-key', this.publishableKey);
@@ -44,23 +50,42 @@ export class ClerkService {
           this.user.set(this.clerk.user);
           this.loaded.set(true);
 
-          // Verifica se o navegador ficou fechado por mais de 5 minutos
           if (this.clerk.user) {
+            // Se tem sessao no Clerk mas nao tem flag no sessionStorage,
+            // significa que o navegador foi fechado e reaberto
+            if (!this.temSessaoAtiva()) {
+              console.log('Navegador foi fechado. Encerrando sessao.');
+              await this.signOut();
+              resolve();
+              return;
+            }
+
+            // Verifica se o navegador ficou fechado por mais de 5 minutos
             this.verificarSessaoExpirada();
-            this.setupInactivityListener();
-            void this.fetchBackendRole();
+
+            if (this.user()) {
+              this.setupInactivityListener();
+              void this.fetchBackendRole();
+            }
           }
 
           this.clerk.addListener((resources: any) => {
             this.user.set(resources.user);
             if (resources.user) {
+              this.marcarSessaoAtiva();
               this.setupInactivityListener();
               void this.fetchBackendRole(); // ja puxa a role do backend
             } else {
+              this.limparSessaoAtiva();
               this.clearInactivityListener();
               this.backendRole.set(null);
             }
           });
+
+          if (this.clerk.user) {
+            this.marcarSessaoAtiva();
+          }
+
           resolve();
         } catch (err) {
           console.error('Erro ao inicializar Clerk:', err);
@@ -68,11 +93,6 @@ export class ClerkService {
       };
 
       document.body.appendChild(script);
-    });
-
-    // Salva o timestamp quando o navegador for fechado/PC desligar
-    window.addEventListener('beforeunload', () => {
-      this.salvarTimestampSessao();
     });
   }
 
@@ -90,6 +110,20 @@ export class ClerkService {
 
   private salvarTimestampSessao(): void {
     localStorage.setItem(this.SESSION_TIMESTAMP_KEY, Date.now().toString());
+  }
+
+  // Marca no sessionStorage que o usuario esta ativo nesta aba
+  // sessionStorage morre quando o navegador fecha
+  private marcarSessaoAtiva(): void {
+    sessionStorage.setItem(this.SESSION_SESSION_KEY, '1');
+  }
+
+  private temSessaoAtiva(): boolean {
+    return sessionStorage.getItem(this.SESSION_SESSION_KEY) === '1';
+  }
+
+  private limparSessaoAtiva(): void {
+    sessionStorage.removeItem(this.SESSION_SESSION_KEY);
   }
 
   private setupInactivityListener(): void {
@@ -173,6 +207,8 @@ export class ClerkService {
     await this.clerk?.signOut();
     this.user.set(null);
     this.backendRole.set(null);
+    this.limparSessaoAtiva();
+    localStorage.removeItem(this.SESSION_TIMESTAMP_KEY);
   }
 
   /*
