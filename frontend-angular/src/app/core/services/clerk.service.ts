@@ -12,7 +12,7 @@ export class ClerkService {
 
   private readonly SESSION_TIMESTAMP_KEY = 'seu-shima-sushi-session-ts';
   private readonly SESSION_SESSION_KEY = 'seu-shima-sushi-session-active';
-  private readonly SESSION_MAX_GAP = 5 * 60 * 1000; // 5 minutos
+  private readonly SESSION_MIGRATED_KEY = 'seu-shima-sushi-migrated';
 
   private clerk: any = null;
   readonly loaded = signal(false);
@@ -51,16 +51,16 @@ export class ClerkService {
           this.loaded.set(true);
 
           if (this.clerk.user) {
-            // So verifica se o navegador foi fechado se ja existe um
-            // timestamp salvo (beforeunload ja rodou alguma vez)
-            if (localStorage.getItem(this.SESSION_TIMESTAMP_KEY)) {
-              if (!this.temSessaoAtiva()) {
-                console.log('Navegador foi fechado. Encerrando sessao.');
-                await this.signOut();
-                resolve();
-                return;
-              }
-              this.verificarSessaoExpirada();
+            // Se tem sessao mas a flag de migracao nao existe,
+            // eh a primeira execucao apos o deploy dessa logica
+            if (!localStorage.getItem(this.SESSION_MIGRATED_KEY)) {
+              localStorage.setItem(this.SESSION_MIGRATED_KEY, '1');
+            } else if (!this.temSessaoAtiva()) {
+              // Ja passou pela migracao, sessionStorage vazio = fechou navegador
+              console.log('Navegador foi fechado. Encerrando sessao.');
+              await this.signOut();
+              resolve();
+              return;
             }
 
             if (this.user()) {
@@ -74,7 +74,7 @@ export class ClerkService {
             if (resources.user) {
               this.marcarSessaoAtiva();
               this.setupInactivityListener();
-              void this.fetchBackendRole(); // ja puxa a role do backend
+              void this.fetchBackendRole();
             } else {
               this.limparSessaoAtiva();
               this.clearInactivityListener();
@@ -94,36 +94,6 @@ export class ClerkService {
 
       document.body.appendChild(script);
     });
-  }
-
-  private verificarSessaoExpirada(): void {
-    const timestampSalvo = localStorage.getItem(this.SESSION_TIMESTAMP_KEY);
-    if (timestampSalvo) {
-      const agora = Date.now();
-      const diferenca = agora - parseInt(timestampSalvo, 10);
-      if (diferenca > this.SESSION_MAX_GAP) {
-        console.log('Sessão expirada: navegador ficou fechado por mais de 5 minutos.');
-        this.signOut();
-      }
-    }
-  }
-
-  private salvarTimestampSessao(): void {
-    localStorage.setItem(this.SESSION_TIMESTAMP_KEY, Date.now().toString());
-  }
-
-  // Marca no sessionStorage que o usuario esta ativo nesta aba
-  // sessionStorage morre quando o navegador fecha
-  private marcarSessaoAtiva(): void {
-    sessionStorage.setItem(this.SESSION_SESSION_KEY, '1');
-  }
-
-  private temSessaoAtiva(): boolean {
-    return sessionStorage.getItem(this.SESSION_SESSION_KEY) === '1';
-  }
-
-  private limparSessaoAtiva(): void {
-    sessionStorage.removeItem(this.SESSION_SESSION_KEY);
   }
 
   private setupInactivityListener(): void {
