@@ -1,7 +1,6 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
-import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { CustomizationGroupResponse, CustomizationOptionResponse, MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
 import { SelectedOption } from '../../core/models/cart.models';
 import { CartService } from '../../core/services/cart.service';
@@ -508,16 +507,7 @@ export class MenuPageComponent implements OnInit {
   }
 
   getImageUrl(imageUrl: string | null | undefined): string {
-    if (!imageUrl) {
-      return '';
-    }
-    if (imageUrl.startsWith('/assets/')) {
-      return imageUrl;
-    }
-    if (imageUrl.startsWith('/images/')) {
-      return `${API_BASE_RAW}${imageUrl}`;
-    }
-    return `${API_BASE_RAW}/api/imagem?url=${encodeURIComponent(imageUrl)}`;
+    return imageUrl ?? '/assets/images/product_placeholder.svg';
   }
 
   onCategoriaChange(slug: string): void {
