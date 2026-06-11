@@ -1,6 +1,7 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
+import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { CustomizationGroupResponse, CustomizationOptionResponse, MenuCategoryResponse, ProductResponse } from '../../core/models/menu.models';
 import { SelectedOption } from '../../core/models/cart.models';
 import { CartService } from '../../core/services/cart.service';
