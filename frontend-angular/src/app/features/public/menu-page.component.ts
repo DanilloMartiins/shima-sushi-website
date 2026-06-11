@@ -49,7 +49,7 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
                     [alt]="item.name"
                     loading="lazy"
                     referrerpolicy="no-referrer"
-                    (error)="imagensFalhas.update(m => { m[item.id] = true; return m; })"
+                    (error)="onImageError(item.id)"
                   />
                 }
                 @if (imagensFalhas()[item.id] || !item.imageUrl) {
@@ -546,6 +546,10 @@ export class MenuPageComponent implements OnInit {
 
   getImageUrl(imageUrl: string | null | undefined): string {
     return imageUrl ?? '/assets/images/product_placeholder.svg';
+  }
+
+  onImageError(itemId: number): void {
+    this.imagensFalhas.update(m => ({ ...m, [itemId]: true }));
   }
 
   onCategoriaChange(slug: string): void {
