@@ -42,6 +42,7 @@ export class ClerkService {
       
       script.onload = async () => {
         this.clerk = (window as any).Clerk;
+        this.marcarSessaoAtiva();
         try {
           await this.clerk.load({
             localization: ptBR,
