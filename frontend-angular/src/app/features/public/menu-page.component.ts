@@ -43,13 +43,19 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
           <div class="product-grid">
             @for (item of cat.produtos; track item.id) {
               <article class="product-card" (click)="openProductModal(item)">
-                @if (item.imageUrl) {
+                @if (!imagensFalhas()[item.id]) {
                   <img
                     [src]="getImageUrl(item.imageUrl)"
                     [alt]="item.name"
                     loading="lazy"
                     referrerpolicy="no-referrer"
+                    (error)="imagensFalhas.update(m => { m[item.id] = true; return m; })"
                   />
+                }
+                @if (imagensFalhas()[item.id] || !item.imageUrl) {
+                  <div class="img-fallback">
+                    <span class="shima-loader-icon"></span>
+                  </div>
                 }
 
                 <div class="product-info">
@@ -77,8 +83,14 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
           <div class="modal-content modal-customize" (click)="$event.stopPropagation()">
             <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
 
-            @if (product.imageUrl) {
-              <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image" />
+            @if (!modalImageFailed() && product.imageUrl) {
+              <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image"
+                (error)="modalImageFailed.set(true)" />
+            }
+            @if (modalImageFailed() || !product.imageUrl) {
+              <div class="modal-img-fallback">
+                <span class="shima-loader-icon"></span>
+              </div>
             }
 
             <div class="modal-body customize-body">
@@ -149,8 +161,14 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
           <div class="modal-content" (click)="$event.stopPropagation()">
             <button type="button" class="modal-close" (click)="closeProductModal()">&times;</button>
 
-            @if (product.imageUrl) {
-              <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image" />
+            @if (!modalImageFailed() && product.imageUrl) {
+              <img [src]="getImageUrl(product.imageUrl)" [alt]="product.name" class="modal-image"
+                (error)="modalImageFailed.set(true)" />
+            }
+            @if (modalImageFailed() || !product.imageUrl) {
+              <div class="modal-img-fallback">
+                <span class="shima-loader-icon"></span>
+              </div>
             }
 
             <div class="modal-body">
@@ -193,6 +211,14 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
     }
     .product-card:hover { transform: translateY(-4px); }
     .product-card img { width: 100%; height: 150px; object-fit: cover; background: #f0f0f0; }
+    .product-card .img-fallback {
+      width: 100%; height: 150px;
+      background: linear-gradient(135deg, #fafafa, #f0f0f0);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .product-card .img-fallback .shima-loader-icon {
+      width: 48px; height: 48px; animation: none;
+    }
 
     .product-info {
       padding: 0.85rem 1rem;
@@ -248,6 +274,14 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
       display: flex; align-items: center; justify-content: center;
     }
     .modal-image { width: 100%; height: 180px; object-fit: cover; background: #f0f0f0; }
+    .modal-img-fallback {
+      width: 100%; height: 180px;
+      background: linear-gradient(135deg, #fafafa, #f0f0f0);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-img-fallback .shima-loader-icon {
+      width: 56px; height: 56px; animation: none;
+    }
     .modal-body { padding: 1rem 1.1rem 1.1rem; }
     .modal-body h2 { margin: 0 0 0.3rem; font-size: 1.15rem; }
     .modal-description { color: var(--brand-muted); font-size: 0.85rem; margin: 0 0 0.5rem; line-height: 1.45; }
@@ -369,6 +403,8 @@ export class MenuPageComponent implements OnInit {
 
   readonly selectedProduct = signal<ProductResponse | null>(null);
   readonly selectedQuantity = signal(1);
+  readonly imagensFalhas = signal<Record<number, boolean>>({});
+  readonly modalImageFailed = signal(false);
 
   // Mapa de opcoes selecionadas: groupId -> SelectedOption[]
   private readonly selectedOptionsMap = signal<Map<number, SelectedOption[]>>(new Map());
@@ -422,6 +458,7 @@ export class MenuPageComponent implements OnInit {
     this.selectedProduct.set(product);
     this.selectedQuantity.set(1);
     this.selectedOptionsMap.set(new Map());
+    this.modalImageFailed.set(false);
   }
 
   closeProductModal(): void {
