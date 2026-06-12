@@ -20,6 +20,7 @@ export class ClerkService {
   readonly backendRole = signal<string | null>(null);
   private inactivityTimeout: any;
   private readonly INACTIVITY_TIME = 10 * 60 * 1000; // 10 minutos
+  private readonly SESSION_MAX_INTERVAL = 30 * 60 * 1000; // 30 min sem abrir = desloga
 
   async init(): Promise<void> {
     if (this.clerk || (window as any).Clerk) {
@@ -52,6 +53,19 @@ export class ClerkService {
           this.loaded.set(true);
 
           if (this.clerk.user) {
+            // Verifica se passou muito tempo desde a ultima vez que fechou
+            const lastTs = localStorage.getItem(this.SESSION_TIMESTAMP_KEY);
+            if (lastTs) {
+              const diff = Date.now() - parseInt(lastTs, 10);
+              if (diff > this.SESSION_MAX_INTERVAL) {
+                console.log('Sessão expirada por tempo offline. Encerrando.');
+                localStorage.removeItem(this.SESSION_TIMESTAMP_KEY);
+                await this.signOut();
+                resolve();
+                return;
+              }
+            }
+
             // Se tem sessao mas a flag de migracao nao existe,
             // eh a primeira execucao apos o deploy dessa logica
             if (!localStorage.getItem(this.SESSION_MIGRATED_KEY)) {

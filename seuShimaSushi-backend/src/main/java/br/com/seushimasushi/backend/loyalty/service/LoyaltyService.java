@@ -142,6 +142,26 @@ public class LoyaltyService {
         transactionRepository.save(transaction);
     }
 
+    @Transactional
+    public int adicionarSelosTeste(String customerClerkId, int quantidade) {
+        LoyaltyCard card = cardRepository.findByCustomerClerkId(customerClerkId)
+                .orElseThrow(() -> new NotFoundException("Cartão fidelidade não encontrado"));
+
+        for (int i = 0; i < quantidade; i++) {
+            card.setStamps(card.getStamps() + 1);
+            cardRepository.save(card);
+
+            LoyaltyTransaction transaction = new LoyaltyTransaction();
+            transaction.setCard(card);
+            transaction.setType(LoyaltyTransactionType.EARNED);
+            transaction.setOrderId(null);
+            transaction.setDescription("Selo de teste #" + (i + 1));
+            transactionRepository.save(transaction);
+        }
+
+        return quantidade;
+    }
+
     private LoyaltySettingsResponse toSettingsResponse(LoyaltySettings settings) {
         return new LoyaltySettingsResponse(
                 settings.getStampsNeeded(),

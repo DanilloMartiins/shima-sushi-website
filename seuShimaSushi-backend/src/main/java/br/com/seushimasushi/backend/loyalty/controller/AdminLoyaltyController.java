@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,5 +53,16 @@ public class AdminLoyaltyController {
     public ResponseEntity<Map<String, String>> criarCartao(@PathVariable String clerkId) {
         loyaltyService.criarCartaoSeNecessario(clerkId);
         return ResponseEntity.ok(Map.of("mensagem", "Cartão criado com sucesso"));
+    }
+
+    @PostMapping("/test/stamps/{clerkId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> gerarSelosTeste(@PathVariable String clerkId) {
+        loyaltyService.criarCartaoSeNecessario(clerkId);
+        int gerados = loyaltyService.adicionarSelosTeste(clerkId, 3);
+        return ResponseEntity.ok(Map.of(
+            "mensagem", gerados + " selos de teste gerados",
+            "selosGerados", gerados
+        ));
     }
 }
