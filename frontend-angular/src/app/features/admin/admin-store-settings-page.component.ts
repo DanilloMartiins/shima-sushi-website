@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import {
   DAY_LABELS,
@@ -8,11 +10,13 @@ import {
   StoreSettingsResponse,
 } from '../../core/models/store.models';
 import { StoreSettingsService } from '../../core/services/store-settings.service';
+import { ClerkService } from '../../core/services/clerk.service';
+import { API_BASE_URL } from '../../core/constants/api.constants';
 
 @Component({
   selector: 'app-admin-store-settings-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
     <div class="settings-page">
       <header class="page-header">
@@ -207,6 +211,62 @@ import { StoreSettingsService } from '../../core/services/store-settings.service
                 formControlName="estimatedDeliveryTime"
                 placeholder="Ex: 40 - 60 min"
               />
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD: Cartão Fidelidade -->
+        <section class="card">
+          <div class="card-header">
+            <h2>Cartão Fidelidade</h2>
+          </div>
+
+          <div class="card-body">
+            <div class="inline-grid">
+              <div class="form-group">
+                <label for="stampsNeeded">Selos necessários para prêmio</label>
+                <input
+                  id="stampsNeeded"
+                  type="number"
+                  min="1"
+                  [(ngModel)]="loyaltyStampsNeeded"
+                  placeholder="Ex: 10"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="minOrderAmount">Pedido mínimo (R$) para ganhar selo</label>
+                <input
+                  id="minOrderAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="loyaltyMinOrder"
+                  placeholder="Ex: 0"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="prizeDescription">Descrição do prêmio</label>
+              <input
+                id="prizeDescription"
+                type="text"
+                [(ngModel)]="loyaltyPrize"
+                placeholder="Ex: 1 produto grátis do cardápio"
+              />
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-save-loyalty"
+                (click)="salvarLoyalty()"
+                [disabled]="loyaltySaving()"
+              >
+                {{ loyaltySaving() ? 'Salvando...' : 'Salvar Configuração de Fidelidade' }}
+              </button>
+              <span *ngIf="loyaltySaved()" class="saved-msg">Salvo!</span>
             </div>
           </div>
         </section>
@@ -415,6 +475,23 @@ import { StoreSettingsService } from '../../core/services/store-settings.service
         font-size: 12px;
         color: #999;
       }
+
+      .btn-save-loyalty {
+        border: none; padding: 10px 22px; font-size: 14px; font-weight: 600;
+        border-radius: 8px; cursor: pointer;
+        background: var(--brand-orange, #ea6a3d); color: #fff;
+        transition: background 0.2s;
+      }
+
+      .btn-save-loyalty:hover:not(:disabled) {
+        background: var(--brand-orange-strong, #d95b2f);
+      }
+
+      .btn-save-loyalty:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .saved-msg { color: #28a745; font-weight: 600; font-size: 0.9rem; margin-left: 8px; }
+
+      .form-actions { display: flex; align-items: center; margin-top: 4px; }
 
       /* Toggle switch */
       .toggle-row {
@@ -705,10 +782,19 @@ import { StoreSettingsService } from '../../core/services/store-settings.service
 export class AdminStoreSettingsPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly storeSettingsService = inject(StoreSettingsService);
+  private readonly http = inject(HttpClient);
+  private readonly clerk = inject(ClerkService);
 
   readonly saving = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
+
+  // Loyalty settings
+  loyaltyStampsNeeded = 10;
+  loyaltyMinOrder = 0;
+  loyaltyPrize = '1 produto grátis do cardápio';
+  readonly loyaltySaving = signal(false);
+  readonly loyaltySaved = signal(false);
 
   readonly logoPreview = signal<string | null>(null);
   readonly coverPreview = signal<string | null>(null);
@@ -770,6 +856,56 @@ export class AdminStoreSettingsPageComponent implements OnInit {
     this.storeSettingsService.getAdminStoreSettings().subscribe({
       next: (settings) => this.populateForm(settings),
       error: () => this.errorMessage.set('Não foi possível carregar as configurações.'),
+    });
+
+    this.carregarLoyaltySettings();
+  }
+
+  private carregarLoyaltySettings(): void {
+    this.getToken().then((token) => {
+      if (!token) return;
+
+      this.http.get<any>(`${API_BASE_URL}/admin/loyalty/settings`, {
+        headers: new HttpHeaders({ Authorization: `Bearer ${token}` })
+      }).subscribe({
+        next: (res) => {
+          this.loyaltyStampsNeeded = res.stampsNeeded ?? 10;
+          this.loyaltyMinOrder = res.minOrderAmount ?? 0;
+          this.loyaltyPrize = res.prizeDescription ?? '1 produto grátis do cardápio';
+        },
+        error: () => {}
+      });
+    });
+  }
+
+  salvarLoyalty(): void {
+    this.loyaltySaving.set(true);
+    this.loyaltySaved.set(false);
+
+    this.getToken().then((token) => {
+      if (!token) {
+        this.loyaltySaving.set(false);
+        return;
+      }
+
+      this.http.put<any>(
+        `${API_BASE_URL}/admin/loyalty/settings`,
+        {
+          stampsNeeded: this.loyaltyStampsNeeded,
+          minOrderAmount: this.loyaltyMinOrder,
+          prizeDescription: this.loyaltyPrize,
+        },
+        { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+      ).subscribe({
+        next: () => {
+          this.loyaltySaved.set(true);
+          this.loyaltySaving.set(false);
+          setTimeout(() => this.loyaltySaved.set(false), 3000);
+        },
+        error: () => {
+          this.loyaltySaving.set(false);
+        }
+      });
     });
   }
 
@@ -868,6 +1004,10 @@ export class AdminStoreSettingsPageComponent implements OnInit {
         }
       })
       .catch(() => {});
+  }
+
+  private async getToken(): Promise<string | null> {
+    return await this.clerk.getToken();
   }
 
   save(): void {
