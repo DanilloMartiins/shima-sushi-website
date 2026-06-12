@@ -11,6 +11,7 @@ interface User {
   role: string;
   active: boolean;
   clerkId: string;
+  phone: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +19,22 @@ interface User {
 interface OpcaoRole {
   value: string;
   label: string;
+}
+
+interface LoyaltyTransaction {
+  id: number;
+  type: string;
+  orderId: number | null;
+  description: string;
+  createdAt: string;
+}
+
+interface LoyaltyCard {
+  id: number;
+  stamps: number;
+  stampsNeeded: number;
+  prizeDescription: string;
+  transactions: LoyaltyTransaction[];
 }
 
 @Component({
@@ -34,13 +51,21 @@ interface OpcaoRole {
         </div>
       }
 
-      @if (isSuperAdmin) {
-        <div class="sync-bar">
+      <div class="toolbar">
+        <div class="search-box">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar por nome..."
+            (input)="onBuscaInput($event)"
+          />
+        </div>
+        @if (isSuperAdmin) {
           <button class="btn-sync" (click)="syncClerk()" [disabled]="syncing()">
             {{ syncing() ? 'Sincronizando...' : 'Sincronizar Nomes do Clerk' }}
           </button>
-        </div>
-      }
+        }
+      </div>
 
       <div class="table-wrapper">
         <table class="user-table">
@@ -54,8 +79,12 @@ interface OpcaoRole {
             </tr>
           </thead>
           <tbody>
-            @for (user of users; track user.id) {
-              <tr>
+            @for (user of usuariosFiltrados; track user.id) {
+              <tr
+                class="user-row"
+                [class.user-row--selected]="clienteSelecionado()?.clerkId === user.clerkId"
+                (click)="selecionarCliente(user)"
+              >
                 <td class="cell-name">{{ nomeExibicao(user) }}</td>
                 <td class="cell-email">{{ emailExibicao(user) }}</td>
                 <td>
@@ -73,6 +102,7 @@ interface OpcaoRole {
                     class="role-select"
                     [disabled]="!isSuperAdmin"
                     (change)="onRoleChange(user, $event)"
+                    (click)="$event.stopPropagation()"
                   >
                     @for (opcao of opcoesPorRole(user.role); track opcao.value) {
                       <option [value]="opcao.value" [selected]="opcao.value === user.role">
@@ -83,6 +113,51 @@ interface OpcaoRole {
                 </td>
                 <td class="cell-clerk-id">{{ user.clerkId || '-' }}</td>
               </tr>
+              @if (clienteSelecionado()?.clerkId === user.clerkId && user.role === 'CUSTOMER') {
+                <tr class="detail-row">
+                  <td colspan="5">
+                    <div class="customer-detail">
+                      <div class="detail-section">
+                        <strong>Telefone:</strong>
+                        <span>{{ user.phone || 'Não informado' }}</span>
+                      </div>
+
+                      @if (loyaltyCard()) {
+                        <div class="detail-section loyalty-section">
+                          <strong>Cartão Fidelidade</strong>
+                          <div class="stamps-bar">
+                            @for (stamp of gerarSelos(loyaltyCard()!); track $index) {
+                              <div
+                                class="stamp"
+                                [class.stamp--filled]="stamp.preenchido"
+                                [class.stamp--empty]="!stamp.preenchido"
+                                [title]="stamp.tooltip"
+                              >
+                                <span class="stamp-icon">&#9679;</span>
+                                @if (stamp.tooltip) {
+                                  <div class="stamp-tooltip">
+                                    <div class="tooltip-order-id">Pedido #{{ stamp.transaction?.orderId }}</div>
+                                    <div class="tooltip-status">Concluído</div>
+                                    <div class="tooltip-date">{{ stamp.transaction?.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                          <div class="stamps-info">
+                            {{ loyaltyCard()!.stamps }}/{{ loyaltyCard()!.stampsNeeded }} selos
+                            &mdash; Prêmio: {{ loyaltyCard()!.prizeDescription }}
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="detail-section">
+                          <em>Cliente ainda não possui cartão fidelidade.</em>
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>
@@ -232,10 +307,34 @@ interface OpcaoRole {
       background: #f5f5f5;
     }
 
-    .sync-bar {
+    .toolbar {
       margin-bottom: 16px;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 320px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #ea6a3d;
+      box-shadow: 0 0 0 3px rgba(234, 106, 61, 0.15);
     }
 
     .btn-sync {
@@ -248,6 +347,7 @@ interface OpcaoRole {
       color: #333;
       cursor: pointer;
       transition: background 0.2s, border-color 0.2s;
+      white-space: nowrap;
     }
 
     .btn-sync:hover:not(:disabled) {
@@ -261,6 +361,137 @@ interface OpcaoRole {
       cursor: not-allowed;
     }
 
+    .user-row {
+      cursor: pointer;
+    }
+
+    .user-row--selected {
+      background-color: #fff8f0 !important;
+      border-left: 3px solid #ea6a3d;
+    }
+
+    .detail-row td {
+      padding: 0;
+      background: #fafafa;
+      border-bottom: 2px solid #e0e6ed;
+    }
+
+    .customer-detail {
+      padding: 16px 24px;
+      display: grid;
+      gap: 16px;
+      animation: slideDown 0.2s ease;
+    }
+
+    .detail-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .detail-section strong {
+      min-width: 140px;
+      color: #444;
+    }
+
+    .loyalty-section {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .loyalty-section strong {
+      margin-bottom: 8px;
+    }
+
+    .stamps-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stamp {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: default;
+      transition: transform 0.15s;
+    }
+
+    .stamp:hover {
+      transform: scale(1.15);
+    }
+
+    .stamp--filled {
+      background: #ea6a3d;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(234, 106, 61, 0.3);
+    }
+
+    .stamp--empty {
+      background: #e9ecef;
+      color: #adb5bd;
+    }
+
+    .stamp-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .stamp-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      line-height: 1.5;
+    }
+
+    .stamp-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1a1a2e;
+    }
+
+    .stamp:hover .stamp-tooltip {
+      display: block;
+    }
+
+    .tooltip-order-id {
+      font-weight: 600;
+    }
+
+    .tooltip-status {
+      color: #4caf50;
+    }
+
+    .tooltip-date {
+      color: #aaa;
+    }
+
+    .stamps-info {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+
     .restricted-msg {
       margin-top: 16px;
       font-size: 0.85rem;
@@ -272,6 +503,11 @@ interface OpcaoRole {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    @keyframes slideDown {
+      from { opacity: 0; max-height: 0; }
+      to { opacity: 1; max-height: 300px; }
+    }
   `],
 })
 export class AdminUsersPageComponent implements OnInit {
@@ -281,6 +517,9 @@ export class AdminUsersPageComponent implements OnInit {
   users: User[] = [];
   isSuperAdmin = false;
   readonly syncing = signal(false);
+  readonly busca = signal('');
+  readonly clienteSelecionado = signal<User | null>(null);
+  readonly loyaltyCard = signal<LoyaltyCard | null>(null);
 
   readonly toast = signal<{ texto: string; tipo: 'sucesso' | 'erro' } | null>(null);
 
@@ -290,6 +529,15 @@ export class AdminUsersPageComponent implements OnInit {
     ADMIN: 'Administrador',
     SUPER_ADMIN: 'Super Admin',
   };
+
+  get usuariosFiltrados(): User[] {
+    const termo = this.busca().toLowerCase().trim();
+    if (!termo) return this.users;
+    return this.users.filter(u => {
+      const nome = this.nomeExibicao(u).toLowerCase();
+      return nome.includes(termo);
+    });
+  }
 
   ngOnInit(): void {
     this.isSuperAdmin = this.clerk.isUserSuperAdmin();
@@ -412,6 +660,51 @@ export class AdminUsersPageComponent implements OnInit {
           },
         });
     });
+  }
+
+  selecionarCliente(user: User): void {
+    if (this.clienteSelecionado()?.clerkId === user.clerkId) {
+      this.clienteSelecionado.set(null);
+      this.loyaltyCard.set(null);
+      return;
+    }
+
+    this.clienteSelecionado.set(user);
+    this.loyaltyCard.set(null);
+
+    if (user.role !== 'CUSTOMER') return;
+
+    this.getToken().then((token) => {
+      if (!token) return;
+
+      this.http.get<{ card: LoyaltyCard | null }>(
+        `${API_BASE_URL}/admin/loyalty/card/${user.clerkId}`,
+        { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+      ).subscribe({
+        next: (res) => this.loyaltyCard.set(res.card),
+        error: () => this.toast.set({ texto: 'Erro ao carregar cartão fidelidade', tipo: 'erro' })
+      });
+    });
+  }
+
+  gerarSelos(card: LoyaltyCard): { preenchido: boolean; tooltip: string; transaction: LoyaltyTransaction | null }[] {
+    const selos: { preenchido: boolean; tooltip: string; transaction: LoyaltyTransaction | null }[] = [];
+    const earned = card.transactions.filter(t => t.type === 'EARNED');
+
+    for (let i = 0; i < card.stampsNeeded; i++) {
+      const transaction = earned[i] || null;
+      selos.push({
+        preenchido: i < card.stamps,
+        tooltip: transaction ? `${transaction.orderId ? 'Pedido #' + transaction.orderId : ''}` : '',
+        transaction
+      });
+    }
+    return selos;
+  }
+
+  onBuscaInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.busca.set(input.value);
   }
 
   private carregarUsuarios(): void {

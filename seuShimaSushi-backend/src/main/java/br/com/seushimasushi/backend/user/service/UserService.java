@@ -80,6 +80,20 @@ public class UserService {
         return "Role alterada de " + roleAtual + " para " + novaRole + " com sucesso";
     }
 
+    @Transactional
+    public void atualizarPhone(String clerkId, String phone) {
+        userRepository.findByClerkId(clerkId)
+                .ifPresent(user -> {
+                    user.setPhone(phone);
+                    userRepository.save(user);
+                });
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<User> buscarPorClerkId(String clerkId) {
+        return userRepository.findByClerkId(clerkId);
+    }
+
     private UserResponse toResponse(User user) {
         return new UserResponse(
                 user.getId(),
@@ -88,6 +102,7 @@ public class UserService {
                 user.getRole(),
                 user.getActive(),
                 user.getClerkId(),
+                user.getPhone(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

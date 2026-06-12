@@ -2,6 +2,7 @@ package br.com.seushimasushi.backend.order.service;
 
 import br.com.seushimasushi.backend.common.exception.BadRequestException;
 import br.com.seushimasushi.backend.common.exception.NotFoundException;
+import br.com.seushimasushi.backend.loyalty.service.LoyaltyService;
 import br.com.seushimasushi.backend.menu.model.Product;
 import br.com.seushimasushi.backend.menu.repository.ProductRepository;
 import br.com.seushimasushi.backend.menu.dto.common.PagedResponse;
@@ -46,16 +47,19 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository;
     private final ObjectMapper objectMapper;
+    private final LoyaltyService loyaltyService;
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, 
+    public OrderService(OrderRepository orderRepository,
                         ProductRepository productRepository,
                         br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper,
+                        LoyaltyService loyaltyService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.produtoRepository = produtoRepository;
         this.objectMapper = objectMapper;
+        this.loyaltyService = loyaltyService;
     }
 
     @Transactional
@@ -279,6 +283,12 @@ public class OrderService {
 
         order.setStatus(nextStatus);
         Order updatedOrder = orderRepository.save(order);
+
+        if (nextStatus == OrderStatus.COMPLETED) {
+            loyaltyService.criarCartaoSeNecessario(order.getCustomerClerkId());
+            loyaltyService.adicionarSelo(order.getCustomerClerkId(), order.getId(), order.getTotalAmount());
+        }
+
         return toResponse(updatedOrder, true);
     }
 

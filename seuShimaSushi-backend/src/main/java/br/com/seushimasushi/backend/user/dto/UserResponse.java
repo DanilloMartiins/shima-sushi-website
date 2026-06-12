@@ -9,6 +9,7 @@ public record UserResponse(
         String role,
         Boolean active,
         String clerkId,
+        String phone,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
