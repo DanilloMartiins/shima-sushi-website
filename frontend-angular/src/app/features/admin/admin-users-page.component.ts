@@ -133,7 +133,7 @@ interface LoyaltyCard {
                                 [class.stamp--empty]="!stamp.preenchido"
                                 [title]="stamp.tooltip"
                               >
-                                <span class="stamp-icon">&#9679;</span>
+                                <span class="stamp-icon stamp-shima-icon" [class.shima-icon--empty]="!stamp.preenchido" aria-hidden="true"></span>
                                 @if (stamp.tooltip) {
                                   <div class="stamp-tooltip">
                                     <div class="tooltip-order-id">Pedido #{{ stamp.transaction?.orderId }}</div>
@@ -439,8 +439,29 @@ interface LoyaltyCard {
     }
 
     .stamp-icon {
-      font-size: 16px;
-      line-height: 1;
+      width: 22px;
+      height: 22px;
+      display: inline-block;
+      animation: none;
+    }
+
+    .stamp-icon::before {
+      width: 22px;
+      height: 10px;
+      left: 0;
+      top: 0;
+      border-radius: 4px;
+    }
+
+    .stamp-icon::after {
+      left: 5px;
+      top: 7px;
+      width: 11px;
+      height: 11px;
+    }
+
+    .stamp-icon.shima-icon--empty {
+      opacity: 0.5;
     }
 
     .stamp-tooltip {
