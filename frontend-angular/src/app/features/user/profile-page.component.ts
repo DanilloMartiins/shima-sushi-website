@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ClerkService } from '../../core/services/clerk.service';
 import { AddressService } from '../../core/services/address.service';
 import { AddressResponse } from '../../core/models/address.models';
+import { API_BASE_URL } from '../../core/constants/api.constants';
 
 @Component({
   selector: 'app-profile-page',
@@ -13,6 +15,24 @@ import { AddressResponse } from '../../core/models/address.models';
     <section class="profile-container">
       <div class="clerk-section">
         <div id="clerk-user-profile"></div>
+      </div>
+
+      <div class="phone-section">
+        <h2>Telefone para Contato</h2>
+        <p class="description">Opcional. Será usado para o entregador entrar em contato.</p>
+        <div class="phone-input-row">
+          <input
+            type="tel"
+            #phoneInput
+            [value]="phone()"
+            placeholder="(DDD) 99999-9999"
+            class="phone-input"
+          />
+          <button (click)="salvarPhone(phoneInput.value)" class="btn-save-phone" [disabled]="phoneSaving()">
+            {{ phoneSaving() ? 'Salvando...' : 'Salvar' }}
+          </button>
+          <span *ngIf="phoneSaved()" class="phone-saved-msg">Salvo!</span>
+        </div>
       </div>
 
       <div class="address-section">
@@ -137,17 +157,46 @@ import { AddressResponse } from '../../core/models/address.models';
     .btn-cancel, .btn-delete { background: transparent; color: var(--brand-muted); border: 1px solid var(--brand-border); border-radius: 8px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.85rem; line-height: 1.35; }
     .btn-delete:hover { background: #fff1f1; color: #ff4d4d; border-color: #ff4d4d; }
 
+    .phone-section {
+      background: #fff; padding: 2rem; border-radius: 20px;
+      border: 1px solid var(--brand-border); box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .phone-input-row {
+      display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    }
+
+    .phone-input {
+      padding: 0.8rem; border-radius: 10px;
+      border: 1px solid var(--brand-border); font-size: 1rem; flex: 1; max-width: 280px;
+    }
+
+    .phone-input:focus { border-color: var(--brand-orange); outline: none; }
+
+    .btn-save-phone {
+      background: var(--brand-orange); color: #fff; border: none; border-radius: 8px;
+      padding: 0.6rem 1.2rem; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+    }
+
+    .btn-save-phone:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .phone-saved-msg { color: #28a745; font-weight: 600; font-size: 0.9rem; animation: fadeIn 0.2s ease; }
+
     @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })
 export class ProfilePageComponent implements OnInit {
   private readonly clerk = inject(ClerkService);
   private readonly addressService = inject(AddressService);
+  private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
 
   readonly defaultAddress = signal<AddressResponse | null>(null);
   readonly showForm = signal(false);
   readonly loading = signal(false);
+  readonly phone = signal('');
+  readonly phoneSaving = signal(false);
+  readonly phoneSaved = signal(false);
   editingId: number | null = null;
 
   readonly form = this.fb.nonNullable.group({
@@ -163,6 +212,12 @@ export class ProfilePageComponent implements OnInit {
 
   ngOnInit(): void {
     this.clerk.mountUserProfile('clerk-user-profile');
+
+    const user = this.clerk.user();
+    if (user?.primaryPhoneNumber?.phoneNumber) {
+      this.phone.set(user.primaryPhoneNumber.phoneNumber);
+    }
+
     this.loadAddress();
   }
 
@@ -221,6 +276,31 @@ export class ProfilePageComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
+    });
+  }
+
+  async salvarPhone(phoneValue: string): Promise<void> {
+    this.phoneSaving.set(true);
+    this.phoneSaved.set(false);
+
+    const token = await this.clerk.getToken();
+    if (!token) {
+      this.phoneSaving.set(false);
+      return;
+    }
+
+    this.http.put<{ mensagem: string }>(
+      `${API_BASE_URL}/loyalty/phone`,
+      { phone: phoneValue },
+      { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+    ).subscribe({
+      next: () => {
+        this.phone.set(phoneValue);
+        this.phoneSaved.set(true);
+        this.phoneSaving.set(false);
+        setTimeout(() => this.phoneSaved.set(false), 3000);
+      },
+      error: () => this.phoneSaving.set(false)
     });
   }
 

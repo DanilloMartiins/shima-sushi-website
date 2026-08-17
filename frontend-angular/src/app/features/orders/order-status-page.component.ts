@@ -99,6 +99,10 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
             <span>Total</span>
             <strong class="total-price">{{ order()!.totalPrice | currency:'BRL' }}</strong>
           </div>
+          <div class="cancel-reason" *ngIf="status() === 'CANCELLED' && order()!.notes">
+            <span>Motivo do cancelamento</span>
+            <strong>{{ order()!.notes }}</strong>
+          </div>
         </div>
 
         <!-- Ações -->
@@ -272,6 +276,13 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
       color: var(--brand-orange-strong) !important;
       font-weight: 800;
     }
+    .cancel-reason {
+      margin-top: 0.5rem; padding: 0.75rem 1rem;
+      background: #ffebee; border-radius: 10px;
+      display: flex; flex-direction: column; gap: 0.25rem;
+    }
+    .cancel-reason span { font-size: 0.8rem; color: #c62828; font-weight: 600; }
+    .cancel-reason strong { font-size: 0.9rem; color: #b71c1c; }
 
     .status-actions {
       display: flex;

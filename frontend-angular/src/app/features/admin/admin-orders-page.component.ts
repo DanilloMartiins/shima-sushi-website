@@ -107,6 +107,9 @@ interface Order {
                         <p *ngIf="order.notes" class="order-notes">
                           <strong>Observações:</strong> {{ order.notes }}
                         </p>
+                        <div *ngIf="order.status === 'Cancelado' && order.notes" class="cancel-info">
+                          <strong>Motivo do cancelamento:</strong> {{ order.notes }}
+                        </div>
                       </div>
                     </div>
                   </td>

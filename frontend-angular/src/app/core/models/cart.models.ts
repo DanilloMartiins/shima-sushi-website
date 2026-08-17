@@ -4,6 +4,7 @@ export interface SelectedOption {
   optionId: number;
   optionName: string;
   priceAddition: number;
+  quantity: number;
 }
 
 export interface CartItem {

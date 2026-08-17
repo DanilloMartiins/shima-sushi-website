@@ -11,7 +11,8 @@ export class ClerkService {
   private readonly instanceUrl = 'informed-haddock-50.clerk.accounts.dev';
 
   private readonly SESSION_TIMESTAMP_KEY = 'seu-shima-sushi-session-ts';
-  private readonly SESSION_MAX_GAP = 5 * 60 * 1000; // 5 minutos
+  private readonly SESSION_SESSION_KEY = 'seu-shima-sushi-session-active';
+  private readonly SESSION_MIGRATED_KEY = 'seu-shima-sushi-migrated';
 
   private clerk: any = null;
   readonly loaded = signal(false);
@@ -19,6 +20,7 @@ export class ClerkService {
   readonly backendRole = signal<string | null>(null);
   private inactivityTimeout: any;
   private readonly INACTIVITY_TIME = 10 * 60 * 1000; // 10 minutos
+  private readonly SESSION_MAX_INTERVAL = 30 * 60 * 1000; // 30 min sem abrir = desloga
 
   async init(): Promise<void> {
     if (this.clerk || (window as any).Clerk) {
@@ -28,6 +30,11 @@ export class ClerkService {
       return;
     }
 
+    // Salva o timestamp quando o navegador for fechado/PC desligar
+    window.addEventListener('beforeunload', () => {
+      this.salvarTimestampSessao();
+    });
+
     return new Promise((resolve) => {
       const script = document.createElement('script');
       script.setAttribute('data-clerk-publishable-key', this.publishableKey);
@@ -36,6 +43,7 @@ export class ClerkService {
       
       script.onload = async () => {
         this.clerk = (window as any).Clerk;
+        this.marcarSessaoAtiva();
         try {
           await this.clerk.load({
             localization: ptBR,
@@ -44,23 +52,55 @@ export class ClerkService {
           this.user.set(this.clerk.user);
           this.loaded.set(true);
 
-          // Verifica se o navegador ficou fechado por mais de 5 minutos
           if (this.clerk.user) {
-            this.verificarSessaoExpirada();
-            this.setupInactivityListener();
-            void this.fetchBackendRole();
+            // Verifica se passou muito tempo desde a ultima vez que fechou
+            const lastTs = localStorage.getItem(this.SESSION_TIMESTAMP_KEY);
+            if (lastTs) {
+              const diff = Date.now() - parseInt(lastTs, 10);
+              if (diff > this.SESSION_MAX_INTERVAL) {
+                console.log('Sessão expirada por tempo offline. Encerrando.');
+                localStorage.removeItem(this.SESSION_TIMESTAMP_KEY);
+                await this.signOut();
+                resolve();
+                return;
+              }
+            }
+
+            // Se tem sessao mas a flag de migracao nao existe,
+            // eh a primeira execucao apos o deploy dessa logica
+            if (!localStorage.getItem(this.SESSION_MIGRATED_KEY)) {
+              localStorage.setItem(this.SESSION_MIGRATED_KEY, '1');
+            } else if (!this.temSessaoAtiva()) {
+              // Ja passou pela migracao, sessionStorage vazio = fechou navegador
+              console.log('Navegador foi fechado. Encerrando sessao.');
+              await this.signOut();
+              resolve();
+              return;
+            }
+
+            if (this.user()) {
+              this.setupInactivityListener();
+              void this.fetchBackendRole();
+            }
           }
 
           this.clerk.addListener((resources: any) => {
             this.user.set(resources.user);
             if (resources.user) {
+              this.marcarSessaoAtiva();
               this.setupInactivityListener();
-              void this.fetchBackendRole(); // ja puxa a role do backend
+              void this.fetchBackendRole();
             } else {
+              this.limparSessaoAtiva();
               this.clearInactivityListener();
               this.backendRole.set(null);
             }
           });
+
+          if (this.clerk.user) {
+            this.marcarSessaoAtiva();
+          }
+
           resolve();
         } catch (err) {
           console.error('Erro ao inicializar Clerk:', err);
@@ -69,27 +109,22 @@ export class ClerkService {
 
       document.body.appendChild(script);
     });
-
-    // Salva o timestamp quando o navegador for fechado/PC desligar
-    window.addEventListener('beforeunload', () => {
-      this.salvarTimestampSessao();
-    });
-  }
-
-  private verificarSessaoExpirada(): void {
-    const timestampSalvo = localStorage.getItem(this.SESSION_TIMESTAMP_KEY);
-    if (timestampSalvo) {
-      const agora = Date.now();
-      const diferenca = agora - parseInt(timestampSalvo, 10);
-      if (diferenca > this.SESSION_MAX_GAP) {
-        console.log('Sessão expirada: navegador ficou fechado por mais de 5 minutos.');
-        this.signOut();
-      }
-    }
   }
 
   private salvarTimestampSessao(): void {
     localStorage.setItem(this.SESSION_TIMESTAMP_KEY, Date.now().toString());
+  }
+
+  private marcarSessaoAtiva(): void {
+    sessionStorage.setItem(this.SESSION_SESSION_KEY, '1');
+  }
+
+  private temSessaoAtiva(): boolean {
+    return sessionStorage.getItem(this.SESSION_SESSION_KEY) === '1';
+  }
+
+  private limparSessaoAtiva(): void {
+    sessionStorage.removeItem(this.SESSION_SESSION_KEY);
   }
 
   private setupInactivityListener(): void {
@@ -173,6 +208,8 @@ export class ClerkService {
     await this.clerk?.signOut();
     this.user.set(null);
     this.backendRole.set(null);
+    this.limparSessaoAtiva();
+    localStorage.removeItem(this.SESSION_TIMESTAMP_KEY);
   }
 
   /*
