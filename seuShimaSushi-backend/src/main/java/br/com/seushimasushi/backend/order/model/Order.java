@@ -57,6 +57,23 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    // Campos de pagamento — ficam vazios até o gateway real ser integrado
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 20)
+    private PaymentStatus paymentStatus;
+
+    @Column(name = "transaction_id", length = 100)
+    private String transactionId;
+
+    @Column(name = "gateway_reference", length = 100)
+    private String gatewayReference;
+
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
+    @Column(name = "pix_copia_e_cola", length = 2000)
+    private String pixCopiaECola;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

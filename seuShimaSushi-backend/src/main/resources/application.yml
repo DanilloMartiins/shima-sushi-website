@@ -37,3 +37,6 @@ app:
     allowed-extensions: jpg,jpeg,png
   clerk:
     secret-key: ${CLERK_SECRET_KEY:}
+  payment:
+    gateway-enabled: ${PAYMENT_GATEWAY_ENABLED:false}
+    gateway-name: ${PAYMENT_GATEWAY_NAME:}
