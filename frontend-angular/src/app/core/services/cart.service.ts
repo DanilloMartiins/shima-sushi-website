@@ -1,11 +1,14 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { CART_STORAGE_KEY } from '../constants/api.constants';
+import { ClerkService } from './clerk.service';
 import { CartItem, SelectedOption } from '../models/cart.models';
 import { ProductResponse } from '../models/menu.models';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
+  private readonly clerk = inject(ClerkService);
+
   private readonly itemsSignal = signal<CartItem[]>(this.readStoredCart());
 
   readonly items = computed(() => this.itemsSignal());
@@ -15,6 +18,20 @@ export class CartService {
   readonly totalPrice = computed(() =>
     this.itemsSignal().reduce((accumulator, item) => accumulator + item.quantity * item.price, 0),
   );
+
+  constructor() {
+    // Se a conta mudar (login/logout/troca de usuário), recarrega o carrinho daquela conta.
+    // Sem conta logada o carrinho fica só em memória, não persiste entre sessões.
+    let lastUserId: string | null = null;
+    effect(() => {
+      const userId = this.clerk.user()?.id ?? null;
+      if (userId === lastUserId) {
+        return;
+      }
+      lastUserId = userId;
+      this.itemsSignal.set(this.readStoredCart(userId));
+    });
+  }
 
   addProduct(product: ProductResponse, quantity = 1, selectedOptions?: SelectedOption[]): void {
     const normalizedQuantity = quantity > 0 ? quantity : 1;
@@ -58,13 +75,26 @@ export class CartService {
     this.persist([]);
   }
 
-  private persist(cart: CartItem[]): void {
-    this.itemsSignal.set(cart);
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  private storageKey(userId: string): string {
+    return `${CART_STORAGE_KEY}:${userId}`;
   }
 
-  private readStoredCart(): CartItem[] {
-    const raw = localStorage.getItem(CART_STORAGE_KEY);
+  private persist(cart: CartItem[]): void {
+    this.itemsSignal.set(cart);
+
+    // Só persiste se tiver conta logada; cada conta tem a própria chave
+    const userId = this.clerk.user()?.id ?? null;
+    if (userId) {
+      localStorage.setItem(this.storageKey(userId), JSON.stringify(cart));
+    }
+  }
+
+  private readStoredCart(userId: string | null = null): CartItem[] {
+    if (!userId) {
+      return [];
+    }
+
+    const raw = localStorage.getItem(this.storageKey(userId));
     if (!raw) {
       return [];
     }
