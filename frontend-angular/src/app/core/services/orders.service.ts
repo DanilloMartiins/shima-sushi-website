@@ -75,10 +75,10 @@ export class OrdersService {
     });
   }
 
-  updateOrderStatus(orderId: number, status: OrderStatus): Observable<OrderResponse> {
+  updateOrderStatus(orderId: number, status: OrderStatus, note?: string): Observable<OrderResponse> {
     return this.http.patch<OrderResponse>(
       `${this.adminOrdersEndpoint}/${orderId}/status`,
-      { status } satisfies UpdateOrderStatusRequest,
+      { status, note } satisfies UpdateOrderStatusRequest,
     );
   }
 }

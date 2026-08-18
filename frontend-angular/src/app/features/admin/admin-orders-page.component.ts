@@ -1,17 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-interface Order {
-  id: string;
-  customerName: string;
-  date: Date;
-  totalValue: number;
-  status: 'Pendente de Pagamento' | 'Concluído' | 'Em Preparo' | 'Saiu para Entrega' | 'Cancelado';
-  items: { name: string; qty: number; price: number }[];
-  address: string;
-  notes?: string;
-}
+import { OrdersService } from '../../core/services/orders.service';
+import { OrderResponse, OrderStatus } from '../../core/models/order.models';
 
 @Component({
   selector: 'app-admin-orders-page',
@@ -20,15 +12,26 @@ interface Order {
   template: `
     <div class="orders-page">
       <header class="page-header">
-        <h1>Relatório de Pedidos</h1>
+        <h1>Gerenciar Pedidos</h1>
+        <button class="btn-refresh" (click)="carregarPedidos()" [disabled]="loading()">
+          {{ loading() ? 'Carregando...' : 'Atualizar' }}
+        </button>
       </header>
 
-      <div class="table-container">
+      @if (erro()) {
+        <div class="erro-msg">{{ erro() }}</div>
+      }
+
+      @if (!loading() && orders().length === 0) {
+        <div class="empty-state">Nenhum pedido encontrado.</div>
+      }
+
+      <div class="table-container" *ngIf="orders().length">
         <table>
           <thead>
             <tr>
               <th>ID do Pedido</th>
-              <th>Nome do Cliente</th>
+              <th>Cliente</th>
               <th>Data</th>
               <th>Valor Total</th>
               <th>Status</th>
@@ -36,27 +39,27 @@ interface Order {
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let order of orders; let i = index">
-              <td>#{{ order.id.slice(0, 6) }}...</td>
+            <tr *ngFor="let order of orders(); let i = index">
+              <td>#{{ order.id }}</td>
               <td>{{ order.customerName }}</td>
-              <td>{{ order.date | date : 'dd/MM/yyyy HH:mm' }}</td>
-              <td>{{ order.totalValue | currency : 'BRL' }}</td>
+              <td>{{ order.createdAt | date : 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ order.totalAmount | currency : 'BRL' }}</td>
               <td>
-                <span
-                  class="status-badge"
-                  [ngClass]="{
-                    'status-pending-payment': order.status === 'Pendente de Pagamento',
-                    'status-completed': order.status === 'Concluído',
-                    'status-preparing': order.status === 'Em Preparo',
-                    'status-delivery': order.status === 'Saiu para Entrega',
-                    'status-canceled': order.status === 'Cancelado'
-                  }"
-                  >{{ order.status }}</span
-                >
+                <span class="status-badge" [ngClass]="statusClass(order.status)">
+                  {{ statusLabel(order.status) }}
+                </span>
               </td>
               <td class="actions">
                 <button class="action-btn details-btn" (click)="toggleDetails(order.id)">
                   {{ expandedOrderId === order.id ? 'Fechar' : 'Ver Detalhes' }}
+                </button>
+                <button
+                  *ngIf="proximoStatus(order.status)"
+                  class="action-btn advance-btn"
+                  (click)="avancarStatus(order)"
+                  [disabled]="salvando()"
+                >
+                  {{ labelProximoStatus(order.status) }}
                 </button>
                 <button
                   *ngIf="canCancel(order.status)"
@@ -70,7 +73,7 @@ interface Order {
 
             <!-- Detalhes do pedido expandido -->
             <ng-container *ngIf="expandedOrderId">
-              <tr class="details-row" *ngFor="let order of orders; let i = index">
+              <tr class="details-row" *ngFor="let order of orders(); let i = index">
                 <ng-container *ngIf="order.id === expandedOrderId">
                   <td colspan="6">
                     <div class="order-details">
@@ -87,27 +90,42 @@ interface Order {
                           </thead>
                           <tbody>
                             <tr *ngFor="let item of order.items">
-                              <td>{{ item.name }}</td>
-                              <td>{{ item.qty }}</td>
-                              <td>{{ item.price | currency : 'BRL' }}</td>
-                              <td>{{ item.qty * item.price | currency : 'BRL' }}</td>
+                              <td>
+                                {{ item.productName }}
+                                <div *ngIf="item.customizations?.length" class="item-customizations">
+                                  <div *ngFor="let c of item.customizations">
+                                    + {{ c.optionName }}
+                                    <span *ngIf="c.priceAddition" class="custom-price">
+                                      ({{ c.priceAddition | currency : 'BRL' }})
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>{{ item.quantity }}</td>
+                              <td>{{ item.unitPrice | currency : 'BRL' }}</td>
+                              <td>{{ item.subtotal | currency : 'BRL' }}</td>
                             </tr>
                           </tbody>
                           <tfoot>
                             <tr>
                               <td colspan="3" class="total-label">Total</td>
-                              <td class="total-value">{{ order.totalValue | currency : 'BRL' }}</td>
+                              <td class="total-value">{{ order.totalAmount | currency : 'BRL' }}</td>
                             </tr>
                           </tfoot>
                         </table>
                       </div>
                       <div class="details-section">
-                        <h3>Endereço de Entrega</h3>
-                        <p>{{ order.address }}</p>
+                        <h3>Entrega & Pagamento</h3>
+                        <p><strong>Tipo:</strong> {{ deliveryLabel(order.deliveryType) }}</p>
+                        <p><strong>Pagamento:</strong> {{ paymentLabel(order.paymentMethod) }}</p>
+                        <p>
+                          <strong>Endereço:</strong>
+                          {{ order.deliveryAddress || 'Retirada no local' }}
+                        </p>
                         <p *ngIf="order.notes" class="order-notes">
                           <strong>Observações:</strong> {{ order.notes }}
                         </p>
-                        <div *ngIf="order.status === 'Cancelado' && order.notes" class="cancel-info">
+                        <div *ngIf="order.status === 'CANCELLED' && order.notes" class="cancel-info">
                           <strong>Motivo do cancelamento:</strong> {{ order.notes }}
                         </div>
                       </div>
@@ -118,13 +136,17 @@ interface Order {
             </ng-container>
           </tbody>
         </table>
+
+        <div class="load-more-wrap">
+          <button class="load-more" (click)="carregarMais()">Carregar mais</button>
+        </div>
       </div>
     </div>
 
     <!-- Modal de cancelamento (admin) - Etapa 1: escolher motivo -->
     <div class="cancel-modal-overlay" *ngIf="cancellingOrderId() && cancelStep() === 1" (click)="closeCancelReason()">
       <div class="cancel-modal" (click)="$event.stopPropagation()">
-        <h2>Cancelar Pedido #{{ cancellingOrderId()?.slice(0, 6) }}</h2>
+        <h2>Cancelar Pedido #{{ cancellingOrderId() }}</h2>
 
         <div class="cancel-options">
           <button
@@ -172,10 +194,10 @@ interface Order {
           <button
             type="button"
             class="btn-confirm-cancel"
-            [disabled]="!canConfirmCancel()"
+            [disabled]="!canConfirmCancel() || salvando()"
             (click)="avancarEtapa()"
           >
-            Confirmar Cancelamento
+            {{ salvando() ? 'Cancelando...' : 'Confirmar Cancelamento' }}
           </button>
         </div>
       </div>
@@ -199,17 +221,16 @@ interface Order {
           <button
             type="button"
             class="btn-confirm-cancel"
-            [disabled]="!estimatedTime.trim()"
+            [disabled]="!estimatedTime.trim() || salvando()"
             (click)="confirmCancel()"
           >
-            Confirmar Cancelamento
+            {{ salvando() ? 'Cancelando...' : 'Confirmar Cancelamento' }}
           </button>
         </div>
       </div>
     </div>
   `,
   styles: [
-    // Reutilizando os mesmos estilos do AdminProductsPageComponent para consistência
     `
       .orders-page {
         animation: fadeIn 0.3s ease-in-out;
@@ -237,6 +258,42 @@ interface Order {
         font-size: 28px;
         font-weight: bold;
         color: #333;
+      }
+
+      .btn-refresh {
+        border: 1px solid var(--brand-orange, #ea6a3d);
+        background: #fff;
+        color: var(--brand-orange, #ea6a3d);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-refresh:hover:not(:disabled) {
+        background: var(--brand-orange, #ea6a3d);
+        color: #fff;
+      }
+      .btn-refresh:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .erro-msg {
+        background: #fbeae5;
+        color: #dc3545;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 0.9rem;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #888;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       }
 
       .table-container {
@@ -297,6 +354,10 @@ interface Order {
         background-color: #fff3cd;
         color: #856404;
       }
+      .status-confirmed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
       .status-canceled {
         background-color: #fbeae5;
         color: #dc3545;
@@ -305,6 +366,7 @@ interface Order {
       .actions {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
       }
 
       .action-btn {
@@ -324,12 +386,43 @@ interface Order {
         background-color: #e0e0e0;
       }
 
+      .advance-btn {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+      .advance-btn:hover:not(:disabled) {
+        background-color: #c8e6c9;
+      }
+      .advance-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
       .cancel-btn {
         background-color: #fbeae5;
         color: #dc3545;
       }
       .cancel-btn:hover {
         background-color: #f5d5cc;
+      }
+
+      .load-more-wrap {
+        padding: 16px;
+        text-align: center;
+        border-top: 1px solid #f0f0f0;
+      }
+      .load-more {
+        border: 1px solid var(--brand-orange, #ea6a3d);
+        background: #fff;
+        color: var(--brand-orange, #ea6a3d);
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .load-more:hover {
+        background: var(--brand-orange, #ea6a3d);
+        color: #fff;
       }
 
       /* Modal de cancelamento admin */
@@ -527,6 +620,27 @@ interface Order {
         font-size: 0.85rem;
       }
 
+      .cancel-info {
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: #fbeae5;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #dc3545;
+      }
+
+      .item-customizations {
+        margin-top: 4px;
+        font-size: 0.78rem;
+        color: #888;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .custom-price {
+        color: #2e7d32;
+      }
+
       .items-table {
         width: 100%;
         border-collapse: collapse;
@@ -563,26 +677,132 @@ interface Order {
     `,
   ],
 })
-export class AdminOrdersPageComponent {
-  expandedOrderId: string | null = null;
+export class AdminOrdersPageComponent implements OnInit {
+  private readonly ordersService = inject(OrdersService);
 
-  readonly cancellingOrderId = signal<string | null>(null);
+  readonly orders = signal<OrderResponse[]>([]);
+  readonly loading = signal(false);
+  readonly erro = signal<string | null>(null);
+  readonly salvando = signal(false);
+
+  expandedOrderId: number | null = null;
+  page = 0;
+
+  readonly cancellingOrderId = signal<number | null>(null);
   readonly selectedReason = signal<string | null>(null);
   readonly cancelStep = signal(1);
   customReason = '';
   estimatedTime = '';
 
-  toggleDetails(orderId: string): void {
+  ngOnInit(): void {
+    this.carregarPedidos();
+  }
+
+  carregarPedidos(): void {
+    this.loading.set(true);
+    this.erro.set(null);
+
+    this.ordersService.getAdminOrders(0, 20).subscribe({
+      next: (res) => {
+        this.orders.set(res.content);
+        this.page = 0;
+        this.loading.set(false);
+      },
+      error: () => {
+        this.erro.set('Erro ao carregar pedidos. Tente novamente.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  carregarMais(): void {
+    this.ordersService.getAdminOrders(this.page + 1, 20).subscribe({
+      next: (res) => {
+        this.orders.update((lista) => [...lista, ...res.content]);
+        this.page += 1;
+      },
+      error: () => {
+        this.erro.set('Erro ao carregar mais pedidos.');
+      },
+    });
+  }
+
+  statusLabel(status: OrderStatus): string {
+    switch (status) {
+      case 'PENDING_PAYMENT': return 'Pendente de Pagamento';
+      case 'CONFIRMED': return 'Confirmado';
+      case 'PREPARING': return 'Em Preparo';
+      case 'OUT_FOR_DELIVERY': return 'Saiu para Entrega';
+      case 'COMPLETED': return 'Concluído';
+      case 'CANCELLED': return 'Cancelado';
+      default: return status;
+    }
+  }
+
+  statusClass(status: OrderStatus): string {
+    switch (status) {
+      case 'PENDING_PAYMENT': return 'status-pending-payment';
+      case 'CONFIRMED': return 'status-confirmed';
+      case 'PREPARING': return 'status-preparing';
+      case 'OUT_FOR_DELIVERY': return 'status-delivery';
+      case 'COMPLETED': return 'status-completed';
+      case 'CANCELLED': return 'status-canceled';
+      default: return '';
+    }
+  }
+
+  proximoStatus(status: OrderStatus): OrderStatus | null {
+    switch (status) {
+      case 'PENDING_PAYMENT': return 'CONFIRMED';
+      case 'CONFIRMED': return 'PREPARING';
+      case 'PREPARING': return 'OUT_FOR_DELIVERY';
+      case 'OUT_FOR_DELIVERY': return 'COMPLETED';
+      default: return null;
+    }
+  }
+
+  labelProximoStatus(status: OrderStatus): string {
+    switch (status) {
+      case 'PENDING_PAYMENT': return 'Confirmar Pagamento';
+      case 'CONFIRMED': return 'Iniciar Preparo';
+      case 'PREPARING': return 'Sair para Entrega';
+      case 'OUT_FOR_DELIVERY': return 'Concluir Pedido';
+      default: return '';
+    }
+  }
+
+  canCancel(status: OrderStatus): boolean {
+    return (
+      status === 'PENDING_PAYMENT' ||
+      status === 'CONFIRMED' ||
+      status === 'PREPARING' ||
+      status === 'OUT_FOR_DELIVERY'
+    );
+  }
+
+  avancarStatus(order: OrderResponse): void {
+    const next = this.proximoStatus(order.status);
+    if (!next || this.salvando()) return;
+
+    this.salvando.set(true);
+    this.erro.set(null);
+    this.ordersService.updateOrderStatus(order.id, next).subscribe({
+      next: () => {
+        this.salvando.set(false);
+        this.carregarPedidos();
+      },
+      error: () => {
+        this.salvando.set(false);
+        this.erro.set('Erro ao alterar o status do pedido.');
+      },
+    });
+  }
+
+  toggleDetails(orderId: number): void {
     this.expandedOrderId = this.expandedOrderId === orderId ? null : orderId;
   }
 
-  canCancel(status: string): boolean {
-    return status === 'Em Preparo' || status === 'Saiu para Entrega';
-  }
-  // Nota: 'Pendente de Pagamento' é gerenciado pelo scheduler,
-  // que cancela automaticamente após 10 minutos sem confirmação.
-
-  openCancelReason(orderId: string): void {
+  openCancelReason(orderId: number): void {
     this.cancellingOrderId.set(orderId);
     this.selectedReason.set(null);
     this.cancelStep.set(1);
@@ -625,7 +845,7 @@ export class AdminOrdersPageComponent {
 
   confirmCancel(): void {
     const orderId = this.cancellingOrderId();
-    if (!orderId) return;
+    if (!orderId || this.salvando()) return;
 
     let reason = '';
     const r = this.selectedReason();
@@ -640,91 +860,35 @@ export class AdminOrdersPageComponent {
 
     if (!reason) return;
 
-    // Atualiza localmente (mock) — quando tiver backend real, chama a API
-    const order = this.orders.find((o) => o.id === orderId);
-    if (order) {
-      order.status = 'Cancelado';
-      order.notes = reason;
-    }
-
-    this.closeCancelReason();
+    this.salvando.set(true);
+    this.erro.set(null);
+    this.ordersService.updateOrderStatus(orderId, 'CANCELLED', reason).subscribe({
+      next: () => {
+        this.salvando.set(false);
+        this.closeCancelReason();
+        this.carregarPedidos();
+      },
+      error: () => {
+        this.salvando.set(false);
+        this.erro.set('Erro ao cancelar o pedido.');
+      },
+    });
   }
 
-  orders: Order[] = [
-    {
-      id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-      customerName: 'Carlos Silva',
-      date: new Date(2026, 4, 21, 19, 30),
-      totalValue: 97.5,
-      status: 'Em Preparo',
-      items: [
-        { name: 'Combinado Salmão (20 peças)', qty: 1, price: 62.0 },
-        { name: 'Hot Roll Filadélfia (8 peças)', qty: 2, price: 17.75 },
-      ],
-      address: 'Rua das Flores, 123 - Centro, São Paulo - SP',
-      notes: 'Sem cebola, por favor',
-    },
-    {
-      id: 'f6a7b8c9-d0e1-2345-6789-0abcdef12345',
-      customerName: 'Pedro Almeida',
-      date: new Date(2026, 4, 21, 19, 30),
-      totalValue: 85.0,
-      status: 'Pendente de Pagamento',
-      items: [
-        { name: 'Combinado Especial (30 peças)', qty: 1, price: 65.0 },
-        { name: 'Temaki Hot', qty: 1, price: 20.0 },
-      ],
-      address: 'Rua Sete de Setembro, 300 - Centro, Vitória - ES',
-      notes: 'Pagamento via Pix aguardando confirmação',
-    },
-    {
-      id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
-      customerName: 'Mariana Oliveira',
-      date: new Date(2026, 4, 21, 19, 15),
-      totalValue: 120.0,
-      status: 'Saiu para Entrega',
-      items: [
-        { name: 'Sashimi Salmão (15 fatias)', qty: 1, price: 45.0 },
-        { name: 'Temaki Salmão', qty: 2, price: 28.5 },
-        { name: 'Jōgo de Chá', qty: 2, price: 9.0 },
-      ],
-      address: 'Av. Paulista, 1500 - Bela Vista, São Paulo - SP',
-    },
-    {
-      id: 'c3d4e5f6-a7b8-9012-3456-7890abcdef2',
-      customerName: 'João Pereira',
-      date: new Date(2026, 4, 20, 20, 0),
-      totalValue: 75.0,
-      status: 'Concluído',
-      items: [
-        { name: 'Uramaki Filadélfia (12 peças)', qty: 1, price: 38.0 },
-        { name: 'Sunomono', qty: 1, price: 22.0 },
-        { name: 'H2O Limão 500ml', qty: 1, price: 15.0 },
-      ],
-      address: 'Rua Augusta, 500 - Consolação, São Paulo - SP',
-    },
-    {
-      id: 'd4e5f6a7-b8c9-0123-4567-890abcdef3',
-      customerName: 'Ana Costa',
-      date: new Date(2026, 4, 20, 18, 45),
-      totalValue: 55.5,
-      status: 'Concluído',
-      items: [
-        { name: 'Hot Roll Filadélfia (8 peças)', qty: 3, price: 17.75 },
-      ],
-      address: 'Rua Oscar Freire, 800 - Jardins, São Paulo - SP',
-      notes: 'Tocar interfone 2 vezes',
-    },
-    {
-      id: 'e5f6a7b8-c9d0-1234-5678-90abcdef4',
-      customerName: 'Lucas Souza',
-      date: new Date(2026, 4, 19, 21, 10),
-      totalValue: 42.0,
-      status: 'Cancelado',
-      items: [
-        { name: 'Combinado Especial (32 peças)', qty: 1, price: 42.0 },
-      ],
-      address: 'Rua da Consolação, 2500 - Consolação, São Paulo - SP',
-    },
-  ];
+  paymentLabel(method: string): string {
+    switch (method) {
+      case 'PIX': return 'Pix';
+      case 'CARTAO_CREDITO': return 'Cartão de Crédito';
+      case 'DINHEIRO': return 'Dinheiro';
+      default: return method;
+    }
+  }
+
+  deliveryLabel(type: string): string {
+    switch (type) {
+      case 'ENTREGA': return 'Entrega';
+      case 'RETIRADA': return 'Retirada no local';
+      default: return type;
+    }
+  }
 }

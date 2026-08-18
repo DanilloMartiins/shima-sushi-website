@@ -77,6 +77,7 @@ export interface OrderResponse {
 
 export interface UpdateOrderStatusRequest {
   status: OrderStatus;
+  note?: string;
 }
 
 export interface OrderStatusResponse {

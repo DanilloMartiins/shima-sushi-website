@@ -294,6 +294,12 @@ public class OrderService {
         }
 
         order.setStatus(nextStatus);
+
+        // Quando o admin cancela, guarda o motivo na nota do pedido
+        if (nextStatus == OrderStatus.CANCELLED && !isBlank(request.note())) {
+            order.setNotes(request.note().trim());
+        }
+
         Order updatedOrder = orderRepository.save(order);
 
         if (nextStatus == OrderStatus.COMPLETED) {
