@@ -21,14 +21,21 @@ export class CartService {
 
   constructor() {
     // Se a conta mudar (login/logout/troca de usuário), recarrega o carrinho daquela conta.
+    // O carrinho fica preso à sessão: quando a sessão morre (logout, inatividade,
+    // navegador fechado), o carrinho da conta que saiu é apagado do storage.
     // Sem conta logada o carrinho fica só em memória, não persiste entre sessões.
-    let lastUserId: string | null = null;
+    let previousUserId: string | null = null;
     effect(() => {
       const userId = this.clerk.user()?.id ?? null;
-      if (userId === lastUserId) {
+      if (userId === previousUserId) {
         return;
       }
-      lastUserId = userId;
+
+      if (previousUserId && userId === null) {
+        localStorage.removeItem(this.storageKey(previousUserId));
+      }
+
+      previousUserId = userId;
       this.itemsSignal.set(this.readStoredCart(userId));
     });
   }
