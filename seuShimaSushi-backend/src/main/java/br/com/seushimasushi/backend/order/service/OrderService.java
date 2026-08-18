@@ -20,6 +20,8 @@ import br.com.seushimasushi.backend.order.model.OrderItem;
 import br.com.seushimasushi.backend.order.model.OrderStatus;
 import br.com.seushimasushi.backend.order.model.PaymentMethod;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
+import br.com.seushimasushi.backend.user.model.User;
+import br.com.seushimasushi.backend.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,18 +50,21 @@ public class OrderService {
     private final br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository;
     private final ObjectMapper objectMapper;
     private final LoyaltyService loyaltyService;
+    private final UserRepository userRepository;
 
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         ProductRepository productRepository,
                         br.com.seushimasushi.backend.scraper.repository.ProdutoRepository produtoRepository,
                         ObjectMapper objectMapper,
-                        LoyaltyService loyaltyService) {
+                        LoyaltyService loyaltyService,
+                        UserRepository userRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.produtoRepository = produtoRepository;
         this.objectMapper = objectMapper;
         this.loyaltyService = loyaltyService;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -377,12 +382,22 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getTotalAmount(),
                 totalItemsCount,
-                "Cliente #" + order.getCustomerClerkId().substring(Math.max(0, order.getCustomerClerkId().length() - 4)),
+                buscarNomeCliente(order.getCustomerClerkId()),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 customer,
                 itemResponses
         );
+    }
+
+    private String buscarNomeCliente(String clerkId) {
+        if (isBlank(clerkId)) {
+            return "Cliente";
+        }
+        // Puxa o nome real que o cliente cadastrou no perfil; se não achar, cai no fallback
+        return userRepository.findByClerkId(clerkId)
+                .map(User::getFullName)
+                .orElseGet(() -> "Cliente #" + clerkId.substring(Math.max(0, clerkId.length() - 4)));
     }
 
     private String normalizeNullable(String value) {
