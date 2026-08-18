@@ -239,6 +239,18 @@ public class OrderService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long orderId, String clerkUserId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Pedido não encontrado"));
+
+        if (!order.getCustomerClerkId().equals(clerkUserId)) {
+            throw new BadRequestException("Esse pedido não pertence ao usuário logado");
+        }
+
+        return toResponse(order, true);
+    }
+
     @Transactional
     public OrderResponse cancelMyOrder(Long orderId, String clerkUserId, String reason) {
         Order order = orderRepository.findById(orderId)

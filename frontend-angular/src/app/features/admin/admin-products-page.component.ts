@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MenuService } from '../../core/services/menu.service';
+import { API_BASE_RAW } from '../../core/constants/api.constants';
 import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupRequest, ProductResponse } from '../../core/models/menu.models';
 
 @Component({
@@ -57,7 +58,7 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
               <td class="image-cell">
                 <img
                   *ngIf="product.imageUrl; else noImage"
-                  [src]="product.imageUrl"
+                  [src]="getImageUrl(product.imageUrl)"
                   [alt]="product.name"
                   class="product-thumb"
                   loading="lazy"
@@ -915,6 +916,19 @@ export class AdminProductsPageComponent implements OnInit {
     this.carregarCategorias();
   }
 
+  getImageUrl(imageUrl: string | null | undefined): string {
+    if (!imageUrl) {
+      return '';
+    }
+    if (imageUrl.startsWith('/assets/')) {
+      return imageUrl;
+    }
+    if (imageUrl.startsWith('/images/')) {
+      return `${API_BASE_RAW}${imageUrl}`;
+    }
+    return `${API_BASE_RAW}/api/imagem?url=${encodeURIComponent(imageUrl)}`;
+  }
+
   carregarProdutos() {
     this.loading = true;
     this.errorMsg = null;
@@ -974,7 +988,7 @@ export class AdminProductsPageComponent implements OnInit {
       name: produto.name,
       description: produto.description,
       price: produto.price,
-      imageUrl: produto.imageUrl ?? '/assets/images/product_placeholder.png',
+      imageUrl: produto.imageUrl ?? '/assets/images/product_placeholder.svg',
       available: !produto.available,
       categoryId: produto.category!.id,
       isCustomizable: produto.isCustomizable ?? false,
@@ -1154,7 +1168,7 @@ export class AdminProductsPageComponent implements OnInit {
       name: this.formData.name.trim(),
       description: this.formData.description.trim(),
       price: this.formData.price,
-      imageUrl: this.produtoEditando?.imageUrl ?? '/assets/images/product_placeholder.png',
+      imageUrl: this.produtoEditando?.imageUrl ?? '/assets/images/product_placeholder.svg',
       available: this.formData.available,
       categoryId: this.formData.categoryId!,
       isCustomizable: this.formData.isCustomizable,

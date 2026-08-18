@@ -5,6 +5,7 @@ import br.com.seushimasushi.backend.order.model.OrderStatus;
 import br.com.seushimasushi.backend.order.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,11 @@ import java.util.List;
 public class PaymentScheduler {
 
     private final OrderRepository orderRepository;
+
+    // Sem gateway de pagamento real, os pedidos ficam como PENDING_PAYMENT
+    // ate serem confirmados manualmente. Nao cancela nada nesse modo.
+    @Value("${app.payment.gateway-enabled:false}")
+    private boolean gatewayEnabled;
 
     @Autowired
     public PaymentScheduler(OrderRepository orderRepository) {
@@ -33,6 +39,10 @@ public class PaymentScheduler {
     @Scheduled(fixedRate = 60_000)
     @Transactional
     public void verificarPagamentosPendentes() {
+        if (!gatewayEnabled) {
+            return;
+        }
+
         Instant limite = Instant.now().minusSeconds(600); // 10 minutos atrás
 
         List<Order> pendentes = orderRepository

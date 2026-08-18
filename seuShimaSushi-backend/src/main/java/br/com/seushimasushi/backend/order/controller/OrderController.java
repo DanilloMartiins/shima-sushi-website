@@ -55,6 +55,19 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    // Endpoint para o cliente acompanhar um pedido específico
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getById(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        String clerkUserId = jwt.getSubject();
+
+        OrderResponse response = orderService.getOrderById(id, clerkUserId);
+        return ResponseEntity.ok(response);
+    }
+
     // Endpoint para o cliente cancelar o próprio pedido
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<OrderResponse> cancel(

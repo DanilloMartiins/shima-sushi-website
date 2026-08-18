@@ -749,7 +749,12 @@ export class HomePageComponent implements OnInit {
     interval(5000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.slideIndex.update(i => (i + 1) % this.featuredProducts().length);
+        const total = this.featuredProducts().length;
+        if (total === 0) {
+          this.slideIndex.set(0);
+          return;
+        }
+        this.slideIndex.update(i => (i + 1) % total);
       });
   }
 
@@ -796,12 +801,12 @@ export class HomePageComponent implements OnInit {
   onSlideError(): void {
     const p = this.featuredProducts()[this.slideIndex()];
     if (p) {
-      p.imageUrl = '/assets/images/product_placeholder.png';
+      p.imageUrl = '/assets/images/product_placeholder.svg';
     }
   }
 
   onCardError(product: FeaturedProductResponse | ProductResponse): void {
-    product.imageUrl = '/assets/images/product_placeholder.png';
+    product.imageUrl = '/assets/images/product_placeholder.svg';
   }
 
   abrirModalProduto(product: FeaturedProductResponse): void {
@@ -813,7 +818,7 @@ export class HomePageComponent implements OnInit {
 
     // Se for customizavel, redireciona pro cardapio onde tem o modal completo
     if (product.isCustomizable) {
-      void this.router.navigate(['/']);
+      void this.router.navigate(['/cardapio']);
       return;
     }
 
