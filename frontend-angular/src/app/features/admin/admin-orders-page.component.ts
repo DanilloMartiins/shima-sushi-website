@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { OrdersService } from '../../core/services/orders.service';
@@ -56,7 +56,7 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
                 <button
                   *ngIf="proximoStatus(order.status)"
                   class="action-btn advance-btn"
-                  (click)="avancarStatus(order)"
+                  (click)="onAvancar(order)"
                   [disabled]="salvando()"
                 >
                   {{ labelProximoStatus(order.status) }}
@@ -67,6 +67,9 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
                   (click)="openCancelReason(order.id)"
                 >
                   Cancelar
+                </button>
+                <button class="action-btn print-btn" (click)="abrirImpressao(order, false)">
+                  Imprimir
                 </button>
               </td>
             </tr>
@@ -118,6 +121,9 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
                         <h3>Entrega & Pagamento</h3>
                         <p><strong>Tipo:</strong> {{ deliveryLabel(order.deliveryType) }}</p>
                         <p><strong>Pagamento:</strong> {{ paymentLabel(order.paymentMethod) }}</p>
+                        <p *ngIf="order.paymentMethod === 'DINHEIRO' && order.changeAmount">
+                          <strong>Troco para:</strong> {{ order.changeAmount | currency : 'BRL' }}
+                        </p>
                         <p>
                           <strong>Endereço:</strong>
                           {{ order.deliveryAddress || 'Retirada no local' }}
@@ -226,6 +232,106 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
           >
             {{ salvando() ? 'Cancelando...' : 'Confirmar Cancelamento' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de impressão (cozinha + entrega) -->
+    <div class="cancel-modal-overlay" *ngIf="printOrderId()" (click)="soConfirmar()">
+      <div class="print-modal" (click)="$event.stopPropagation()">
+        <h2>Imprimir Pedido #{{ orderAImprimir()?.id }}</h2>
+
+        <div class="print-options">
+          <button
+            type="button"
+            class="print-option"
+            [class.selected]="printMode() === 'kitchen'"
+            (click)="printMode.set('kitchen')"
+          >
+            <strong>Comanda Cozinha</strong>
+            <span>Itens + quantidade + customizações (sem preço)</span>
+          </button>
+          <button
+            type="button"
+            class="print-option"
+            [class.selected]="printMode() === 'delivery'"
+            (click)="printMode.set('delivery')"
+          >
+            <strong>Comanda de Entrega</strong>
+            <span>Itens + endereço + pagamento + troco (motoqueiro)</span>
+          </button>
+          <button
+            type="button"
+            class="print-option"
+            [class.selected]="printMode() === 'both'"
+            (click)="printMode.set('both')"
+          >
+            <strong>Ambos</strong>
+            <span>Comanda da cozinha + comprovante de entrega</span>
+          </button>
+        </div>
+
+        <div class="print-preview" *ngIf="orderAImprimir()">
+          <div class="print-area">
+            <div class="cupom" *ngIf="printMode() !== 'delivery'">
+              <div class="cupom-cab">
+                <div class="cupom-logo">SEU SHIMA SUSHI</div>
+                <div class="cupom-titulo">COMANDA COZINHA</div>
+                <div class="cupom-linha">Pedido: #{{ orderAImprimir()!.id }}</div>
+                <div class="cupom-linha">Data: {{ orderAImprimir()!.createdAt | date : 'dd/MM/yyyy HH:mm' }}</div>
+              </div>
+              <div class="cupom-div">==============================</div>
+              <div *ngFor="let item of orderAImprimir()!.items" class="cupom-item">
+                <div class="cupom-item-nome">{{ item.productName.toUpperCase() }}</div>
+                <div class="cupom-linha">{{ item.quantity }} UN</div>
+                <div *ngFor="let c of item.customizations" class="cupom-linha">  + {{ c.optionName }}</div>
+              </div>
+              <div class="cupom-div">==============================</div>
+              <div class="cupom-linha">Entrega: {{ deliveryLabel(orderAImprimir()!.deliveryType) }}</div>
+              <div *ngIf="orderAImprimir()!.notes" class="cupom-linha">Obs: {{ orderAImprimir()!.notes }}</div>
+            </div>
+
+            <div class="cupom" *ngIf="printMode() !== 'kitchen'">
+              <div class="cupom-cab">
+                <div class="cupom-logo">SEU SHIMA SUSHI</div>
+                <div class="cupom-titulo">COMPROVANTE DE ENTREGA</div>
+                <div class="cupom-linha">Pedido: #{{ orderAImprimir()!.id }}</div>
+                <div class="cupom-linha">Data: {{ orderAImprimir()!.createdAt | date : 'dd/MM/yyyy HH:mm' }}</div>
+                <div class="cupom-linha">Cliente: {{ orderAImprimir()!.customerName }}</div>
+              </div>
+              <div class="cupom-div">==============================</div>
+              <div *ngFor="let item of orderAImprimir()!.items" class="cupom-item">
+                <div class="cupom-item-nome">{{ item.productName.toUpperCase() }}</div>
+                <div *ngFor="let c of item.customizations" class="cupom-linha">
+                  + {{ c.optionName }}<span *ngIf="c.priceAddition"> (+R$ {{ c.priceAddition | number : '1.2-2' }})</span>
+                </div>
+                <div class="cupom-linha">
+                  {{ item.quantity }} UN x R$ {{ item.unitPrice | number : '1.2-2' }} = R$ {{ item.subtotal | number : '1.2-2' }}
+                </div>
+              </div>
+              <div class="cupom-div">==============================</div>
+              <div class="cupom-total">TOTAL: R$ {{ orderAImprimir()!.totalAmount | number : '1.2-2' }}</div>
+              <div class="cupom-div">==============================</div>
+              <div class="cupom-linha">Pagamento: {{ paymentLabel(orderAImprimir()!.paymentMethod) }}</div>
+              <div *ngIf="orderAImprimir()!.paymentMethod === 'DINHEIRO' && orderAImprimir()!.changeAmount" class="cupom-linha">
+                Troco para: R$ {{ orderAImprimir()!.changeAmount | number : '1.2-2' }}
+              </div>
+              <div class="cupom-linha">Entrega: {{ deliveryLabel(orderAImprimir()!.deliveryType) }}</div>
+              <div *ngIf="orderAImprimir()!.deliveryAddress" class="cupom-linha">
+                Endereço: {{ orderAImprimir()!.deliveryAddress }}
+              </div>
+              <div *ngIf="orderAImprimir()!.notes" class="cupom-linha">Obs: {{ orderAImprimir()!.notes }}</div>
+              <div class="cupom-div">==============================</div>
+              <div class="cupom-rodape">Obrigado pela preferencia!</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cancel-modal-actions">
+          <button type="button" class="btn-back" (click)="soConfirmar()">
+            {{ printAfterConfirm ? 'Só confirmar' : 'Fechar' }}
+          </button>
+          <button type="button" class="btn-confirm-print" (click)="imprimirEConfirmar()">Imprimir</button>
         </div>
       </div>
     </div>
@@ -674,6 +780,165 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
       .items-table .total-value {
         color: var(--brand-orange, #ea6a3d);
       }
+
+      .print-btn {
+        background-color: #e8eaf6;
+        color: #3f51b5;
+      }
+      .print-btn:hover {
+        background-color: #c5cae9;
+      }
+
+      /* Modal de impressão */
+      .print-modal {
+        background: #fff;
+        border-radius: 14px;
+        padding: 1.5rem;
+        max-width: 480px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        animation: fadeIn 0.15s ease;
+      }
+
+      .print-modal h2 {
+        margin: 0 0 1rem;
+        font-size: 1.1rem;
+        color: #333;
+      }
+
+      .print-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 1.25rem;
+      }
+
+      .print-option {
+        border: 1px solid #eee;
+        border-radius: 10px;
+        background: #fafafa;
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .print-option:hover {
+        background: #f3f2ff;
+        border-color: #3f51b5;
+      }
+
+      .print-option.selected {
+        background: #e8eaf6;
+        border-color: #3f51b5;
+      }
+
+      .print-option strong {
+        font-size: 0.9rem;
+        color: #333;
+      }
+
+      .print-option span {
+        font-size: 0.8rem;
+        color: #888;
+        line-height: 1.4;
+      }
+
+      .btn-confirm-print {
+        border: none;
+        padding: 10px 18px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #3f51b5;
+        color: #fff;
+        transition: background 0.2s;
+      }
+
+      .btn-confirm-print:hover {
+        background: #303f9f;
+      }
+
+      /* Prévia do cupom (térmica 80mm) */
+      .print-preview {
+        background: #f5f5f5;
+        border: 1px dashed #ccc;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 1.25rem;
+        overflow-x: auto;
+      }
+
+      .print-area {
+        width: 80mm;
+        margin: 0 auto;
+        background: #fff;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        line-height: 1.35;
+        padding: 4mm;
+      }
+
+      .cupom + .cupom {
+        margin-top: 8mm;
+        padding-top: 8mm;
+        border-top: 1px dashed #999;
+      }
+
+      .cupom-cab {
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      .cupom-logo {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+
+      .cupom-titulo {
+        font-size: 12px;
+        font-weight: 700;
+        margin: 2px 0 6px;
+      }
+
+      .cupom-div {
+        text-align: center;
+        white-space: pre;
+        margin: 2px 0;
+      }
+
+      .cupom-linha {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .cupom-item {
+        margin: 6px 0;
+      }
+
+      .cupom-item-nome {
+        font-weight: 700;
+      }
+
+      .cupom-total {
+        font-weight: 700;
+        text-align: center;
+        font-size: 12px;
+        margin: 2px 0;
+      }
+
+      .cupom-rodape {
+        text-align: center;
+        margin-top: 4px;
+      }
     `,
   ],
 })
@@ -693,6 +958,15 @@ export class AdminOrdersPageComponent implements OnInit {
   readonly cancelStep = signal(1);
   customReason = '';
   estimatedTime = '';
+
+  readonly printOrderId = signal<number | null>(null);
+  readonly printMode = signal<'kitchen' | 'delivery' | 'both'>('both');
+  printAfterConfirm = false;
+
+  readonly orderAImprimir = computed<OrderResponse | null>(() => {
+    const id = this.printOrderId();
+    return id ? this.orders().find((o) => o.id === id) ?? null : null;
+  });
 
   ngOnInit(): void {
     this.carregarPedidos();
@@ -796,6 +1070,48 @@ export class AdminOrdersPageComponent implements OnInit {
         this.erro.set('Erro ao alterar o status do pedido.');
       },
     });
+  }
+
+  // Confirmar pagamento abre o modal de impressão; os outros status avançam direto
+  onAvancar(order: OrderResponse): void {
+    const next = this.proximoStatus(order.status);
+    if (!next || this.salvando()) return;
+
+    if (next === 'CONFIRMED') {
+      this.abrirImpressao(order, true);
+    } else {
+      this.avancarStatus(order);
+    }
+  }
+
+  abrirImpressao(order: OrderResponse, afterConfirm: boolean): void {
+    this.printOrderId.set(order.id);
+    this.printMode.set('both');
+    this.printAfterConfirm = afterConfirm;
+  }
+
+  // Fecha o modal sem imprimir; se for fluxo de confirmar pagamento, avança o status
+  soConfirmar(): void {
+    const order = this.orderAImprimir();
+    const after = this.printAfterConfirm;
+    this.printOrderId.set(null);
+    if (after && order) {
+      this.avancarStatus(order);
+    }
+  }
+
+  // window.print() é bloqueante no Chrome (fica na prévia até confirmar),
+  // então o modal continua aberto enquanto imprime e fecha depois
+  imprimirEConfirmar(): void {
+    const order = this.orderAImprimir();
+    if (!order) return;
+
+    const after = this.printAfterConfirm;
+    window.print();
+    this.printOrderId.set(null);
+    if (after) {
+      this.avancarStatus(order);
+    }
   }
 
   toggleDetails(orderId: number): void {

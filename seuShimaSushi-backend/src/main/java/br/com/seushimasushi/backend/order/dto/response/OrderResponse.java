@@ -18,6 +18,7 @@ public record OrderResponse(
         BigDecimal totalAmount,
         BigDecimal totalPrice, // Adicionado para bater com o front
         Integer totalItems,    // Adicionado para bater com o front
+        BigDecimal changeAmount, // Troco p/ dinheiro, usado na comanda de entrega
         String customerName,   // Adicionado para facilitar exibição no admin
         Instant createdAt,
         Instant updatedAt,

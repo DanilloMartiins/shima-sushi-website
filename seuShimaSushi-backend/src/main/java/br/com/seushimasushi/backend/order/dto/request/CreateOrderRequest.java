@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record CreateOrderRequest(
@@ -21,6 +22,8 @@ public record CreateOrderRequest(
 
         @Size(max = 500, message = "Observacoes devem ter no maximo 500 caracteres")
         String notes,
+
+        BigDecimal changeAmount,
 
         @NotEmpty(message = "Pedido deve ter ao menos 1 item")
         List<@Valid CreateOrderItemRequest> items

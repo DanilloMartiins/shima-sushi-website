@@ -28,6 +28,7 @@ export interface CreateOrderRequest {
   paymentMethod: PaymentMethod;
   deliveryAddress?: string;
   notes?: string;
+  changeAmount?: number | null;
   items: CreateOrderItemRequest[];
 }
 
@@ -66,6 +67,7 @@ export interface OrderResponse {
   totalAmount: number;
   totalPrice: number;
   totalItems: number;
+  changeAmount?: number | null;
   createdAt: string;
   updatedAt: string;
   customer: {

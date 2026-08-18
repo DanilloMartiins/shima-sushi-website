@@ -481,6 +481,10 @@ export class CheckoutPageComponent implements OnInit {
       paymentMethod: formValue.paymentMethod,
       deliveryAddress: fullAddressText,
       notes: formValue.notes,
+      changeAmount:
+        formValue.paymentMethod === 'DINHEIRO' && formValue.needsChange
+          ? Number(formValue.changeFor)
+          : null,
       items: this.cartItems().map(item => ({
         productId: item.productId,
         quantity: item.quantity,

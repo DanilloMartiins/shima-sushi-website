@@ -54,6 +54,10 @@ public class Order {
     @Column(length = 500)
     private String notes;
 
+    // Troco que o cliente pediu pra pagar em dinheiro (vai na comanda do motoqueiro)
+    @Column(name = "change_amount", precision = 10, scale = 2)
+    private BigDecimal changeAmount;
+
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 

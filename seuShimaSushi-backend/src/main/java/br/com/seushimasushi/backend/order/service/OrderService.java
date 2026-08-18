@@ -147,6 +147,7 @@ public class OrderService {
         }
 
         order.setTotalAmount(total);
+        order.setChangeAmount(request.changeAmount());
 
         Order savedOrder = orderRepository.save(order);
         return toResponse(savedOrder, true);
@@ -179,6 +180,7 @@ public class OrderService {
                 1000L, OrderStatus.PENDING_PAYMENT, PaymentMethod.PIX, DeliveryType.ENTREGA,
                 "Rua Sete de Setembro, 300 - Centro, Vitória - ES",
                 "Pagamento via Pix pendente", BigDecimal.valueOf(85), BigDecimal.valueOf(85), 2,
+                null,
                 "Pedro Almeida", now.minusSeconds(120), now.minusSeconds(120), customer,
                 List.of(
                     new OrderItemResponse(1L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65), List.of()),
@@ -190,6 +192,7 @@ public class OrderService {
                 1001L, OrderStatus.CONFIRMED, PaymentMethod.PIX, DeliveryType.ENTREGA,
                 "Rua das Palmeiras, 150 - Jardim da Penha, Vitória - ES",
                 "Sem cebola", BigDecimal.valueOf(62.5), BigDecimal.valueOf(62.5), 3,
+                null,
                 "Cliente Teste", now.minusSeconds(36000), now.minusSeconds(35800), customer,
                 List.of(
                     new OrderItemResponse(1L, "Combinado Salmão (20 peças)", 1, BigDecimal.valueOf(38), BigDecimal.valueOf(38), List.of()),
@@ -201,6 +204,7 @@ public class OrderService {
             new OrderResponse(
                 1002L, OrderStatus.PREPARING, PaymentMethod.DINHEIRO, DeliveryType.RETIRADA,
                 null, null, BigDecimal.valueOf(45), BigDecimal.valueOf(45), 3,
+                null,
                 "Cliente Teste", now.minusSeconds(1800), now.minusSeconds(1200), customer,
                 List.of(
                     new OrderItemResponse(4L, "Temaki de Salmão Completo", 1, BigDecimal.valueOf(25), BigDecimal.valueOf(25), List.of()),
@@ -213,6 +217,7 @@ public class OrderService {
                 1003L, OrderStatus.OUT_FOR_DELIVERY, PaymentMethod.CARTAO_CREDITO, DeliveryType.ENTREGA,
                 "Av. Marechal Campos, 500 - Mata da Praia, Vitória - ES",
                 "Tocar interfone 2x", BigDecimal.valueOf(97.5), BigDecimal.valueOf(97.5), 4,
+                null,
                 "Cliente Teste", now.minusSeconds(5400), now.minusSeconds(2400), customer,
                 List.of(
                     new OrderItemResponse(7L, "Combinado Especial (30 peças)", 1, BigDecimal.valueOf(65), BigDecimal.valueOf(65), List.of()),
@@ -225,6 +230,7 @@ public class OrderService {
                 1004L, OrderStatus.CANCELLED, PaymentMethod.PIX, DeliveryType.ENTREGA,
                 "Rua da Praia, 88 - Praia do Canto, Vitória - ES",
                 "Cliente desistiu", BigDecimal.valueOf(32), BigDecimal.valueOf(32), 1,
+                null,
                 "Cliente Teste", now.minusSeconds(172800), now.minusSeconds(171900), customer,
                 List.of(
                     new OrderItemResponse(10L, "Uramaki Filadélfia (12 peças)", 1, BigDecimal.valueOf(32), BigDecimal.valueOf(32), List.of())
@@ -234,6 +240,7 @@ public class OrderService {
             new OrderResponse(
                 1005L, OrderStatus.COMPLETED, PaymentMethod.PIX, DeliveryType.RETIRADA,
                 null, "Quero wasabi extra", BigDecimal.valueOf(28), BigDecimal.valueOf(28), 3,
+                null,
                 "Cliente Teste", now.minusSeconds(86400), now.minusSeconds(85800), customer,
                 List.of(
                     new OrderItemResponse(11L, "Temaki Skin", 1, BigDecimal.valueOf(20), BigDecimal.valueOf(20), List.of()),
@@ -382,6 +389,7 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getTotalAmount(),
                 totalItemsCount,
+                order.getChangeAmount(),
                 buscarNomeCliente(order.getCustomerClerkId()),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
