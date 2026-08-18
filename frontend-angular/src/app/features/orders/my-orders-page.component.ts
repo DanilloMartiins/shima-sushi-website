@@ -52,7 +52,7 @@ import { OrdersService } from '../../core/services/orders.service';
 
         <div class="order-footer" *ngIf="order.deliveryAddress || order.notes || canCancel(order.status)">
           <div class="order-footer-row">
-            <span *ngIf="order.deliveryAddress" class="order-address">📍 {{ order.deliveryAddress }}</span>
+            <span *ngIf="order.deliveryAddress" class="order-address" style="white-space: pre-line;">📍 {{ order.deliveryAddress }}</span>
             <span *ngIf="order.notes" class="order-notes">📝 {{ order.notes }}</span>
           </div>
           <button

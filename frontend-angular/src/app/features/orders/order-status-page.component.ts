@@ -93,7 +93,7 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
           </div>
           <div class="detail-row" *ngIf="order()!.deliveryAddress">
             <span>Endereço de Entrega</span>
-            <strong>{{ order()!.deliveryAddress }}</strong>
+            <strong style="white-space: pre-line;">{{ order()!.deliveryAddress }}</strong>
           </div>
           <div class="detail-row">
             <span>Total</span>

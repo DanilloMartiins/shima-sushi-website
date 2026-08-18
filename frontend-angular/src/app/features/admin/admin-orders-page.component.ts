@@ -126,7 +126,7 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
                         </p>
                         <p>
                           <strong>Endereço:</strong>
-                          {{ order.deliveryAddress || 'Retirada no local' }}
+                          <span style="white-space: pre-line;">{{ order.deliveryAddress || 'Retirada no local' }}</span>
                         </p>
                         <p *ngIf="order.notes" class="order-notes">
                           <strong>Observações:</strong> {{ order.notes }}

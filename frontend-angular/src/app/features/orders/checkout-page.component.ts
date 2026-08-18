@@ -472,9 +472,17 @@ export class CheckoutPageComponent implements OnInit {
     this.submitting.set(true);
     const formValue = this.form.getRawValue();
 
-    const fullAddressText = formValue.deliveryType === 'ENTREGA' 
-      ? `${formValue.street}, ${formValue.number} - ${formValue.neighborhood}, ${formValue.city}`
-      : undefined;
+    let fullAddressText: string | undefined;
+    if (formValue.deliveryType === 'ENTREGA') {
+      fullAddressText =
+        `${formValue.street}, ${formValue.number} - ${formValue.neighborhood}, ${formValue.city}`;
+      if (formValue.complement) {
+        fullAddressText += `\nComplemento: ${formValue.complement}`;
+      }
+      if (formValue.referencePoint) {
+        fullAddressText += `\nPonto de referência: ${formValue.referencePoint}`;
+      }
+    }
 
     const payload: CreateOrderRequest = {
       deliveryType: formValue.deliveryType,
