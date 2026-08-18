@@ -7,6 +7,22 @@ import { AddressService } from '../../core/services/address.service';
 import { AddressResponse } from '../../core/models/address.models';
 import { API_BASE_URL } from '../../core/constants/api.constants';
 
+interface LoyaltyTransaction {
+  id: number;
+  type: string;
+  orderId: number | null;
+  description: string;
+  createdAt: string;
+}
+
+interface LoyaltyCard {
+  id: number;
+  stamps: number;
+  stampsNeeded: number;
+  prizeDescription: string;
+  transactions: LoyaltyTransaction[];
+}
+
 @Component({
   selector: 'app-profile-page',
   standalone: true,
@@ -33,6 +49,41 @@ import { API_BASE_URL } from '../../core/constants/api.constants';
           </button>
           <span *ngIf="phoneSaved()" class="phone-saved-msg">Salvo!</span>
         </div>
+      </div>
+
+      <div class="loyalty-section">
+        <h2>Cartão Fidelidade</h2>
+        <p class="description">A cada pedido confirmado você ganha um selo. Complete o cartão para resgatar o prêmio!</p>
+
+        @if (loyaltyLoading()) {
+          <p class="loyalty-loading">Carregando seu cartão...</p>
+        } @else if (loyaltyCard()) {
+          <div class="stamps-bar">
+            @for (stamp of gerarSelos(loyaltyCard()!); track $index) {
+              <div
+                class="stamp"
+                [class.stamp--filled]="stamp.preenchido"
+                [class.stamp--empty]="!stamp.preenchido"
+                [title]="stamp.tooltip"
+              >
+                <span class="stamp-icon" [class.stamp-icon--empty]="!stamp.preenchido" aria-hidden="true"></span>
+                @if (stamp.tooltip) {
+                  <div class="stamp-tooltip">
+                    <div class="tooltip-order-id">Pedido #{{ stamp.transaction?.orderId }}</div>
+                    <div class="tooltip-status">Concluído</div>
+                    <div class="tooltip-date">{{ stamp.transaction?.createdAt | date:'dd/MM/yyyy' }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="stamps-info">
+            {{ loyaltyCard()!.stamps }}/{{ loyaltyCard()!.stampsNeeded }} selos
+            &mdash; Prêmio: {{ loyaltyCard()!.prizeDescription }}
+          </div>
+        } @else {
+          <p class="loyalty-empty">Você ainda não tem selos. Faça um pedido confirmado e comece a juntar!</p>
+        }
       </div>
 
       <div class="address-section">
@@ -182,6 +233,80 @@ import { API_BASE_URL } from '../../core/constants/api.constants';
 
     .phone-saved-msg { color: #28a745; font-weight: 600; font-size: 0.9rem; animation: fadeIn 0.2s ease; }
 
+    .loyalty-section {
+      background: #fff; padding: 2rem; border-radius: 20px;
+      border: 1px solid var(--brand-border); box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .loyalty-loading, .loyalty-empty { color: var(--brand-muted); font-size: 0.95rem; }
+
+    .stamps-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .stamp {
+      position: relative;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+      transition: transform 0.15s;
+    }
+    .stamp:hover { transform: scale(1.15); }
+    .stamp--filled { background: var(--brand-orange); box-shadow: 0 2px 6px rgba(234, 106, 61, 0.3); }
+    .stamp--empty { background: #e9ecef; }
+
+    .stamp-icon {
+      position: relative;
+      width: 20px; height: 11px;
+      display: inline-block;
+    }
+    .stamp-icon::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      width: 15px; height: 11px;
+      border-radius: 50% 50% 45% 55% / 55% 55% 45% 45%;
+      background: radial-gradient(circle at 32% 42%, #1a1a2e 0 1.5px, #fff 1.5px);
+      transform: rotate(-8deg);
+    }
+    .stamp-icon::after {
+      content: '';
+      position: absolute;
+      right: -2px; top: 50%;
+      width: 7px; height: 5px;
+      border: 2px solid #fff;
+      border-left: none;
+      border-radius: 0 50% 50% 0;
+      transform: translateY(-50%);
+    }
+    .stamp-icon--empty { opacity: 0.45; }
+
+    .stamp-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e; color: #fff;
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 12px; white-space: nowrap;
+      z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      line-height: 1.5;
+    }
+    .stamp-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1a1a2e;
+    }
+    .stamp:hover .stamp-tooltip { display: block; }
+    .tooltip-order-id { font-weight: 600; }
+    .tooltip-status { color: #4caf50; }
+    .tooltip-date { color: #aaa; }
+
+    .stamps-info { font-size: 13px; color: #666; margin-top: 12px; }
+
     @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })
@@ -197,6 +322,8 @@ export class ProfilePageComponent implements OnInit {
   readonly phone = signal('');
   readonly phoneSaving = signal(false);
   readonly phoneSaved = signal(false);
+  readonly loyaltyCard = signal<LoyaltyCard | null>(null);
+  readonly loyaltyLoading = signal(true);
   editingId: number | null = null;
 
   readonly form = this.fb.nonNullable.group({
@@ -219,12 +346,48 @@ export class ProfilePageComponent implements OnInit {
     }
 
     this.loadAddress();
+    this.carregarLoyaltyCard();
   }
 
   loadAddress(): void {
     this.addressService.getDefaultAddress().subscribe({
       next: (addr) => this.defaultAddress.set(addr),
     });
+  }
+
+  carregarLoyaltyCard(): void {
+    this.clerk.getToken().then((token) => {
+      if (!token) {
+        this.loyaltyLoading.set(false);
+        return;
+      }
+
+      this.http.get<{ card: LoyaltyCard | null }>(
+        `${API_BASE_URL}/loyalty/card`,
+        { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+      ).subscribe({
+        next: (res) => {
+          this.loyaltyCard.set(res.card);
+          this.loyaltyLoading.set(false);
+        },
+        error: () => this.loyaltyLoading.set(false)
+      });
+    });
+  }
+
+  gerarSelos(card: LoyaltyCard): { preenchido: boolean; tooltip: string; transaction: LoyaltyTransaction | null }[] {
+    const selos: { preenchido: boolean; tooltip: string; transaction: LoyaltyTransaction | null }[] = [];
+    const earned = card.transactions.filter(t => t.type === 'EARNED');
+
+    for (let i = 0; i < card.stampsNeeded; i++) {
+      const transaction = earned[i] || null;
+      selos.push({
+        preenchido: i < card.stamps,
+        tooltip: transaction && transaction.orderId ? `Pedido #${transaction.orderId}` : '',
+        transaction
+      });
+    }
+    return selos;
   }
 
   onCepBlur(): void {
