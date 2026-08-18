@@ -65,6 +65,7 @@ public class AdminProductService {
         );
 
         product.setIsCustomizable(Boolean.TRUE.equals(request.isCustomizable()));
+        product.setTag(normalizarTag(request.tag()));
 
         if (request.customizationGroups() != null && !request.customizationGroups().isEmpty()) {
             for (CustomizationGroupRequest groupReq : request.customizationGroups()) {
@@ -107,6 +108,7 @@ public class AdminProductService {
         product.setAvailable(request.available());
         product.setCategory(categoryService.findByIdOrThrow(request.categoryId()));
         product.setIsCustomizable(Boolean.TRUE.equals(request.isCustomizable()));
+        product.setTag(normalizarTag(request.tag()));
 
         product.getCustomizationGroups().clear();
         if (request.customizationGroups() != null && !request.customizationGroups().isEmpty()) {
@@ -253,10 +255,19 @@ public class AdminProductService {
                 product.getAvailable(),
                 product.getIsFeatured(),
                 product.getIsCustomizable(),
+                product.getTag(),
                 new CategorySummaryResponse(product.getCategory().getId(), product.getCategory().getName()),
                 product.getCreatedAt(),
                 product.getUpdatedAt(),
                 groups
         );
+    }
+
+    // Tag vazia ou espaco nao deve ser salva, senao polui o badge do cardapio
+    private String normalizarTag(String tag) {
+        if (tag == null || tag.isBlank()) {
+            return null;
+        }
+        return tag.trim();
     }
 }

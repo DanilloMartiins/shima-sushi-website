@@ -85,6 +85,7 @@ export interface CreateProductRequest {
   available: boolean;
   categoryId: number;
   isCustomizable: boolean;
+  tag?: string;
   customizationGroups: CustomizationGroupRequest[];
 }
 

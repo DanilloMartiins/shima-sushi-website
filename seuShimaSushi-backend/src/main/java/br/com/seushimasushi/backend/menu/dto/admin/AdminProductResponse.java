@@ -13,6 +13,7 @@ public record AdminProductResponse(
         Boolean available,
         Boolean isFeatured,
         Boolean isCustomizable,
+        String tag,
         CategorySummaryResponse category,
         Instant createdAt,
         Instant updatedAt,

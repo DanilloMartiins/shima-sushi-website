@@ -14,10 +14,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,93 +30,152 @@ public class PublicMenuService {
 
     @Transactional(readOnly = true)
     public List<PublicMenuCategoryResponse> getPublicMenu() {
-        // Buscamos os produtos que foram raspados do site externo
-        List<Produto> produtos = produtoRepository.findAll();
+        // Junta as duas fontes (scraper + admin) numa lista só, normalizando o nome
+        // da categoria pra nao duplicar secao (ex: "Bebidas" do scraper e do admin)
+        Map<String, List<PublicMenuProductResponse>> porCategoria = new LinkedHashMap<>();
 
-        // Agrupamos os produtos por categoria vinda do Yooga
-        Map<String, List<Produto>> produtosPorCategoria = produtos.stream()
-                .filter(p -> p.getCategoria() != null)
-                .collect(Collectors.groupingBy(Produto::getCategoria));
+        // 1. Produtos vindos do site externo (seed), sem customizacao
+        for (Produto p : produtoRepository.findAll()) {
+            String categoria = normalizarCategoria(p.getCategoria());
+            String descricao = gerarDescricao(p.getNome(), p.getCategoria());
+            PublicMenuProductResponse resp = new PublicMenuProductResponse(
+                    p.getId(), p.getNome(), descricao, p.getPreco(), p.getUrlImagem(),
+                    false, List.of(), null
+            );
+            porCategoria.computeIfAbsent(categoria, k -> new ArrayList<>()).add(resp);
+        }
 
+        // 2. Produtos cadastrados no admin (suportam customizacao e badge)
+        for (Product p : productRepository.findByAvailableTrueAndCategoryActiveTrueOrderByCategoryNameAscNameAsc()) {
+            String categoria = normalizarCategoria(p.getCategory().getName());
+            PublicMenuProductResponse resp = new PublicMenuProductResponse(
+                    p.getId(), p.getName(), p.getDescription(), p.getPrice(),
+                    p.getImageUrl(), p.getIsCustomizable(), montarGroups(p), p.getTag()
+            );
+            porCategoria.computeIfAbsent(categoria, k -> new ArrayList<>()).add(resp);
+        }
+
+        // 3. Monta as categorias ordenadas pela ordem canonica (desconhecidas vao pro fim)
         List<PublicMenuCategoryResponse> categorias = new ArrayList<>();
+        List<Map.Entry<String, List<PublicMenuProductResponse>>> ordenadas = new ArrayList<>(porCategoria.entrySet());
+        ordenadas.sort(Comparator.comparingInt(e -> ORDEM_CANONICAS.getOrDefault(e.getKey(), 999)));
         long idCounter = 1;
-
-        // Iteramos sobre o mapa para criar as categorias formatadas
-        for (Map.Entry<String, List<Produto>> entry : produtosPorCategoria.entrySet()) {
-            String nomeCategoria = entry.getKey();
-            List<Produto> produtosDaCategoria = entry.getValue();
-
-            List<PublicMenuProductResponse> productResponses = new ArrayList<>();
-            for (Produto p : produtosDaCategoria) {
-                String descricao = gerarDescricao(p.getNome(), nomeCategoria);
-                productResponses.add(new PublicMenuProductResponse(
-                        p.getId(),
-                        p.getNome(),
-                        descricao,
-                        p.getPreco(),
-                        p.getUrlImagem(),
-                        false,
-                        List.of()
-                ));
-            }
-
+        for (Map.Entry<String, List<PublicMenuProductResponse>> e : ordenadas) {
             categorias.add(new PublicMenuCategoryResponse(
                     idCounter++,
-                    nomeCategoria,
-                    "Produtos da categoria " + nomeCategoria,
-                    productResponses
+                    e.getKey(),
+                    DESCRICOES.getOrDefault(e.getKey(), "Produtos da categoria " + e.getKey()),
+                    e.getValue()
             ));
         }
+        return categorias;
+    }
 
-        // Se houver algum produto sem categoria, colocamos numa categoria padrão
-        List<Produto> semCategoria = produtos.stream().filter(p -> p.getCategoria() == null).toList();
-        if (!semCategoria.isEmpty()) {
-            List<PublicMenuProductResponse> extraResponses = new ArrayList<>();
-            for (Produto p : semCategoria) {
-                String descricao = gerarDescricao(p.getNome(), "Geral");
-                extraResponses.add(new PublicMenuProductResponse(p.getId(), p.getNome(), descricao, p.getPreco(), p.getUrlImagem(), false, List.of()));
-            }
-            categorias.add(new PublicMenuCategoryResponse(999L, "Geral", "Outros produtos", extraResponses));
+    // Alias normalizados (sem acento) apontando pro nome canonico da categoria
+    private static final Map<String, String> ALIAS_CATEGORIAS = Map.ofEntries(
+            Map.entry("experiencia do chef", "Experiência do Chef"),
+            Map.entry("entradas", "Entradas & Ceviche"),
+            Map.entry("ceviche", "Entradas & Ceviche"),
+            Map.entry("acompanhamentos", "Entradas & Ceviche"),
+            Map.entry("poke", "Monte seu Poke"),
+            Map.entry("pokes", "Monte seu Poke"),
+            Map.entry("seja o chef", "Monte seu Poke"),
+            Map.entry("sashimi", "Sashimi & Carpaccio"),
+            Map.entry("carpaccio", "Sashimi & Carpaccio"),
+            Map.entry("sushi", "Sushis Tradicionais"),
+            Map.entry("sushis", "Sushis Tradicionais"),
+            Map.entry("gunka 6 pecas", "Sushis Tradicionais"),
+            Map.entry("uramaki 8 pecas", "Sushis Tradicionais"),
+            Map.entry("makimono 8 pecas", "Sushis Tradicionais"),
+            Map.entry("especiais", "Sushis Tradicionais"),
+            Map.entry("hot 10 pecas", "Hots"),
+            Map.entry("hot", "Hots"),
+            Map.entry("hots", "Hots"),
+            Map.entry("temaki", "Hots"),
+            Map.entry("temakis", "Hots"),
+            Map.entry("combinado", "Combinados"),
+            Map.entry("combinados", "Combinados"),
+            Map.entry("combinados individuais", "Combinados"),
+            Map.entry("pratos quentes", "Pratos Quentes & Yakisobas"),
+            Map.entry("yakisobas", "Pratos Quentes & Yakisobas"),
+            Map.entry("yakisobas individuais", "Pratos Quentes & Yakisobas"),
+            Map.entry("bebidas", "Bebidas"),
+            Map.entry("sobremesa", "Sobremesas"),
+            Map.entry("sobremesas", "Sobremesas"),
+            Map.entry("complementos", "Complementos")
+    );
+
+    private static final Map<String, Integer> ORDEM_CANONICAS = Map.ofEntries(
+            Map.entry("Experiência do Chef", 1),
+            Map.entry("Entradas & Ceviche", 2),
+            Map.entry("Monte seu Poke", 3),
+            Map.entry("Sashimi & Carpaccio", 4),
+            Map.entry("Sushis Tradicionais", 5),
+            Map.entry("Hots", 6),
+            Map.entry("Combinados", 7),
+            Map.entry("Pratos Quentes & Yakisobas", 8),
+            Map.entry("Bebidas", 9),
+            Map.entry("Sobremesas", 10),
+            Map.entry("Complementos", 11)
+    );
+
+    private static final Map<String, String> DESCRICOES = Map.ofEntries(
+            Map.entry("Experiência do Chef", "Experiencias especiais preparadas pelo chef"),
+            Map.entry("Entradas & Ceviche", "Entradas, ceviches e acompanhamentos"),
+            Map.entry("Monte seu Poke", "Monte seu poke ou combinacao personalizada"),
+            Map.entry("Sashimi & Carpaccio", "Sashimis e carpaccios frescos"),
+            Map.entry("Sushis Tradicionais", "Sushis, gunkas, uramakis e makimonos"),
+            Map.entry("Hots", "Hot rolls e temakis empanados"),
+            Map.entry("Combinados", "Combinados para compartilhar"),
+            Map.entry("Pratos Quentes & Yakisobas", "Pratos quentes e yakisobas"),
+            Map.entry("Bebidas", "Bebidas para acompanhar seu pedido"),
+            Map.entry("Sobremesas", "Sobremesas orientais"),
+            Map.entry("Complementos", "Complementos e adicionais")
+    );
+
+    // Nome de categoria vem do seed ou do admin, entao a gente padroniza
+    private String normalizarCategoria(String categoria) {
+        if (categoria == null || categoria.isBlank()) {
+            return "Outros";
         }
+        String chave = normalizarTexto(categoria);
+        String canonica = ALIAS_CATEGORIAS.get(chave);
+        if (canonica != null) {
+            return canonica;
+        }
+        // Categoria criada direto no admin e que nao tem alias: mantem o nome original
+        return categoria.trim();
+    }
 
-        // Adiciona produtos do admin (com suporte a customizacao) como categoria extra
-        List<Product> adminProducts = productRepository.findByAvailableTrueAndCategoryActiveTrueOrderByCategoryNameAscNameAsc();
-        if (!adminProducts.isEmpty()) {
-            Map<String, List<Product>> adminPorCategoria = adminProducts.stream()
-                    .collect(Collectors.groupingBy(p -> p.getCategory().getName()));
+    // Remove acentos e caracteres especiais pra bater com as chaves do mapa
+    private String normalizarTexto(String texto) {
+        return Normalizer.normalize(texto, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^a-z0-9 ]", " ")
+                .toLowerCase()
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
 
-            for (Map.Entry<String, List<Product>> entry : adminPorCategoria.entrySet()) {
-                List<PublicMenuProductResponse> productResponses = new ArrayList<>();
-                for (Product p : entry.getValue()) {
-                    List<PublicCustomizationGroupResponse> groups = new ArrayList<>();
-                    if (Boolean.TRUE.equals(p.getIsCustomizable()) && p.getCustomizationGroups() != null) {
-                        for (CustomizationGroup g : p.getCustomizationGroups()) {
-                            List<PublicCustomizationOptionResponse> opts = new ArrayList<>();
-                            if (g.getOptions() != null) {
-                                for (CustomizationOption o : g.getOptions()) {
-                                    opts.add(new PublicCustomizationOptionResponse(
-                                            o.getId(), o.getName(), o.getPriceAddition(), o.getDisplayOrder()
-                                    ));
-                                }
-                            }
-                            groups.add(new PublicCustomizationGroupResponse(
-                                    g.getId(), g.getName(), g.getMinSelected(), g.getMaxSelected(),
-                                    g.getDisplayOrder(), opts
-                            ));
-                        }
+    private List<PublicCustomizationGroupResponse> montarGroups(Product p) {
+        List<PublicCustomizationGroupResponse> groups = new ArrayList<>();
+        if (Boolean.TRUE.equals(p.getIsCustomizable()) && p.getCustomizationGroups() != null) {
+            for (CustomizationGroup g : p.getCustomizationGroups()) {
+                List<PublicCustomizationOptionResponse> opts = new ArrayList<>();
+                if (g.getOptions() != null) {
+                    for (CustomizationOption o : g.getOptions()) {
+                        opts.add(new PublicCustomizationOptionResponse(
+                                o.getId(), o.getName(), o.getPriceAddition(), o.getDisplayOrder()
+                        ));
                     }
-                    productResponses.add(new PublicMenuProductResponse(
-                            p.getId(), p.getName(), p.getDescription(), p.getPrice(),
-                            p.getImageUrl(), p.getIsCustomizable(), groups
-                    ));
                 }
-                categorias.add(new PublicMenuCategoryResponse(
-                        idCounter++ + 1000, entry.getKey(), "Produtos do cardapio", productResponses
+                groups.add(new PublicCustomizationGroupResponse(
+                        g.getId(), g.getName(), g.getMinSelected(), g.getMaxSelected(),
+                        g.getDisplayOrder(), opts
                 ));
             }
         }
-
-        return categorias;
+        return groups;
     }
 
     /**

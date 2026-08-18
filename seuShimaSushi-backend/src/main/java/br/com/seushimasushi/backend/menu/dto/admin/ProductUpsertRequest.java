@@ -35,6 +35,9 @@ public record ProductUpsertRequest(
         @NotNull(message = "Indicador de customizavel e obrigatorio")
         Boolean isCustomizable,
 
+        @Size(max = 50, message = "Tag deve ter no maximo 50 caracteres")
+        String tag,
+
         @Valid
         List<CustomizationGroupRequest> customizationGroups
 ) {

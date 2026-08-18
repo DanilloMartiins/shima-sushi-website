@@ -154,6 +154,11 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
           </div>
 
           <label class="form-group">
+            <span>Etiqueta (badge)</span>
+            <input type="text" [(ngModel)]="formData.tag" maxlength="50" placeholder="Ex: Recomendado" />
+          </label>
+
+          <label class="form-group">
             <span>Imagem do produto</span>
             <input type="file" (change)="onFileSelected($event)" accept="image/*" />
             <div class="image-preview" *ngIf="imagemPreview">
@@ -905,6 +910,7 @@ export class AdminProductsPageComponent implements OnInit {
     categoryId: null as number | null,
     available: true,
     isCustomizable: false,
+    tag: '',
     customizationGroups: [] as CustomizationGroupRequest[],
   };
 
@@ -992,6 +998,7 @@ export class AdminProductsPageComponent implements OnInit {
       available: !produto.available,
       categoryId: produto.category!.id,
       isCustomizable: produto.isCustomizable ?? false,
+      tag: produto.tag ?? undefined,
       customizationGroups: groups,
     };
 
@@ -1055,6 +1062,7 @@ export class AdminProductsPageComponent implements OnInit {
       categoryId: produto.category?.id ?? null,
       available: produto.available ?? true,
       isCustomizable: produto.isCustomizable ?? false,
+      tag: produto.tag ?? '',
       customizationGroups: (produto.customizationGroups ?? []).map(g => ({
         id: g.id,
         name: g.name,
@@ -1081,7 +1089,7 @@ export class AdminProductsPageComponent implements OnInit {
   }
 
   resetarFormulario() {
-    this.formData = { name: '', description: '', price: null, categoryId: null, available: true, isCustomizable: false, customizationGroups: [] };
+    this.formData = { name: '', description: '', price: null, categoryId: null, available: true, isCustomizable: false, tag: '', customizationGroups: [] };
     this.arquivoImagem = null;
     this.imagemPreview = null;
     this.formError = null;
@@ -1172,6 +1180,7 @@ export class AdminProductsPageComponent implements OnInit {
       available: this.formData.available,
       categoryId: this.formData.categoryId!,
       isCustomizable: this.formData.isCustomizable,
+      tag: this.formData.tag?.trim() || undefined,
       customizationGroups: groups,
     };
 

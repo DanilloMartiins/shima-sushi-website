@@ -57,6 +57,9 @@ public class Product {
     @Column(name = "is_customizable", nullable = false)
     private Boolean isCustomizable = Boolean.FALSE;
 
+    @Column(length = 50)
+    private String tag;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;

@@ -41,7 +41,7 @@ import { MenuCarouselComponent, CategoriaCarrossel } from './menu-carousel.compo
           <h3>{{ cat.nome }}</h3>
 
           <div class="product-grid">
-            @for (item of cat.produtos; track item.id) {
+            @for (item of cat.produtos; track $index) {
               <article class="product-card" (click)="openProductModal(item)">
                 @if (!imagensFalhas()[item.id]) {
                   <img

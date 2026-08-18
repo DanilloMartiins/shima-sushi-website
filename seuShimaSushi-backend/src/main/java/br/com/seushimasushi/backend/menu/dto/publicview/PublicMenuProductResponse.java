@@ -10,6 +10,7 @@ public record PublicMenuProductResponse(
         BigDecimal price,
         String imageUrl,
         Boolean isCustomizable,
-        List<PublicCustomizationGroupResponse> customizationGroups
+        List<PublicCustomizationGroupResponse> customizationGroups,
+        String tag
 ) {
 }
