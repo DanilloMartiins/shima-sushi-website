@@ -40,7 +40,7 @@ export class NotificationSoundService {
 
     // Envelope rápido pra não estourar o ouvido
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.8, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(1.0, start + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + durSec);
 
     osc.connect(gain);
