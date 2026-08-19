@@ -31,21 +31,26 @@ export class NotificationSoundService {
 
   // Um bip só, pra dar liberdade de usar em outro lugar se precisar
   bip(ctx: AudioContext, freq: number, delaySec: number, durSec: number): void {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
     const start = ctx.currentTime + delaySec;
 
-    osc.type = 'sine';
-    osc.frequency.value = freq;
+    const tocar = (f: number, vol: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = f;
 
-    // Envelope rápido pra não estourar o ouvido
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(1.0, start + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + durSec);
+      // Envelope rápido pra não estourar o ouvido
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(vol, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + durSec);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(start);
-    osc.stop(start + durSec + 0.02);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + durSec + 0.02);
+    };
+
+    tocar(freq, 0.6);
+    tocar(freq * 2, 0.4);
   }
 }
