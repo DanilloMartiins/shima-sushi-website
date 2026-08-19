@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 @Injectable({ providedIn: 'root' })
 export class NotificationSoundService {
   private audioCtx: AudioContext | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
 
   // O AudioContext só nasce depois de uma interação do usuário (política de
   // autoplay do navegador). Criação preguiçosa + resume pra garantir que toque.
@@ -18,6 +19,20 @@ export class NotificationSoundService {
       void this.audioCtx.resume();
     }
     return this.audioCtx;
+  }
+
+  private getCompressor(ctx: AudioContext): DynamicsCompressorNode {
+    if (!this.compressor) {
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -12;
+      comp.knee.value = 0;
+      comp.ratio.value = 12;
+      comp.attack.value = 0.001;
+      comp.release.value = 0.15;
+      comp.connect(ctx.destination);
+      this.compressor = comp;
+    }
+    return this.compressor;
   }
 
   // Bip bip agudo, estilo notificação de app de delivery
@@ -45,12 +60,12 @@ export class NotificationSoundService {
       gain.gain.exponentialRampToValueAtTime(0.0001, start + durSec);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.getCompressor(ctx));
       osc.start(start);
       osc.stop(start + durSec + 0.02);
     };
 
-    tocar(freq, 0.6);
-    tocar(freq * 2, 0.4);
+    tocar(freq, 0.9);
+    tocar(freq * 2, 0.9);
   }
 }
