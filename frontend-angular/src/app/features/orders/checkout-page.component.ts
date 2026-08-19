@@ -7,8 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { AddressService } from '../../core/services/address.service';
-import { ClerkService } from '../../core/services/clerk.service';
-import { CreateOrderRequest, DeliveryType, OrderResponse, PaymentMethod } from '../../core/models/order.models';
+import { CreateOrderRequest, DeliveryType, PaymentMethod } from '../../core/models/order.models';
 import { AddressResponse } from '../../core/models/address.models';
 
 @Component({
@@ -366,7 +365,6 @@ export class CheckoutPageComponent implements OnInit {
   readonly cartService = inject(CartService);
   private readonly ordersService = inject(OrdersService);
   private readonly addressService = inject(AddressService);
-  private readonly clerkService = inject(ClerkService);
   private readonly router = inject(Router);
 
   readonly cartItems = this.cartService.items;
@@ -508,7 +506,6 @@ export class CheckoutPageComponent implements OnInit {
 
     this.ordersService.createOrder(payload).subscribe({
       next: (order) => {
-        this.redirectToWhatsApp(order);
         this.cartService.clear();
         void this.router.navigateByUrl('/orders');
       },
@@ -517,59 +514,5 @@ export class CheckoutPageComponent implements OnInit {
         this.submitting.set(false);
       }
     });
-  }
-
-  private redirectToWhatsApp(order: OrderResponse): void {
-    const user = this.clerkService.user();
-    const customerName = user?.fullName || 'Cliente';
-    const customerPhone = user?.primaryPhoneNumber?.phoneNumber || 'Não informado';
-    const customerCpf = user?.publicMetadata?.['cpf'] || 'Não informado';
-
-    const date = new Date().toLocaleDateString('pt-BR');
-    const paymentLabels: Record<PaymentMethod, string> = {
-      PIX: 'Pix - Cobrança antecipada',
-      CARTAO_CREDITO: 'Cartão de Crédito (na entrega)',
-      DINHEIRO: 'Dinheiro'
-    };
-
-    let msg = `*Pedido:* #${order.id}\n`;
-    msg += `*Data:* ${date}\n\n`;
-    msg += `*Cliente:* ${customerName}\n`;
-    msg += `*CPF:* ${customerCpf}\n`;
-    msg += `*Telefone:* ${customerPhone}\n`;
-    msg += `------------------------------\n`;
-
-    this.cartItems().forEach(item => {
-      msg += `*${item.name.toUpperCase()}*\n`;
-      if (item.selectedOptions?.length) {
-        item.selectedOptions.forEach(opt => {
-          msg += `   - ${opt.groupName}: ${opt.optionName}${opt.priceAddition ? ' (+R$ ' + opt.priceAddition.toFixed(2).replace('.', ',') + ')' : ''}\n`;
-        });
-      }
-      msg += `   ${item.quantity} UN x R$ ${item.price.toFixed(2).replace('.', ',')} = R$ ${(item.quantity * item.price).toFixed(2).replace('.', ',')}\n`;
-    });
-
-    msg += `------------------------------\n`;
-    msg += `*SUBTOTAL:* R$ ${this.cartService.totalPrice().toFixed(2).replace('.', ',')}\n\n`;
-    
-    let paymentStr = paymentLabels[order.paymentMethod];
-    const formValue = this.form.getRawValue();
-    if (order.paymentMethod === 'DINHEIRO' && formValue.needsChange) {
-      paymentStr += ` (Troco para R$ ${formValue.changeFor})`;
-    }
-    
-    msg += `*Pagamento:* ${paymentStr}\n`;
-    msg += order.deliveryType === 'ENTREGA' ? `*Entrega no endereço:* ${order.deliveryAddress}` : `*Retirada na loja*`;
-
-    if (order.notes) {
-      msg += `\n\n*Obs:* ${order.notes}`;
-    }
-
-    const encodedMsg = encodeURIComponent(msg);
-    const whatsappUrl = `https://wa.me/5527996518265?text=${encodedMsg}`;
-    const win = window.open(whatsappUrl, '_blank');
-    if (!win || win.closed) {
-      window.location.href = whatsappUrl;
-    }
   }
 }
