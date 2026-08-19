@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subject, interval, switchMap, takeUntil } from 'rxjs';
 
 import { OrdersService } from '../../core/services/orders.service';
+import { NotificationSoundService } from '../../core/services/notification-sound.service';
 import { OrderResponse, OrderStatus } from '../../core/models/order.models';
 
 @Component({
@@ -942,13 +944,18 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
     `,
   ],
 })
-export class AdminOrdersPageComponent implements OnInit {
+export class AdminOrdersPageComponent implements OnInit, OnDestroy {
   private readonly ordersService = inject(OrdersService);
+  private readonly notificationSound = inject(NotificationSoundService);
+  private readonly destroy$ = new Subject<void>();
 
   readonly orders = signal<OrderResponse[]>([]);
   readonly loading = signal(false);
   readonly erro = signal<string | null>(null);
   readonly salvando = signal(false);
+
+  // IDs já exibidos na tela; o polling compara contra eles pra achar pedido novo
+  private readonly idsCarregados = new Set<number>();
 
   expandedOrderId: number | null = null;
   page = 0;
@@ -970,6 +977,12 @@ export class AdminOrdersPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregarPedidos();
+    this.iniciarPolling();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   carregarPedidos(): void {
@@ -980,6 +993,7 @@ export class AdminOrdersPageComponent implements OnInit {
       next: (res) => {
         this.orders.set(res.content);
         this.page = 0;
+        this.marcarIdsCarregados(res.content);
         this.loading.set(false);
       },
       error: () => {
@@ -989,11 +1003,46 @@ export class AdminOrdersPageComponent implements OnInit {
     });
   }
 
+  // Busca a página atual a cada 20s. Se aparecer um id que não existia antes,
+  // toca o bip (pedido novo chegou). A primeira carga é feita pelo carregarPedidos,
+  // então o polling nunca bipa pedido que já está na tela.
+  private iniciarPolling(): void {
+    interval(20000)
+      .pipe(
+        takeUntil(this.destroy$),
+        switchMap(() => this.ordersService.getAdminOrders(0, 20)),
+      )
+      .subscribe({
+        next: (res) => {
+          const idsNovos = res.content
+            .map((o) => o.id)
+            .filter((id) => !this.idsCarregados.has(id));
+
+          // Atualiza a lista mesmo sem pedido novo (reflete mudança de status)
+          this.orders.set(res.content);
+          this.marcarIdsCarregados(res.content);
+
+          if (idsNovos.length > 0) {
+            this.notificationSound.pedidoNovo();
+          }
+        },
+        error: () => {
+          // Silencioso: se a API falhar, a página continua com o que tem
+        },
+      });
+  }
+
+  private marcarIdsCarregados(lista: OrderResponse[]): void {
+    this.idsCarregados.clear();
+    lista.forEach((o) => this.idsCarregados.add(o.id));
+  }
+
   carregarMais(): void {
     this.ordersService.getAdminOrders(this.page + 1, 20).subscribe({
       next: (res) => {
         this.orders.update((lista) => [...lista, ...res.content]);
         this.page += 1;
+        res.content.forEach((o) => this.idsCarregados.add(o.id));
       },
       error: () => {
         this.erro.set('Erro ao carregar mais pedidos.');
