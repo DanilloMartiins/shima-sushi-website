@@ -48,7 +48,7 @@ import { ADMIN_VERSION } from '../../../environments/admin-version';
         </nav>
 
         <div class="sidebar-footer">
-          <span class="version-badge">Admin {{ ADMIN_VERSION }}</span>
+          <span class="version-badge">{{ ADMIN_VERSION }}</span>
           <button type="button" class="btn-logout" (click)="logout()">Sair</button>
         </div>
       </aside>
@@ -133,14 +133,15 @@ import { ADMIN_VERSION } from '../../../environments/admin-version';
 
       .sidebar-footer {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
         gap: 12px;
         padding-top: 16px;
         border-top: 1px solid #eef1f5;
       }
 
       .version-badge {
-        align-self: flex-start;
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.5px;
@@ -150,6 +151,7 @@ import { ADMIN_VERSION } from '../../../environments/admin-version';
         padding: 4px 10px;
         border-radius: 20px;
         box-shadow: 0 2px 6px rgba(234, 106, 61, 0.35);
+        white-space: nowrap;
       }
 
       .btn-logout {

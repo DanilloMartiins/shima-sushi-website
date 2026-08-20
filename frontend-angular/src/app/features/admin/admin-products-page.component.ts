@@ -480,6 +480,7 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
         align-items: center;
         gap: 6px;
         margin-top: 16px;
+        margin-bottom: 24px;
         flex-wrap: wrap;
       }
 
