@@ -74,6 +74,7 @@ class OrderServiceTest {
                     DeliveryType.RETIRADA,
                     null,
                     null,
+                    null,
                     List.of(item)
             );
 
@@ -94,6 +95,7 @@ class OrderServiceTest {
                     DeliveryType.ENTREGA,
                     "Rua Principal, 123",
                     "Complemento",
+                    null,
                     List.of(item)
             );
 
@@ -113,6 +115,7 @@ class OrderServiceTest {
                     DeliveryType.RETIRADA,
                     null,
                     null,
+                    null,
                     List.of(item1, item2)
             );
 
@@ -130,17 +133,17 @@ class OrderServiceTest {
             var item = new CreateOrderItemRequest(produtoTeste.getId(), 1, null);
 
             // Test PIX
-            var requestPix = new CreateOrderRequest(PaymentMethod.PIX, DeliveryType.RETIRADA, null, null, List.of(item));
+            var requestPix = new CreateOrderRequest(PaymentMethod.PIX, DeliveryType.RETIRADA, null, null, null, List.of(item));
             var responsePix = orderService.createOrder(clienteClerkId, requestPix);
             assertEquals(PaymentMethod.PIX, responsePix.paymentMethod(), "Deveria aceitar PIX");
 
             // Test CARTAO_CREDITO
-            var requestCartao = new CreateOrderRequest(PaymentMethod.CARTAO_CREDITO, DeliveryType.RETIRADA, null, null, List.of(item));
+            var requestCartao = new CreateOrderRequest(PaymentMethod.CARTAO_CREDITO, DeliveryType.RETIRADA, null, null, null, List.of(item));
             var responseCartao = orderService.createOrder(clienteClerkId, requestCartao);
             assertEquals(PaymentMethod.CARTAO_CREDITO, responseCartao.paymentMethod(), "Deveria aceitar CARTÃO_CREDITO");
 
             // Test DINHEIRO
-            var requestDinheiro = new CreateOrderRequest(PaymentMethod.DINHEIRO, DeliveryType.RETIRADA, null, null, List.of(item));
+            var requestDinheiro = new CreateOrderRequest(PaymentMethod.DINHEIRO, DeliveryType.RETIRADA, null, null, null, List.of(item));
             var responseDinheiro = orderService.createOrder(clienteClerkId, requestDinheiro);
             assertEquals(PaymentMethod.DINHEIRO, responseDinheiro.paymentMethod(), "Deveria aceitar DINHEIRO");
         }
@@ -162,6 +165,7 @@ class OrderServiceTest {
                     DeliveryType.RETIRADA,
                     null,
                     null,
+                    null,
                     List.of(item)
             );
 
@@ -177,6 +181,7 @@ class OrderServiceTest {
                     PaymentMethod.PIX,
                     DeliveryType.ENTREGA,
                     null,  // Sem endereço!
+                    null,
                     null,
                     List.of(item)
             );
@@ -195,6 +200,7 @@ class OrderServiceTest {
                     DeliveryType.RETIRADA,
                     null,
                     null,
+                    null,
                     List.of(item1, item2)
             );
 
@@ -209,6 +215,7 @@ class OrderServiceTest {
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
+                    null,
                     null,
                     null,
                     List.of(item)
@@ -227,6 +234,7 @@ class OrderServiceTest {
                     DeliveryType.RETIRADA,
                     null,
                     null,
+                    null,
                     List.of(item)
             );
 
@@ -240,6 +248,7 @@ class OrderServiceTest {
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
+                    null,
                     null,
                     null,
                     List.of()  // Lista vazia
@@ -256,6 +265,7 @@ class OrderServiceTest {
             var request = new CreateOrderRequest(
                     PaymentMethod.PIX,
                     DeliveryType.RETIRADA,
+                    null,
                     null,
                     null,
                     List.of(item)
@@ -279,6 +289,7 @@ class OrderServiceTest {
                     DeliveryType.ENTREGA,
                     "Rua Principal, 123",
                     "",  // Complemento vazio
+                    null,
                     List.of(item)
             );
 
