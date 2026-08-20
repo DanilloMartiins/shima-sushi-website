@@ -17,9 +17,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findAllWithCategory(Pageable pageable);
 
     @Query(value = "SELECT p FROM Product p LEFT JOIN FETCH p.category "
-                   + "WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :term, '%')) "
+                   + "WHERE LOWER(p.name) LIKE LOWER(CONCAT(:term, '%')) "
                    + "ORDER BY p.createdAt DESC, p.id ASC",
-           countQuery = "SELECT COUNT(p) FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :term, '%'))")
+           countQuery = "SELECT COUNT(p) FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT(:term, '%'))")
     Page<Product> findAllWithCategoryByName(@Param("term") String term, Pageable pageable);
 
     @EntityGraph(attributePaths = {"category"})
