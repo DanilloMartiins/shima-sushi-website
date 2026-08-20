@@ -70,8 +70,12 @@ import { OrderResponse, OrderStatus } from '../../core/models/order.models';
                 >
                   Cancelar
                 </button>
-                <button class="action-btn print-btn" (click)="abrirImpressao(order, false)">
-                  Imprimir
+                <button
+                  *ngIf="order.status !== 'PENDING_PAYMENT'"
+                  class="action-btn print-btn"
+                  (click)="abrirImpressao(order, false)"
+                >
+                  Re-imprimir
                 </button>
               </td>
             </tr>
