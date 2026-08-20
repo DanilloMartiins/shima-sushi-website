@@ -47,9 +47,18 @@ public class AdminProductService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<AdminProductResponse> list(int page, int size) {
+    public PagedResponse<AdminProductResponse> list(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<AdminProductResponse> productPage = productRepository.findAllWithCategory(pageable).map(this::toAdminResponse);
+
+        Page<AdminProductResponse> productPage;
+        if (search != null && !search.isBlank()) {
+            productPage = productRepository
+                    .findAllWithCategoryByName(search.trim(), pageable)
+                    .map(this::toAdminResponse);
+        } else {
+            productPage = productRepository.findAllWithCategory(pageable).map(this::toAdminResponse);
+        }
+
         return PagedResponse.from(productPage);
     }
 

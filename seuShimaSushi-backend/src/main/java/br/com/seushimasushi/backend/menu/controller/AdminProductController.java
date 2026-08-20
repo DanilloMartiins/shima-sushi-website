@@ -42,9 +42,10 @@ public class AdminProductController {
     public ResponseEntity<PagedResponse<AdminProductResponse>> list(
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page nao pode ser negativa") int page,
             @RequestParam(defaultValue = "10") @Min(value = 1, message = "Size minimo e 1")
-            @Max(value = 100, message = "Size maximo e 100") int size
+            @Max(value = 100, message = "Size maximo e 100") int size,
+            @RequestParam(required = false) String search
     ) {
-        PagedResponse<AdminProductResponse> response = adminProductService.list(page, size);
+        PagedResponse<AdminProductResponse> response = adminProductService.list(page, size, search);
         return ResponseEntity.ok(response);
     }
 

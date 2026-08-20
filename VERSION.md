@@ -15,3 +15,12 @@
 | v4.0.0 | — | Auto-criação de usuários no login e promote admin |
 | v4.1.0 | — | Role SUPER_ADMIN e página de gerenciar usuários |
 | v4.1.1 | 07/06/2026 | Rota /admin/orders adicionada |
+| v4.2.0 | 20/08/2026 | Busca por nome + paginação na gestão de produtos do admin |
+
+## Versionamento do Admin (painel administrativo)
+
+O painel admin tem versionamento próprio (`ADMIN_VERSION`), separado do frontend do cliente — nasceu depois dele.
+
+| Versão | Data | Descrição |
+|--------|------|-----------|
+| v1.0.0 | 20/08/2026 | Primeira versão com versionamento próprio (badge na sidebar); busca por nome + paginação em produtos |

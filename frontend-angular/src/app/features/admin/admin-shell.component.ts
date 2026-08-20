@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ClerkService } from '../../core/services/clerk.service';
+import { ADMIN_VERSION } from '../../../environments/admin-version';
 
 @Component({
   selector: 'app-admin-shell',
@@ -46,9 +47,10 @@ import { ClerkService } from '../../core/services/clerk.service';
           >
         </nav>
 
-        <div class="sidebar-spacer"></div>
-
-        <button type="button" class="btn-logout" (click)="logout()">Sair</button>
+        <div class="sidebar-footer">
+          <span class="version-badge">Admin {{ ADMIN_VERSION }}</span>
+          <button type="button" class="btn-logout" (click)="logout()">Sair</button>
+        </div>
       </aside>
       <main class="admin-main-content">
         <router-outlet></router-outlet>
@@ -129,6 +131,27 @@ import { ClerkService } from '../../core/services/clerk.service';
         flex: 1;
       }
 
+      .sidebar-footer {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 16px;
+        border-top: 1px solid #eef1f5;
+      }
+
+      .version-badge {
+        align-self: flex-start;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: #fff;
+        background: linear-gradient(135deg, #ea6a3d, #d4552e);
+        padding: 4px 10px;
+        border-radius: 20px;
+        box-shadow: 0 2px 6px rgba(234, 106, 61, 0.35);
+      }
+
       .btn-logout {
         background: transparent;
         border: none;
@@ -156,6 +179,7 @@ import { ClerkService } from '../../core/services/clerk.service';
   ],
 })
 export class AdminShellComponent implements OnInit {
+  readonly ADMIN_VERSION = ADMIN_VERSION;
   private readonly clerk = inject(ClerkService);
   private readonly router = inject(Router);
 

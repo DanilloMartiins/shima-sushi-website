@@ -71,10 +71,12 @@ export class MenuService {
     return this.http.get<CategorySummaryResponse[]>(`${API_BASE_URL}/admin/categories`);
   }
 
-  getAdminProducts(page = 0, size = 100): Observable<PagedResponse<ProductResponse>> {
-    return this.http.get<PagedResponse<ProductResponse>>(
-      `${API_BASE_URL}/admin/products?page=${page}&size=${size}`,
-    );
+  getAdminProducts(page = 0, size = 15, search = ''): Observable<PagedResponse<ProductResponse>> {
+    let url = `${API_BASE_URL}/admin/products?page=${page}&size=${size}`;
+    if (search?.trim()) {
+      url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+    return this.http.get<PagedResponse<ProductResponse>>(url);
   }
 
   createAdminProduct(payload: CreateProductRequest): Observable<ProductResponse> {

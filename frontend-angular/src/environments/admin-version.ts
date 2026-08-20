@@ -1,0 +1,1 @@
+export const ADMIN_VERSION = 'v1.0.0';

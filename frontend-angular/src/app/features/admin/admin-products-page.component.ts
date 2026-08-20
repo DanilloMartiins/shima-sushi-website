@@ -26,6 +26,27 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
         </div>
       </header>
 
+      <div class="toolbar" *ngIf="!loading">
+        <div class="search-box">
+          <input
+            type="text"
+            [(ngModel)]="buscaInput"
+            (keyup.enter)="buscarProdutos()"
+            placeholder="Buscar por nome (ex: Combinado Gojuu...)"
+          />
+          <button class="search-btn" (click)="buscarProdutos()">Buscar</button>
+          <button class="clear-btn" *ngIf="buscaAtiva" (click)="limparBusca()">Limpar</button>
+        </div>
+        <span class="result-count">
+          Mostrando
+          {{ totalElementos === 0 ? 0 : pagina * tamanhoPagina + 1 }}–{{
+            Math.min(totalElementos, (pagina + 1) * tamanhoPagina)
+          }}
+          de {{ totalElementos }} produto(s)
+          <ng-container *ngIf="buscaAtiva"> para "{{ buscaAtiva }}"</ng-container>
+        </span>
+      </div>
+
       <div class="loading" *ngIf="loading">
         <span>Carregando produtos...</span>
       </div>
@@ -110,6 +131,26 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="pagination" *ngIf="totalPaginas > 1">
+        <button class="page-btn" (click)="irParaPagina(pagina - 1)" [disabled]="pagina === 0">«</button>
+        <button
+          *ngFor="let p of paginasVisiveis()"
+          class="page-btn"
+          [class.active]="p === pagina"
+          [disabled]="p === '...'"
+          (click)="irParaPagina(p)"
+        >
+          {{ p === '...' ? '…' : p + 1 }}
+        </button>
+        <button
+          class="page-btn"
+          (click)="irParaPagina(pagina + 1)"
+          [disabled]="pagina >= totalPaginas - 1"
+        >
+          »
+        </button>
       </div>
     </div>
 
@@ -361,6 +402,115 @@ import { CategorySummaryResponse, CreateProductRequest, CustomizationGroupReques
         padding: 60px;
         color: #c0392b;
         font-size: 16px;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+
+      .search-box {
+        display: flex;
+        gap: 8px;
+        flex: 1;
+        max-width: 480px;
+      }
+
+      .search-box input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #333;
+        background: #fff;
+        transition: border-color 0.2s;
+      }
+
+      .search-box input:focus {
+        outline: none;
+        border-color: #3498db;
+      }
+
+      .search-btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        font-size: 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.2s;
+      }
+
+      .search-btn:hover {
+        background-color: #2980b9;
+      }
+
+      .clear-btn {
+        background-color: #f0f0f0;
+        color: #555;
+        border: none;
+        padding: 10px 16px;
+        font-size: 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.2s;
+      }
+
+      .clear-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      .result-count {
+        color: #777;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+
+      .page-btn {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #555;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+      }
+
+      .page-btn:hover:not(:disabled) {
+        background-color: #f0f4f8;
+        border-color: #b8c4d0;
+      }
+
+      .page-btn.active {
+        background-color: #3498db;
+        border-color: #3498db;
+        color: #fff;
+      }
+
+      .page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
 
       .table-container {
@@ -895,6 +1045,14 @@ export class AdminProductsPageComponent implements OnInit {
   loading = true;
   errorMsg: string | null = null;
 
+  Math = Math;
+  tamanhoPagina = 15;
+  pagina = 0;
+  totalElementos = 0;
+  totalPaginas = 0;
+  buscaInput = '';
+  buscaAtiva = '';
+
   modalAberta = false;
   salvando = false;
   formError: string | null = null;
@@ -939,9 +1097,16 @@ export class AdminProductsPageComponent implements OnInit {
     this.loading = true;
     this.errorMsg = null;
 
-    this.menuService.getAdminProducts().subscribe({
+    this.menuService.getAdminProducts(this.pagina, this.tamanhoPagina, this.buscaAtiva).subscribe({
       next: (paged) => {
+        if (paged.content.length === 0 && this.pagina > 0) {
+          this.pagina--;
+          this.carregarProdutos();
+          return;
+        }
         this.products = paged.content;
+        this.totalElementos = paged.totalElements;
+        this.totalPaginas = paged.totalPages;
         this.loading = false;
       },
       error: (err) => {
@@ -949,6 +1114,49 @@ export class AdminProductsPageComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  buscarProdutos() {
+    this.buscaAtiva = this.buscaInput.trim();
+    this.pagina = 0;
+    this.carregarProdutos();
+  }
+
+  limparBusca() {
+    this.buscaInput = '';
+    this.buscaAtiva = '';
+    this.pagina = 0;
+    this.carregarProdutos();
+  }
+
+  paginasVisiveis(): (number | '...')[] {
+    const total = this.totalPaginas;
+    const atual = this.pagina;
+
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i);
+    }
+
+    const paginas: (number | '...')[] = [];
+    const inicio = Math.max(0, atual - 2);
+    const fim = Math.min(total - 1, atual + 2);
+
+    if (inicio > 0) {
+      paginas.push(0);
+      if (inicio > 1) paginas.push('...');
+    }
+    for (let p = inicio; p <= fim; p++) paginas.push(p);
+    if (fim < total - 1) {
+      if (fim < total - 2) paginas.push('...');
+      paginas.push(total - 1);
+    }
+    return paginas;
+  }
+
+  irParaPagina(pagina: number | '...') {
+    if (typeof pagina !== 'number' || pagina === this.pagina) return;
+    this.pagina = pagina;
+    this.carregarProdutos();
   }
 
   carregarCategorias() {
